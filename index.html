@@ -20,7 +20,7 @@
         .btn-sm { padding: 6px 12px; font-size: 11px; } .btn-block { width: 100%; }
         .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .badge { background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
-        .nav-tabs { display: flex; gap: 5px; border-bottom: 2px solid var(--border); margin-bottom: 20px; }
+        .nav-tabs { display: flex; gap: 5px; border-bottom: 2px solid var(--border); margin-bottom: 20px; flex-wrap: wrap; }
         .nav-tabs button { background: none; color: #64748b; border: none; padding: 12px 20px; font-size: 14px; border-bottom: 3px solid transparent; }
         .nav-tabs button.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 800; }
         
@@ -33,6 +33,11 @@
         .filter-row input { padding: 6px; margin: 0; font-size: 11px; border-radius: 4px; border: 1px solid #cbd5e1; width: 100%; }
         .inativo td { opacity: 0.5; background: #f1f5f9; }
         
+        /* Dashboard Cards */
+        .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .dash-card { background: #fff; padding: 20px; border-radius: 10px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center; }
+        .dash-value { font-size: 28px; font-weight: bold; color: var(--primary-dark); margin-top: 10px; }
+
         /* Modais */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 15px; }
         .modal-box { background: #ffffff; border-radius: 12px; padding: 25px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto;}
@@ -81,6 +86,7 @@
 
         <!-- Abas Admin -->
         <div id="navAdmin" class="nav-tabs hidden">
+            <button id="tabDashboard" onclick="mudarAba('dashboard')">Dashboard</button>
             <button id="tabAdmUsers" onclick="mudarAba('admUsers')">Usuários</button>
             <button id="tabGeralEqs" onclick="mudarAba('geralEqs')">Equipamentos</button>
             <button id="tabGeralOS" onclick="mudarAba('geralOS')">Gestão de O.S.</button>
@@ -199,12 +205,13 @@
     const IS_GITHUB_PAGES = window.location.hostname.includes('github.io');
     let servidorBaseUrl = "http://127.0.0.1:8083"; 
     let usuarioLogado = null;
+    
+    // Caches e Filtros
     let equipamentosCache = []; 
-
-    // Variáveis para Ordenação e Filtro
-    let eqSortCol = 'comarca';
-    let eqSortAsc = true;
+    let osCache = [];
+    let eqSortCol = 'comarca'; let eqSortAsc = true;
     let eqFiltros = { comarca: '', predio: '', sala: '', tipo: '', cap: '', tombo: '', status: '' };
+    let osFiltros = { id: '', comarca: '', status: '' };
 
     window.addEventListener('DOMContentLoaded', async () => {
         if (IS_GITHUB_PAGES) await descobrirUrlServidor();
@@ -252,7 +259,7 @@
         document.getElementById('usuarioNomeDisplay').textContent = usuarioLogado.nome;
         document.getElementById('usuarioPerfilDisplay').textContent = usuarioLogado.perfil;
         
-        if (usuarioLogado.perfil === 'administrador') { document.getElementById('navAdmin').classList.remove('hidden'); mudarAba('geralEqs'); }
+        if (usuarioLogado.perfil === 'administrador') { document.getElementById('navAdmin').classList.remove('hidden'); mudarAba('dashboard'); }
         else { document.getElementById('navPadrao').classList.remove('hidden'); mudarAba('geralEqs'); }
     }
 
@@ -265,12 +272,39 @@
         }
         
         const box = document.getElementById('conteudoAba');
+        if (abaId === 'dashboard') renderDashboard(box);
         if (abaId === 'admUsers') renderAdmUsers(box);
         if (abaId === 'geralEqs') carregarEquipamentosServer(box); 
-        if (abaId === 'geralOS') renderAbaOS(box);
+        if (abaId === 'geralOS') carregarOSServer(box);
     }
 
-    // ====== GESTÃO DE USUÁRIOS (ADMIN) ======
+    // ====== DASHBOARD (ADMIN) ======
+    async function renderDashboard(box) {
+        box.innerHTML = `<h3>Visão Geral (Indicadores)</h3><div id="dashContent">Carregando...</div>`;
+        const chamados = await (await fetch(getApiUrl('/api/os'))).json();
+        const equipamentos = await (await fetch(getApiUrl('/api/equipamentos'))).json();
+        
+        let abertas = 0, andamento = 0, concluidas = 0;
+        chamados.forEach(os => {
+            if (os.status === 'aberta') abertas++;
+            else if (os.status === 'concluida') concluidas++;
+            else if (os.status !== 'cancelada') andamento++;
+        });
+
+        box.innerHTML = `
+            <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                <h3>Visão Geral (Indicadores)</h3><button onclick="renderDashboard(document.getElementById('conteudoAba'))">Atualizar</button>
+            </div>
+            <div class="dash-grid">
+                <div class="dash-card"><div style="color:#64748b;">O.S. Aguardando Atendimento</div><div class="dash-value" style="color:var(--primary);">${abertas}</div></div>
+                <div class="dash-card"><div style="color:#64748b;">O.S. Em Andamento</div><div class="dash-value" style="color:var(--warning);">${andamento}</div></div>
+                <div class="dash-card"><div style="color:#64748b;">O.S. Concluídas</div><div class="dash-value" style="color:var(--success);">${concluidas}</div></div>
+                <div class="dash-card"><div style="color:#64748b;">Total de Equipamentos</div><div class="dash-value" style="color:#475569;">${equipamentos.length}</div></div>
+            </div>
+        `;
+    }
+
+    // ====== USUÁRIOS (ADMIN) ======
     async function renderAdmUsers(box) {
         box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h3>Gestão de Usuários</h3><button class="btn-success" onclick="abrirModalUser()">+ Novo Usuário</button></div><div id="tabelaUsers">Carregando...</div>`;
         const users = await (await fetch(getApiUrl('/api/usuarios'))).json();
@@ -285,40 +319,25 @@
         if(res.ok) { fecharModal('modalFormUser'); mudarAba('admUsers'); } else alert((await res.json()).erro);
     }
 
-    // ====== TABELA UNIFICADA DE EQUIPAMENTOS (COM FILTROS CORRIGIDOS) ======
+    // ====== EQUIPAMENTOS (TABELA COM FILTROS) ======
     async function carregarEquipamentosServer(box) {
         box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;">
             <h3>Base de Equipamentos</h3>
             ${usuarioLogado.perfil === 'administrador' ? '<button class="btn-success" onclick="abrirModalEquip(null)">+ Novo Equipamento</button>' : ''}
         </div>
         <div style="overflow-x: auto;">
-            <table>
-                <thead id="headFiltros"></thead>
-                <tbody id="tabelaBoxEq"><tr><td colspan="8">Carregando dados...</td></tr></tbody>
-            </table>
+            <table><thead id="headFiltrosEq"></thead><tbody id="tabelaBoxEq"><tr><td colspan="8">Carregando dados...</td></tr></tbody></table>
         </div>
         <div id="totalEqs" style="font-size:12px; color:#64748b; margin-top:10px;"></div>`;
-        
         equipamentosCache = await (await fetch(getApiUrl('/api/equipamentos'))).json();
-        renderizarCabecalhoEq();
-        desenharTabelaEquipamentos();
+        renderizarCabecalhoEq(); desenharTabelaEquipamentos();
     }
 
     function renderizarCabecalhoEq() {
         const iconSort = eqSortAsc ? ' ▴' : ' ▾';
         const col = (nome, cod) => `<th onclick="setEqSort('${cod}')">${nome}${eqSortCol === cod ? iconSort : ''}</th>`;
-        
-        document.getElementById('headFiltros').innerHTML = `
-            <tr>
-                ${col('Comarca', 'comarca')}
-                ${col('Prédio', 'predio')}
-                ${col('Local (Sala)', 'sala')}
-                ${col('Equipamento', 'tipo_equipamento')}
-                ${col('Capacidade', 'capacidade')}
-                ${col('Tombo', 'tombo')}
-                ${col('Status', 'status')}
-                <th>Ações</th>
-            </tr>
+        document.getElementById('headFiltrosEq').innerHTML = `
+            <tr>${col('Comarca','comarca')}${col('Prédio','predio')}${col('Local','sala')}${col('Equipamento','tipo_equipamento')}${col('Cap','capacidade')}${col('Tombo','tombo')}${col('Status','status')}<th>Ações</th></tr>
             <tr class="filter-row">
                 <td><input type="text" placeholder="Buscar..." oninput="setEqFiltro('comarca', this.value)" value="${eqFiltros.comarca}"></td>
                 <td><input type="text" placeholder="Buscar..." oninput="setEqFiltro('predio', this.value)" value="${eqFiltros.predio}"></td>
@@ -326,33 +345,17 @@
                 <td><input type="text" placeholder="Buscar..." oninput="setEqFiltro('tipo', this.value)" value="${eqFiltros.tipo}"></td>
                 <td><input type="text" placeholder="Buscar..." oninput="setEqFiltro('cap', this.value)" value="${eqFiltros.cap}"></td>
                 <td><input type="text" placeholder="Buscar..." oninput="setEqFiltro('tombo', this.value)" value="${eqFiltros.tombo}"></td>
-                <td><input type="text" placeholder="ativo/inat..." oninput="setEqFiltro('status', this.value)" value="${eqFiltros.status}"></td>
+                <td><input type="text" placeholder="ativo/inativo" oninput="setEqFiltro('status', this.value)" value="${eqFiltros.status}"></td>
                 <td><button class="btn-sm btn-secondary" onclick="limparFiltrosEq()" style="padding:6px;width:100%;">Limpar</button></td>
             </tr>
         `;
     }
-
-    function limparFiltrosEq() {
-        eqFiltros = { comarca: '', predio: '', sala: '', tipo: '', cap: '', tombo: '', status: '' };
-        renderizarCabecalhoEq();
-        desenharTabelaEquipamentos();
-    }
-
-    function setEqFiltro(campo, valor) { 
-        eqFiltros[campo] = valor.toLowerCase(); 
-        desenharTabelaEquipamentos(); 
-    }
-    
-    function setEqSort(coluna) {
-        if(eqSortCol === coluna) { eqSortAsc = !eqSortAsc; } else { eqSortCol = coluna; eqSortAsc = true; }
-        renderizarCabecalhoEq(); // Redesenha a seta no cabeçalho
-        desenharTabelaEquipamentos();
-    }
+    function limparFiltrosEq() { eqFiltros = { comarca: '', predio: '', sala: '', tipo: '', cap: '', tombo: '', status: '' }; renderizarCabecalhoEq(); desenharTabelaEquipamentos(); }
+    function setEqFiltro(campo, valor) { eqFiltros[campo] = valor.toLowerCase(); desenharTabelaEquipamentos(); }
+    function setEqSort(coluna) { if(eqSortCol === coluna) { eqSortAsc = !eqSortAsc; } else { eqSortCol = coluna; eqSortAsc = true; } renderizarCabecalhoEq(); desenharTabelaEquipamentos(); }
 
     function desenharTabelaEquipamentos() {
         const tbody = document.getElementById('tabelaBoxEq');
-        if(!tbody) return;
-
         let filtrados = equipamentosCache.filter(eq => {
             if (usuarioLogado.perfil !== 'administrador' && eq.ativo !== 1) return false;
             if (eqFiltros.comarca && !(eq.comarca||'').toLowerCase().includes(eqFiltros.comarca)) return false;
@@ -361,53 +364,31 @@
             if (eqFiltros.tipo && !(eq.tipo_equipamento||'').toLowerCase().includes(eqFiltros.tipo)) return false;
             if (eqFiltros.cap && !(eq.capacidade||'').toLowerCase().includes(eqFiltros.cap)) return false;
             if (eqFiltros.tombo && !(eq.tombo||'').toLowerCase().includes(eqFiltros.tombo)) return false;
-            let statusTexto = eq.ativo === 1 ? 'ativo' : 'inativo';
-            if (eqFiltros.status && !statusTexto.includes(eqFiltros.status)) return false;
+            if (eqFiltros.status && !(eq.ativo === 1 ? 'ativo' : 'inativo').includes(eqFiltros.status)) return false;
             return true;
         });
-
         filtrados.sort((a, b) => {
-            let valA = (a[eqSortCol] || '').toString().toLowerCase();
-            let valB = (b[eqSortCol] || '').toString().toLowerCase();
+            let valA = (a[eqSortCol] || '').toString().toLowerCase(); let valB = (b[eqSortCol] || '').toString().toLowerCase();
             if(eqSortCol === 'status') { valA = a.ativo; valB = b.ativo; }
-            if (valA < valB) return eqSortAsc ? -1 : 1;
-            if (valA > valB) return eqSortAsc ? 1 : -1;
-            return 0;
+            if (valA < valB) return eqSortAsc ? -1 : 1; if (valA > valB) return eqSortAsc ? 1 : -1; return 0;
         });
 
         let html = '';
         filtrados.forEach(eq => {
             const inativoStr = eq.ativo === 0 ? 'class="inativo"' : '';
             const statusLabel = eq.ativo === 1 ? '<span style="color:var(--success);font-weight:bold;">Ativo</span>' : '<span style="color:var(--danger);font-weight:bold;">Inativo</span>';
-            
             let acoes = '';
-            // Se ativo, qualquer um pode abrir O.S.
             if (eq.ativo === 1) acoes += `<button class="btn-sm btn-success" onclick="abrirOS(${eq.id}, '${eq.tipo_equipamento} ${eq.capacidade||''}', '${eq.comarca} - ${eq.predio} / ${eq.sala}')">Abrir O.S.</button> `;
-            
-            // Apenas Admin pode editar e Inativar
             if (usuarioLogado.perfil === 'administrador') {
                 acoes += `<button class="btn-sm btn-secondary" onclick="abrirModalEquip(${eq.id})">Editar</button> `;
                 if(eq.ativo === 1) acoes += `<button class="btn-sm btn-danger" onclick="toggleAtivoEq(${eq.id}, 0)">Inativar</button>`;
                 else acoes += `<button class="btn-sm" style="background:#10b981;" onclick="toggleAtivoEq(${eq.id}, 1)">Ativar</button>`;
             }
-
-            html += `<tr ${inativoStr}>
-                <td>${eq.comarca}</td>
-                <td>${eq.predio}</td>
-                <td>${eq.sala}</td>
-                <td>${eq.tipo_equipamento}</td>
-                <td>${eq.capacidade||'-'}</td>
-                <td>${eq.tombo === 'S/T' ? '<span class="badge" style="background:#e2e8f0;color:#64748b;">S/T</span>' : eq.tombo}</td>
-                <td>${statusLabel}</td>
-                <td style="white-space: nowrap;">${acoes}</td>
-            </tr>`;
+            html += `<tr ${inativoStr}><td>${eq.comarca}</td><td>${eq.predio}</td><td>${eq.sala}</td><td>${eq.tipo_equipamento}</td><td>${eq.capacidade||'-'}</td><td>${eq.tombo === 'S/T' ? '<span class="badge" style="background:#e2e8f0;color:#64748b;">S/T</span>' : eq.tombo}</td><td>${statusLabel}</td><td style="white-space:nowrap;">${acoes}</td></tr>`;
         });
-        
-        tbody.innerHTML = html;
-        document.getElementById('totalEqs').textContent = `Total listado: ${filtrados.length} equipamento(s).`;
+        tbody.innerHTML = html; document.getElementById('totalEqs').textContent = `Total listado: ${filtrados.length} equipamento(s).`;
     }
 
-    // Modal Equipamento Admin
     function abrirModalEquip(id) {
         document.getElementById('modalFormEquip').classList.remove('hidden');
         if(id) {
@@ -418,8 +399,7 @@
             document.getElementById('formEqTipo').value = eq.tipo_equipamento; document.getElementById('formEqCap').value = eq.capacidade || '';
             document.getElementById('formEqMarca').value = eq.marca || ''; document.getElementById('formEqTombo').value = eq.tombo === 'S/T' ? '' : eq.tombo;
         } else {
-            document.getElementById('tituloModalEquip').textContent = 'Novo Equipamento';
-            document.getElementById('formEqId').value = '';
+            document.getElementById('tituloModalEquip').textContent = 'Novo Equipamento'; document.getElementById('formEqId').value = '';
             document.querySelectorAll('#modalFormEquip input:not([type=hidden])').forEach(i => i.value='');
         }
     }
@@ -435,11 +415,9 @@
         mudarAba('geralEqs');
     }
 
-    // ====== ABERTURA E GESTÃO DE O.S. ======
+    // ====== ORDENS DE SERVIÇO (COM FILTROS E CANCELAMENTO DIRETO) ======
     function abrirOS(id, desc, local) {
-        document.getElementById('osEquipamentoId').value = id; document.getElementById('osEquipDesc').textContent = desc;
-        document.getElementById('osEquipLocal').textContent = local; document.getElementById('osDescricao').value = '';
-        document.getElementById('modalAbrirOS').classList.remove('hidden');
+        document.getElementById('osEquipamentoId').value = id; document.getElementById('osEquipDesc').textContent = desc; document.getElementById('osEquipLocal').textContent = local; document.getElementById('osDescricao').value = ''; document.getElementById('modalAbrirOS').classList.remove('hidden');
     }
     async function enviarOS() {
         const payload = { equipamento_id: document.getElementById('osEquipamentoId').value, solicitante_id: usuarioLogado.id, descricao_falha: document.getElementById('osDescricao').value, prioridade: document.getElementById('osPrioridade').value };
@@ -448,21 +426,75 @@
         fecharModal('modalAbrirOS'); mudarAba('geralOS');
     }
 
-    async function renderAbaOS(box) {
+    async function carregarOSServer(box) {
         box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;">
-            <h3>Ordens de Serviço</h3><button onclick="mudarAba('geralOS')">Atualizar O.S.</button></div><div id="tabOsBox" style="overflow-x:auto;">Carregando...</div>`;
-        const chamados = await (await fetch(getApiUrl('/api/os'))).json();
+            <h3>Ordens de Serviço</h3><button onclick="carregarOSServer(document.getElementById('conteudoAba'))">Atualizar O.S.</button></div>
+            <div style="overflow-x:auto;"><table><thead id="headFiltrosOS"></thead><tbody id="tabelaBoxOS"><tr><td colspan="5">Carregando...</td></tr></tbody></table></div>`;
         
-        let html = `<table><thead><tr><th>ID / Data</th><th>Local</th><th>Equipamento / Defeito</th><th>Status</th><th>Ações</th></tr></thead><tbody>`;
-        chamados.forEach(os => {
+        osCache = await (await fetch(getApiUrl('/api/os'))).json();
+        renderizarCabecalhoOS();
+        desenharTabelaOS();
+    }
+
+    function renderizarCabecalhoOS() {
+        document.getElementById('headFiltrosOS').innerHTML = `
+            <tr><th>ID / Data</th><th>Local (Comarca/Prédio)</th><th>Equipamento / Defeito</th><th>Status</th><th>Ações</th></tr>
+            <tr class="filter-row">
+                <td><input type="text" placeholder="Buscar ID..." oninput="setOsFiltro('id', this.value)" value="${osFiltros.id}"></td>
+                <td><input type="text" placeholder="Buscar Comarca..." oninput="setOsFiltro('comarca', this.value)" value="${osFiltros.comarca}"></td>
+                <td></td>
+                <td><input type="text" placeholder="Buscar Status..." oninput="setOsFiltro('status', this.value)" value="${osFiltros.status}"></td>
+                <td><button class="btn-sm btn-secondary" onclick="limparFiltrosOS()" style="padding:6px;width:100%;">Limpar</button></td>
+            </tr>
+        `;
+    }
+
+    function limparFiltrosOS() { osFiltros = { id: '', comarca: '', status: '' }; renderizarCabecalhoOS(); desenharTabelaOS(); }
+    function setOsFiltro(campo, valor) { osFiltros[campo] = valor.toLowerCase(); desenharTabelaOS(); }
+
+    function desenharTabelaOS() {
+        const tbody = document.getElementById('tabelaBoxOS');
+        let filtrados = osCache.filter(os => {
+            if (osFiltros.id && !os.id.toString().includes(osFiltros.id)) return false;
+            if (osFiltros.comarca && !(os.comarca||'').toLowerCase().includes(osFiltros.comarca)) return false;
+            if (osFiltros.status && !(os.status||'').toLowerCase().includes(osFiltros.status)) return false;
+            return true;
+        });
+
+        let html = '';
+        filtrados.forEach(os => {
             let cor = '#3b82f6'; if(os.status==='concluida') cor='#10b981'; if(os.status==='cancelada') cor='#ef4444'; if(os.status.includes('execucao')) cor='#f59e0b'; if(os.status.includes('peca')) cor='#8b5cf6';
-            html += `<tr><td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td>
+            
+            // Botão de cancelar direto para Administrador
+            let btnCancelar = '';
+            if (usuarioLogado.perfil === 'administrador' && os.status !== 'cancelada' && os.status !== 'concluida') {
+                btnCancelar = `<button class="btn-sm btn-danger" style="margin-top:4px;" onclick="cancelarOSDireto(${os.id})">Cancelar O.S.</button>`;
+            }
+
+            html += `<tr>
+                <td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td>
                 <td><strong>${os.comarca}</strong><br><small>${os.predio} (${os.sala})</small></td>
                 <td style="max-width:250px;"><strong>${os.tipo_equipamento} ${os.capacidade||''}</strong><br><small style="color:#64748b;">${os.descricao_falha}</small></td>
                 <td><span class="badge" style="background:${cor};color:white;">${os.status.replace('_', ' ').toUpperCase()}</span></td>
-                <td><button class="btn-sm btn-secondary" onclick="abrirDetalhesOS(${os.id})">Detalhes / Tratar</button></td></tr>`;
+                <td>
+                    <button class="btn-sm btn-secondary" onclick="abrirDetalhesOS(${os.id})">Tratar / Detalhes</button><br>
+                    ${btnCancelar}
+                </td>
+            </tr>`;
         });
-        document.getElementById('tabOsBox').innerHTML = html + `</tbody></table>`;
+        tbody.innerHTML = html;
+    }
+
+    // Cancelamento Direto pelo Admin
+    async function cancelarOSDireto(os_id) {
+        const motivo = prompt("Digite o motivo do cancelamento desta O.S.:");
+        if (!motivo) return; // Cancelou o prompt
+        
+        await fetch(getApiUrl(`/api/os/${os_id}/status`), { 
+            method: 'PUT', headers: {'Content-Type': 'application/json'}, 
+            body: JSON.stringify({ status: 'cancelada', observacao: 'Cancelado pelo Administrador: ' + motivo, usuario_id: usuarioLogado.id }) 
+        });
+        mudarAba('geralOS');
     }
 
     async function abrirDetalhesOS(os_id) {
@@ -473,27 +505,19 @@
         const data = await (await fetch(getApiUrl(`/api/os/${os_id}`))).json();
         const os = data.os; const hist = data.historico;
 
-        document.getElementById('detalheOsId').textContent = `#${os.id}`;
-        document.getElementById('detalheOsBadge').textContent = os.status.replace('_', ' ').toUpperCase();
+        document.getElementById('detalheOsId').textContent = `#${os.id}`; document.getElementById('detalheOsBadge').textContent = os.status.replace('_', ' ').toUpperCase();
         document.getElementById('detalheOsEquip').textContent = `${os.tipo_equipamento} ${os.capacidade||''} (Tombo: ${os.tombo})`;
-        document.getElementById('detalheOsLocal').textContent = `${os.comarca} - ${os.predio} / ${os.sala}`;
-        document.getElementById('detalheOsDefeito').textContent = os.descricao_falha;
+        document.getElementById('detalheOsLocal').textContent = `${os.comarca} - ${os.predio} / ${os.sala}`; document.getElementById('detalheOsDefeito').textContent = os.descricao_falha;
 
         let htmlHist = '';
         hist.forEach(h => { htmlHist += `<div class="timeline-item"><div class="timeline-date">${dataFormatada(h.data_registro)}</div><div class="timeline-user">${h.nome_usuario} <span class="badge" style="background:#e2e8f0; color:#475569;">${h.acao}</span></div>${h.observacao ? `<div class="timeline-text">${h.observacao}</div>` : ''}</div>`; });
         document.getElementById('boxTimeline').innerHTML = htmlHist;
 
         let podeTratar = false;
-        if (usuarioLogado.perfil === 'administrador') {
-            podeTratar = true; 
-        } else if (usuarioLogado.perfil !== 'solicitante' && os.status !== 'concluida' && os.status !== 'cancelada') {
-            podeTratar = true; 
-        }
+        if (usuarioLogado.perfil === 'administrador') podeTratar = true; 
+        else if (usuarioLogado.perfil !== 'solicitante' && os.status !== 'concluida' && os.status !== 'cancelada') podeTratar = true; 
 
-        if (podeTratar) {
-            document.getElementById('boxAcaoOS').classList.remove('hidden');
-            document.getElementById('tratarOsId').value = os.id;
-        }
+        if (podeTratar) { document.getElementById('boxAcaoOS').classList.remove('hidden'); document.getElementById('tratarOsId').value = os.id; }
     }
 
     async function salvarTratamentoOS() {
