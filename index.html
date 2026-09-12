@@ -219,30 +219,48 @@
 
     async function carregarEquipamentos() {
         const tbody = document.getElementById('tabelaEquipamentos');
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center;">Carregando dados da Raspberry Pi...</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center;">Carregando dados da Raspberry Pi...</td></tr>`;
         
         try {
             const res = await fetch(getApiUrl('/api/equipamentos'));
             const equipamentos = await res.json();
             
             if (equipamentos.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center;">Nenhum equipamento cadastrado.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center;">Nenhum equipamento cadastrado.</td></tr>`;
                 return;
             }
 
+            // Atualiza os cabeçalhos da tabela dinamicamente para garantir a nova ordem
+            const thead = document.querySelector('table thead');
+            thead.innerHTML = `
+                <tr>
+                    <th>Comarca</th>
+                    <th>Prédio</th>
+                    <th>Sala</th>
+                    <th>Tipo</th>
+                    <th>Capacidade</th>
+                    <th>Marca</th>
+                    <th>Tombo</th>
+                    <th>Status</th>
+                </tr>
+            `;
+
+            // Mapeia os dados separados para as colunas corretas
             tbody.innerHTML = equipamentos.map(eq => `
                 <tr>
-                    <td><strong>${eq.predio}</strong><br><small>${eq.unidade}</small></td>
+                    <td><strong>${eq.comarca}</strong></td>
+                    <td>${eq.predio}</td>
                     <td>${eq.sala}</td>
                     <td>${eq.tipo_equipamento}</td>
+                    <td><strong>${eq.capacidade || '-'}</strong></td>
                     <td>${eq.marca}</td>
-                    <td>${eq.tombo === 'S/T' ? '<span class="badge" style="background:#f1f5f9;color:#64748b;">Sem Tombo</span>' : eq.tombo}</td>
+                    <td>${eq.tombo === 'S/T' ? '<span class="badge" style="background:#f1f5f9;color:#64748b;">S/T</span>' : eq.tombo}</td>
                     <td><span class="badge">${eq.status_equipamento}</span></td>
                 </tr>
             `).join('');
             
         } catch (err) {
-            tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger);">Falha ao carregar lista.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--danger);">Falha ao carregar lista.</td></tr>`;
         }
     }
 </script>
