@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de OS - Ar Condicionado</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --border: #e2e8f0;
+            --danger: #ef4444;
+            --success: #10b981;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background: var(--bg); color: var(--text); padding: 15px; }
+        .container { max-width: 1024px; margin: 0 auto; }
+        .hidden { display: none !important; }
+        
+        .card { background: var(--card); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 20px; border: 1px solid var(--border); }
+        h2, h3 { color: var(--primary-dark); margin-bottom: 15px; }
+        label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 5px; color: #475569; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 15px; font-size: 14px; background: #f8fafc; }
+        input:focus, select:focus { outline: none; border-color: var(--primary); background: #fff; }
+        
+        button { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:hover { background: var(--primary-dark); }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-danger { background: var(--danger); }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-block { width: 100%; }
+
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        .badge { background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+        th, td { border: 1px solid var(--border); padding: 10px; text-align: left; }
+        th { background: #f1f5f9; color: #334155; }
+        tr:hover { background: #f8fafc; }
+
+        .status-badge { text-align: center; margin-top: 15px; font-size: 13px; color: #64748b; font-weight: 500; }
+        .status-online { color: var(--success); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- ================= TELA DE LOGIN ================= -->
+    <div id="authSection" class="card" style="max-width: 400px; margin: 40px auto;">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h2>Gest&atilde;o de O.S.</h2>
+            <p style="color: #64748b; font-size: 14px;">Controle de Ar Condicionado</p>
+        </div>
+
+        <form id="formLogin" onsubmit="fazerLogin(event)">
+            <label>Login:</label>
+            <input type="text" id="loginUser" placeholder="Seu usu&aacute;rio" required>
+
+            <label>Senha:</label>
+            <input type="password" id="loginSenha" placeholder="Sua senha" required>
+
+            <button type="submit" id="btnEntrar" class="btn-block">Entrar no Sistema</button>
+        </form>
+
+        <div id="statusConexao" class="status-badge">Buscando servidor...</div>
+    </div>
+
+    <!-- ================= PAINEL PRINCIPAL (DASHBOARD) ================= -->
+    <div id="appSection" class="hidden">
+        <div class="top-bar">
+            <div>
+                <h2 style="margin-bottom: 5px;">Painel de Controle</h2>
+                <div>
+                    <span id="usuarioNomeDisplay" style="font-weight: 600;"></span>
+                    <span id="usuarioPerfilDisplay" class="badge"></span>
+                </div>
+            </div>
+            <button onclick="fazerLogout()" class="btn-danger">Sair</button>
+        </div>
+
+        <!-- ABA: Equipamentos -->
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                <h3>Equipamentos Cadastrados</h3>
+                <button onclick="carregarEquipamentos()">Atualizar Lista</button>
+            </div>
+            
+            <div style="overflow-x: auto; margin-top: 15px;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Pr&eacute;dio</th>
+                            <th>Sala</th>
+                            <th>Tipo / Capacidade</th>
+                            <th>Marca</th>
+                            <th>Tombo</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaEquipamentos">
+                        <tr><td colspan="6" style="text-align: center; color: #64748b;">Nenhum equipamento carregado.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // =========================================================================
+    // LÓGICA DE INFRAESTRUTURA HÍBRIDA E SINCRONIZAÇÃO DE URL
+    // =========================================================================
+    const IS_GITHUB_PAGES = window.location.hostname.includes('github.io');
+    let servidorBaseUrl = "http://127.0.0.1:8083"; // Fallback local para testes no VS Code
+    let usuarioLogado = null;
+
+    // Quando a página carregar...
+    window.addEventListener('DOMContentLoaded', async () => {
+        if (IS_GITHUB_PAGES) {
+            await descobrirUrlServidor();
+        } else {
+            document.getElementById('statusConexao').innerHTML = "● Rodando Localmente (VS Code)";
+            document.getElementById('statusConexao').classList.add('status-online');
+        }
+
+        // Tenta recuperar sessão salva
+        const sessao = localStorage.getItem('os_usuario_logado');
+        if (sessao) {
+            usuarioLogado = JSON.parse(sessao);
+            mostrarPainel();
+        }
+    });
+
+    // Lê o arquivo JSON gerado pelo seu script Bash
+    async function descobrirUrlServidor() {
+        try {
+            // Adiciona timestamp para furar o cache do GitHub
+            const res = await fetch(`servidor.json?t=${Date.now()}`);
+            const data = await res.json();
+            
+            // Define a URL base para todas as chamadas de API
+            servidorBaseUrl = data.url.replace(/\/+$/, '');
+            
+            document.getElementById('statusConexao').innerHTML = "● Servidor Online Conectado";
+            document.getElementById('statusConexao').classList.add('status-online');
+        } catch (err) {
+            document.getElementById('statusConexao').innerHTML = "⚠️ Servidor Offline ou Manuten&ccedil;&atilde;o";
+            document.getElementById('statusConexao').style.color = "var(--danger)";
+        }
+    }
+
+    // Facilita a montagem da URL completa
+    function getApiUrl(endpoint) {
+        return `${servidorBaseUrl}${endpoint}`;
+    }
+
+    // =========================================================================
+    // LÓGICA DE APLICAÇÃO (REGRAS DE NEGÓCIO E INTERFACE)
+    // =========================================================================
+
+    async function fazerLogin(e) {
+        e.preventDefault();
+        const login = document.getElementById('loginUser').value.trim();
+        const senha = document.getElementById('loginSenha').value;
+        const btn = document.getElementById('btnEntrar');
+        
+        btn.disabled = true;
+        btn.textContent = "Autenticando...";
+
+        try {
+            const res = await fetch(getApiUrl('/api/login'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ login, senha })
+            });
+            
+            const data = await res.json();
+            
+            if (res.ok) {
+                usuarioLogado = data;
+                localStorage.setItem('os_usuario_logado', JSON.stringify(usuarioLogado));
+                mostrarPainel();
+            } else {
+                alert(data.erro || "Falha na autentica&ccedil;&atilde;o.");
+            }
+        } catch (err) {
+            alert("Erro de conex&atilde;o com a Raspberry Pi. Verifique se o servidor est&aacute; online.");
+        } finally {
+            btn.disabled = false;
+            btn.textContent = "Entrar no Sistema";
+        }
+    }
+
+    function mostrarPainel() {
+        document.getElementById('authSection').classList.add('hidden');
+        document.getElementById('appSection').classList.remove('hidden');
+        
+        document.getElementById('usuarioNomeDisplay').textContent = usuarioLogado.nome;
+        document.getElementById('usuarioPerfilDisplay').textContent = usuarioLogado.perfil;
+        
+        // Se for o primeiro acesso, exibiremos um aviso (o modal de troca será implementado na Fase 5)
+        if (usuarioLogado.primeiro_acesso === 1) {
+            alert("Atenção: Este é o seu primeiro acesso. Na próxima fase, o sistema solicitará a troca de senha obrigatória.");
+        }
+
+        carregarEquipamentos();
+    }
+
+    function fazerLogout() {
+        localStorage.removeItem('os_usuario_logado');
+        usuarioLogado = null;
+        location.reload();
+    }
+
+    async function carregarEquipamentos() {
+        const tbody = document.getElementById('tabelaEquipamentos');
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center;">Carregando dados da Raspberry Pi...</td></tr>`;
+        
+        try {
+            const res = await fetch(getApiUrl('/api/equipamentos'));
+            const equipamentos = await res.json();
+            
+            if (equipamentos.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center;">Nenhum equipamento cadastrado.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = equipamentos.map(eq => `
+                <tr>
+                    <td><strong>${eq.predio}</strong><br><small>${eq.unidade}</small></td>
+                    <td>${eq.sala}</td>
+                    <td>${eq.tipo_equipamento}</td>
+                    <td>${eq.marca}</td>
+                    <td>${eq.tombo === 'S/T' ? '<span class="badge" style="background:#f1f5f9;color:#64748b;">Sem Tombo</span>' : eq.tombo}</td>
+                    <td><span class="badge">${eq.status_equipamento}</span></td>
+                </tr>
+            `).join('');
+            
+        } catch (err) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger);">Falha ao carregar lista.</td></tr>`;
+        }
+    }
+</script>
+
+</body>
+</html>
