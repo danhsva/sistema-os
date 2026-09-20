@@ -442,18 +442,36 @@
             document.getElementById('tituloModalEquip').textContent = 'Editar Equipamento';
             document.getElementById('formEqId').value = eq.id; 
             
-            // Tratamento especial para o Select (se a comarca antiga não estiver nos 184 atuais, injeta ela)
+            // Tratamento especial para o Select Comarca
             let selectComarca = document.getElementById('formEqComarca');
             if(!Array.from(selectComarca.options).some(opt => opt.value === eq.comarca)){
                 selectComarca.innerHTML += `<option value="${eq.comarca}">${eq.comarca}</option>`;
             }
             selectComarca.value = eq.comarca;
             
-            document.getElementById('formEqPredio').value = eq.predio; document.getElementById('formEqSala').value = eq.sala;
-            document.getElementById('formEqTipo').value = eq.tipo_equipamento; document.getElementById('formEqCap').value = eq.capacidade || '';
-            document.getElementById('formEqMarca').value = eq.marca || ''; document.getElementById('formEqTombo').value = eq.tombo === 'S/T' ? '' : eq.tombo;
+            document.getElementById('formEqPredio').value = eq.predio; 
+            document.getElementById('formEqSala').value = eq.sala;
+            
+            // Tratamento especial para o Select Tipo
+            let selectTipo = document.getElementById('formEqTipo');
+            if(!Array.from(selectTipo.options).some(opt => opt.value === eq.tipo_equipamento)){
+                selectTipo.innerHTML += `<option value="${eq.tipo_equipamento}">${eq.tipo_equipamento}</option>`;
+            }
+            selectTipo.value = eq.tipo_equipamento; 
+            
+            // Tratamento especial para o Select Capacidade
+            let cap = eq.capacidade || '';
+            let selectCap = document.getElementById('formEqCap');
+            if(cap && !Array.from(selectCap.options).some(opt => opt.value === cap)){
+                selectCap.innerHTML += `<option value="${cap}">${cap}</option>`;
+            }
+            selectCap.value = cap;
+            
+            document.getElementById('formEqMarca').value = eq.marca || ''; 
+            document.getElementById('formEqTombo').value = eq.tombo === 'S/T' ? '' : eq.tombo;
         } else {
-            document.getElementById('tituloModalEquip').textContent = 'Novo Equipamento'; document.getElementById('formEqId').value = '';
+            document.getElementById('tituloModalEquip').textContent = 'Novo Equipamento'; 
+            document.getElementById('formEqId').value = '';
         }
     }
     
