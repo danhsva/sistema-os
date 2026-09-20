@@ -406,24 +406,61 @@
         usuariosCache.forEach(u => {
             const inativo = u.ativo === 0 ? 'class="inativo"' : '';
             const status = u.ativo === 1 ? '<span style="color:var(--success);font-weight:bold;">Ativo</span>' : '<span style="color:var(--danger);font-weight:bold;">Inativo</span>';
-            let btnAtivar = '';
-            if (u.id !== usuarioLogado.id) btnAtivar = u.ativo === 1 ? `<button class="btn-sm btn-danger" onclick="toggleAtivoUser(${u.id}, 0)">Inativar</button>` : `<button class="btn-sm btn-success" onclick="toggleAtivoUser(${u.id}, 1)">Ativar</button>`;
-            html += `<tr ${inativo}><td>${esc(u.nome)}</td><td>${esc(u.login)}</td><td><span class="badge">${esc(u.perfil)}</span></td><td><strong>${esc(u.contrato_nome)||'-'}</strong></td><td>${status}</td><td style="white-space:nowrap;"><button class="btn-sm btn-secondary" onclick="abrirModalUser(${u.id})">Editar</button> ${btnAtivar}</td></tr>`;
+            
+            let acoes = '';
+            // Se for ele mesmo, não mostra botão de inativar nem de editar (se ele for fiscal)
+            if (u.id === usuarioLogado.id) {
+                if (usuarioLogado.perfil === 'administrador') {
+                    acoes = `<button class="btn-sm btn-secondary" onclick="abrirModalUser(${u.id})">Editar</button>`;
+                } else {
+                    acoes = `<span style="color:#64748b; font-size: 11px;">(Seu Perfil)</span>`;
+                }
+            } else {
+                let btnAtivar = u.ativo === 1 ? `<button class="btn-sm btn-danger" onclick="toggleAtivoUser(${u.id}, 0)">Inativar</button>` : `<button class="btn-sm btn-success" onclick="toggleAtivoUser(${u.id}, 1)">Ativar</button>`;
+                acoes = `<button class="btn-sm btn-secondary" onclick="abrirModalUser(${u.id})">Editar</button> ${btnAtivar}`;
+            }
+
+            html += `<tr ${inativo}><td>${esc(u.nome)}</td><td>${esc(u.login)}</td><td><span class="badge">${esc(u.perfil)}</span></td><td><strong>${esc(u.contrato_nome)||'-'}</strong></td><td>${status}</td><td style="white-space:nowrap;">${acoes}</td></tr>`;
         });
         document.getElementById('tabelaUsers').innerHTML = html + `</tbody></table>`;
     }
     
     async function abrirModalUser(id) { 
+        // Trava de Regra de Negócio: Fiscal não pode editar o próprio perfil (para evitar rebaixamento)
+        if (id === usuarioLogado.id && usuarioLogado.perfil === 'fiscal') {
+            alert("Você não pode editar o seu próprio perfil. Solicite a um Administrador.");
+            return;
+        }
+
         document.getElementById('formCriarUsuario').reset(); 
         let selPerfil = document.getElementById('formUserPerfil');
-        if(usuarioLogado.perfil === 'fiscal') { selPerfil.innerHTML = '<option value="executante">Executante</option><option value="contratada">Contratada</option>'; document.getElementById('boxUserContrato').classList.add('hidden'); } 
-        else { selPerfil.innerHTML = '<option value="solicitante">Solicitante</option><option value="fiscal">Fiscal</option><option value="executante">Executante</option><option value="contratada">Contratada</option><option value="administrador">Administrador</option>'; await carregarListaContratosAtivos(); }
+        
+        if(usuarioLogado.perfil === 'fiscal') { 
+            selPerfil.innerHTML = '<option value="executante">Executante</option><option value="contratada">Contratada</option>'; 
+            document.getElementById('boxUserContrato').classList.add('hidden'); 
+        } else { 
+            selPerfil.innerHTML = '<option value="solicitante">Solicitante</option><option value="fiscal">Fiscal</option><option value="executante">Executante</option><option value="contratada">Contratada</option><option value="administrador">Administrador</option>'; 
+            await carregarListaContratosAtivos(); 
+        }
+        
         document.getElementById('modalFormUser').classList.remove('hidden'); 
+        
         if (id) {
-            const u = usuariosCache.find(x => x.id === id); document.getElementById('tituloModalUser').textContent = 'Editar Usuário';
-            document.getElementById('formUserId').value = u.id; document.getElementById('formUserNome').value = u.nome; document.getElementById('formUserLogin').value = u.login; document.getElementById('formUserPerfil').value = u.perfil;
-            if(usuarioLogado.perfil === 'administrador') { document.getElementById('formUserContrato').value = u.contrato_id || ''; verificarExibicaoContratoUser(); }
-        } else { document.getElementById('tituloModalUser').textContent = 'Novo Usuário'; document.getElementById('formUserId').value = ''; verificarExibicaoContratoUser(); }
+            const u = usuariosCache.find(x => x.id === id); 
+            document.getElementById('tituloModalUser').textContent = 'Editar Usuário';
+            document.getElementById('formUserId').value = u.id; 
+            document.getElementById('formUserNome').value = u.nome; 
+            document.getElementById('formUserLogin').value = u.login; 
+            document.getElementById('formUserPerfil').value = u.perfil;
+            if(usuarioLogado.perfil === 'administrador') { 
+                document.getElementById('formUserContrato').value = u.contrato_id || ''; 
+                verificarExibicaoContratoUser(); 
+            }
+        } else { 
+            document.getElementById('tituloModalUser').textContent = 'Novo Usuário'; 
+            document.getElementById('formUserId').value = ''; 
+            verificarExibicaoContratoUser(); 
+        }
     }
     
     function verificarExibicaoContratoUser() {
