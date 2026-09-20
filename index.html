@@ -137,13 +137,23 @@
 
     <div id="modalFormUser" class="modal-overlay hidden">
         <div class="modal-box" style="max-width: 400px;">
-            <h3>Novo Usuário</h3>
+            <h3 id="tituloModalUser">Novo Usuário</h3>
             <form id="formCriarUsuario" onsubmit="salvarUsuario(event)">
+                <input type="hidden" id="formUserId">
                 <label>Nome Completo:</label><input type="text" id="formUserNome" required>
                 <label>Login de Acesso:</label><input type="text" id="formUserLogin" required>
                 <label>Perfil:</label>
-                <select id="formUserPerfil" required><option value="solicitante">Solicitante</option><option value="fiscal">Fiscal</option><option value="executante">Executante</option><option value="contratada">Contratada</option><option value="administrador">Administrador</option></select>
-                <div style="display: flex; gap: 10px; margin-top: 15px;"><button type="submit" class="btn-success btn-block" id="btnSalvarUser">Salvar</button><button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalFormUser')">Cancelar</button></div>
+                <select id="formUserPerfil" required>
+                    <option value="solicitante">Solicitante</option>
+                    <option value="fiscal">Fiscal</option>
+                    <option value="executante">Executante</option>
+                    <option value="contratada">Contratada</option>
+                    <option value="administrador">Administrador</option>
+                </select>
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button type="submit" class="btn-success btn-block" id="btnSalvarUser">Salvar</button>
+                    <button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalFormUser')">Cancelar</button>
+                </div>
             </form>
         </div>
     </div>
@@ -251,7 +261,7 @@
     const IS_GITHUB_PAGES = window.location.hostname.includes('github.io');
     let servidorBaseUrl = "http://127.0.0.1:8083"; 
     let usuarioLogado = null;
-    
+    let usuariosCache = []; // Adicione esta linha junto aos outros caches
     let equipamentosCache = []; 
     let osCache = [];
     let eqSortCol = 'comarca'; let eqSortAsc = true;
@@ -401,20 +411,71 @@
             </div>`;
     }
 
-    // ====== USUÁRIOS ======
+    // ====== GESTÃO DE USUÁRIOS (ADMIN) ======
     async function renderAdmUsers(box) {
-        box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h3>Gestão de Usuários</h3><button class="btn-success" onclick="abrirModalUser()">+ Novo Usuário</button></div><div id="tabelaUsers">Carregando...</div>`;
-        const users = await (await apiFetch('/api/usuarios')).json();
-        let html = `<table><thead><tr><th>Nome</th><th>Login</th><th>Perfil</th></tr></thead><tbody>`;
-        users.forEach(u => html += `<tr><td>${esc(u.nome)}</td><td>${esc(u.login)}</td><td><span class="badge">${esc(u.perfil)}</span></td></tr>`);
+        box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h3>Gestão de Usuários</h3><button class="btn-success" onclick="abrirModalUser(null)">+ Novo Usuário</button></div><div id="tabelaUsers">Carregando...</div>`;
+        usuariosCache = await (await apiFetch('/api/usuarios')).json();
+        
+        let html = `<table><thead><tr><th>Nome</th><th>Login</th><th>Perfil</th><th>Status</th><th>Ações</th></tr></thead><tbody>`;
+        usuariosCache.forEach(u => {
+            const inativoStr = u.ativo === 0 ? 'class="inativo"' : '';
+            const statusLabel = u.ativo === 1 ? '<span style="color:var(--success);font-weight:bold;">Ativo</span>' : '<span style="color:var(--danger);font-weight:bold;">Inativo</span>';
+            
+            let btnAtivar = '';
+            if (u.id !== usuarioLogado.id) { // Esconde botão de inativar do próprio usuário logado
+                btnAtivar = u.ativo === 1 ? `<button class="btn-sm btn-danger" onclick="toggleAtivoUser(${u.id}, 0)">Inativar</button>` : `<button class="btn-sm" style="background:#10b981;" onclick="toggleAtivoUser(${u.id}, 1)">Ativar</button>`;
+            }
+
+            html += `<tr ${inativoStr}>
+                <td>${esc(u.nome)}</td><td>${esc(u.login)}</td><td><span class="badge">${esc(u.perfil)}</span></td><td>${statusLabel}</td>
+                <td style="white-space: nowrap;"><button class="btn-sm btn-secondary" onclick="abrirModalUser(${u.id})">Editar</button> ${btnAtivar}</td>
+            </tr>`;
+        });
         document.getElementById('tabelaUsers').innerHTML = html + `</tbody></table>`;
     }
     
-    function abrirModalUser() { document.getElementById('formCriarUsuario').reset(); document.getElementById('modalFormUser').classList.remove('hidden'); }
+    function abrirModalUser(id) { 
+        document.getElementById('formCriarUsuario').reset(); 
+        document.getElementById('modalFormUser').classList.remove('hidden'); 
+        if (id) {
+            const u = usuariosCache.find(x => x.id === id);
+            document.getElementById('tituloModalUser').textContent = 'Editar Usuário';
+            document.getElementById('formUserId').value = u.id;
+            document.getElementById('formUserNome').value = u.nome;
+            document.getElementById('formUserLogin').value = u.login;
+            document.getElementById('formUserPerfil').value = u.perfil;
+        } else {
+            document.getElementById('tituloModalUser').textContent = 'Novo Usuário';
+            document.getElementById('formUserId').value = '';
+        }
+    }
+    
     async function salvarUsuario(e) {
-        e.preventDefault(); const p = { nome: document.getElementById('formUserNome').value.trim().toUpperCase(), login: document.getElementById('formUserLogin').value.trim().toLowerCase(), perfil: document.getElementById('formUserPerfil').value };
-        const res = await apiFetch('/api/usuarios', { method: 'POST', body: JSON.stringify(p) });
-        if(res.ok) { alert("Usuário criado!\nSenha provisória igual ao login."); fecharModal('modalFormUser'); mudarAba('admUsers'); } else alert((await res.json()).erro);
+        e.preventDefault(); 
+        const btn = document.getElementById('btnSalvarUser'); btn.disabled = true; btn.textContent = 'Salvando...';
+        const id = document.getElementById('formUserId').value;
+        try {
+            const p = { 
+                nome: document.getElementById('formUserNome').value.trim().toUpperCase(), 
+                login: document.getElementById('formUserLogin').value.trim().toLowerCase(), 
+                perfil: document.getElementById('formUserPerfil').value,
+                ativo: id ? usuariosCache.find(x => x.id == id).ativo : 1
+            };
+            const res = await apiFetch(id ? `/api/usuarios/${id}` : '/api/usuarios', { method: id ? 'PUT' : 'POST', body: JSON.stringify(p) });
+            const data = await res.json();
+            if(res.ok) { 
+                alert(id ? "Usuário atualizado com sucesso!" : "Usuário criado!\nSenha provisória igual ao login."); 
+                fecharModal('modalFormUser'); mudarAba('admUsers'); 
+            } else alert(data.erro || "Erro ao salvar usuário.");
+        } catch(err) { alert("Erro de conexão."); }
+        btn.disabled = false; btn.textContent = 'Salvar';
+    }
+
+    async function toggleAtivoUser(id, status) {
+        if (status === 0 && !confirm("Deseja realmente inativar este usuário? Ele perderá o acesso ao sistema imediatamente.")) return;
+        const u = usuariosCache.find(x => x.id == id); u.ativo = status;
+        await apiFetch(`/api/usuarios/${id}`, { method: 'PUT', body: JSON.stringify(u) });
+        mudarAba('admUsers');
     }
 
     // ====== EQUIPAMENTOS (COM DEBOUNCE NOS FILTROS) ======
