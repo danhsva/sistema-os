@@ -283,7 +283,7 @@
                         <option value="aguardando_peca">Aguardando Peça</option>
                         <option value="em_execucao">Em Execução</option>
                         <option value="concluida">Concluída (Resolvido)</option>
-                        <option value="cancelada">Cancelada (Improcedente / Erro)</option></select><label>Relatório Técnico / Observação:</label><textarea id="tratarOsObs" rows="3" placeholder="O que foi feito?" required></textarea><button type="submit" class="btn-success btn-block" id="btnSalvarTratamento">Gravar Atualização</button></form></div><h4 style="margin-top: 25px;">Histórico da O.S.</h4><div id="boxTimeline" class="timeline"></div><button class="btn-secondary btn-block" style="margin-top: 20px;" onclick="fecharModal('modalTratarOS')">Fechar Detalhes</button></div></div>
+                        <option value="cancelada">Cancelada (Improcedente / Erro)</option></select><label>Relatório Técnico / Observação:</label><textarea id="tratarOsObs" rows="3" placeholder="O que foi feito?"></textarea><button type="submit" class="btn-success btn-block" id="btnSalvarTratamento">Gravar Atualização</button></form></div><h4 style="margin-top: 25px;">Histórico da O.S.</h4><div id="boxTimeline" class="timeline"></div><button class="btn-secondary btn-block" style="margin-top: 20px;" onclick="fecharModal('modalTratarOS')">Fechar Detalhes</button></div></div>
 
 </div>
 
@@ -691,42 +691,98 @@
     async function cancelarOSDireto(os_id) { const motivo = prompt("Motivo do cancelamento:"); if (!motivo) return; await apiFetch(`/api/os/${os_id}/status`, { method: 'PUT', body: JSON.stringify({ status: 'cancelada', observacao: 'CANCELADO PELO ADMIN: ' + motivo.toUpperCase() }) }); mudarAba('geralOS'); }
 
     async function abrirDetalhesOS(os_id) { 
-        document.getElementById('modalTratarOS').classList.remove('hidden'); document.getElementById('boxTimeline').innerHTML = "Carregando..."; document.getElementById('boxAcaoOS').classList.add('hidden'); document.getElementById('tratarOsObs').value = ''; 
+        document.getElementById('modalTratarOS').classList.remove('hidden'); 
+        document.getElementById('boxTimeline').innerHTML = "Carregando..."; 
+        document.getElementById('boxAcaoOS').classList.add('hidden'); 
+        document.getElementById('tratarOsObs').value = ''; 
+        
         try { 
-            const data = await (await apiFetch(`/api/os/${os_id}`)).json(); const os = data.os; const hist = data.historico; 
-            document.getElementById('detalheOsId').textContent = `#${os.id}`; document.getElementById('detalheOsBadge').textContent = os.status.replace('_', ' ').toUpperCase(); 
-            document.getElementById('detalheOsEquip').textContent = `${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')} (Tombo: ${esc(os.tombo)})`; document.getElementById('detalheOsLocal').textContent = `${esc(os.comarca)} - ${esc(os.predio)} / ${esc(os.sala)}`; document.getElementById('detalheOsDefeito').textContent = esc(os.descricao_falha); 
-            let htmlHist = ''; hist.forEach(h => { htmlHist += `<div class="timeline-item"><div class="timeline-date">${dataFormatada(h.data_registro)}</div><div class="timeline-user">${esc(h.nome_usuario)} <span class="badge" style="background:#e2e8f0; color:#475569;">${h.acao}</span></div>${h.observacao ? `<div class="timeline-text">${esc(h.observacao)}</div>` : ''}</div>`; }); document.getElementById('boxTimeline').innerHTML = htmlHist; 
+            const data = await (await apiFetch(`/api/os/${os_id}`)).json(); 
+            const os = data.os; const hist = data.historico; 
+
+            document.getElementById('detalheOsId').textContent = `#${os.id}`; 
+            document.getElementById('detalheOsBadge').textContent = os.status.replace('_', ' ').toUpperCase(); 
+            document.getElementById('detalheOsEquip').textContent = `${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')} (Tombo: ${esc(os.tombo)})`; 
+            document.getElementById('detalheOsLocal').textContent = `${esc(os.comarca)} - ${esc(os.predio)} / ${esc(os.sala)}`; 
+            document.getElementById('detalheOsDefeito').textContent = esc(os.descricao_falha); 
+
+            let htmlHist = ''; 
+            hist.forEach(h => { 
+                htmlHist += `<div class="timeline-item"><div class="timeline-date">${dataFormatada(h.data_registro)}</div><div class="timeline-user">${esc(h.nome_usuario)} <span class="badge" style="background:#e2e8f0; color:#475569;">${h.acao}</span></div>${h.observacao ? `<div class="timeline-text">${esc(h.observacao)}</div>` : ''}</div>`; 
+            }); 
+            document.getElementById('boxTimeline').innerHTML = htmlHist; 
             
+            // Regra de Negócio: Quem pode tratar a O.S?
             let podeTratar = false; 
             if (usuarioLogado.perfil === 'administrador') podeTratar = true; 
             else if (usuarioLogado.perfil !== 'solicitante' && os.status !== 'concluida' && os.status !== 'cancelada') podeTratar = true; 
             
-            if (podeTratar) { document.getElementById('boxAcaoOS').classList.remove('hidden'); document.getElementById('tratarOsId').value = os.id; } 
-        } catch (err) { document.getElementById('boxTimeline').innerHTML = `<span style="color:red;">Falha de comunicação.</span>`; } 
+            if (podeTratar) { 
+                document.getElementById('boxAcaoOS').classList.remove('hidden'); 
+                document.getElementById('tratarOsId').value = os.id; 
+                
+                // Filtra as opções da lista de Status baseada no Perfil
+                const selStatus = document.getElementById('tratarOsStatus');
+                if (usuarioLogado.perfil === 'fiscal') {
+                    // Fiscal só pode Aprovar, Concluir ou Cancelar
+                    selStatus.innerHTML = `
+                        <option value="aprovada">Aprovar O.S. (Enviar para Execução)</option>
+                        <option value="concluida">Concluída (Resolvido)</option>
+                        <option value="cancelada">Cancelar O.S. (Improcedente)</option>
+                    `;
+                } else if (usuarioLogado.perfil === 'contratada' || usuarioLogado.perfil === 'executante') {
+                    // Contratada não pode Aprovar nem Cancelar
+                    selStatus.innerHTML = `
+                        <option value="em_analise">Em Análise Técnica</option>
+                        <option value="aguardando_peca">Aguardando Peça</option>
+                        <option value="em_execucao">Em Execução</option>
+                        <option value="concluida">Concluída (Resolvido)</option>
+                    `;
+                } else {
+                    // Administrador pode tudo
+                    selStatus.innerHTML = `
+                        <option value="aprovada">Aprovada (Pelo Fiscal)</option>
+                        <option value="em_analise">Em Análise</option>
+                        <option value="aguardando_peca">Aguardando Peça</option>
+                        <option value="em_execucao">Em Execução</option>
+                        <option value="concluida">Concluída (Resolvido)</option>
+                        <option value="cancelada">Cancelada (Improcedente / Erro)</option>
+                    `;
+                }
+            } 
+        } catch (err) { 
+            document.getElementById('boxTimeline').innerHTML = `<span style="color:red;">Falha de comunicação.</span>`; 
+        } 
     }
 
-    async function salvarTratamentoOS(e) {
+    async function salvarTratamentoOS(e) { 
         e.preventDefault(); 
-        const statusNovo = document.getElementById('tratarOsStatus').value;
         
-        // Bloqueia se a Contratada/Executante tentar aprovar O.S.
-        if (statusNovo === 'aprovada' && (usuarioLogado.perfil === 'contratada' || usuarioLogado.perfil === 'executante')) {
-            alert("Apenas Fiscais ou Administradores podem Aprovar uma O.S.");
-            return;
+        const statusNovo = document.getElementById('tratarOsStatus').value;
+        let obsTexto = document.getElementById('tratarOsObs').value.trim().toUpperCase();
+
+        // Regra de Observação: Obrigatória para todo mundo, EXCETO para Fiscais quando escolhem "Aprovar"
+        if (obsTexto === '') {
+            if (usuarioLogado.perfil === 'fiscal' && statusNovo === 'aprovada') {
+                obsTexto = "O.S. APROVADA PELO FISCAL. AUTORIZADO INÍCIO DO ATENDIMENTO.";
+            } else {
+                alert("É obrigatório preencher o Relatório Técnico / Observação para esta ação.");
+                document.getElementById('tratarOsObs').focus();
+                return;
+            }
         }
 
         const btn = document.getElementById('btnSalvarTratamento'); 
-        btn.disabled = true; btn.textContent = 'Gravando...';
+        btn.disabled = true; btn.textContent = 'Gravando...'; 
         
-        const p = { status: statusNovo, observacao: document.getElementById('tratarOsObs').value.trim().toUpperCase(), usuario_id: usuarioLogado.id };
-        await apiFetch(`/api/os/${document.getElementById('tratarOsId').value}/status`, { method: 'PUT', body: JSON.stringify(p) });
+        const p = { status: statusNovo, observacao: obsTexto, usuario_id: usuarioLogado.id };
+        await apiFetch(`/api/os/${document.getElementById('tratarOsId').value}/status`, { method: 'PUT', body: JSON.stringify(p) }); 
         
         btn.disabled = false; btn.textContent = 'Gravar Atualização'; 
         fecharModal('modalTratarOS'); 
-        mudarAba('geralOS');
+        mudarAba('geralOS'); 
     }
-    
+
 </script>
 </body>
 </html>
