@@ -22,7 +22,7 @@
         button { background: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; }
         button:hover { background: var(--primary-dark); }
         button:disabled { opacity: 0.6; cursor: not-allowed; }
-        .btn-danger { background: var(--danger); } .btn-success { background: var(--success); } .btn-secondary { background: #64748b; } .btn-warning { background: var(--warning); color: #fff; } .btn-warning:hover { background: #d97706; }
+        .btn-danger { background: var(--danger); } .btn-success { background: var(--success); } .btn-secondary { background: #64748b; } .btn-warning { background: var(--warning); color: #fff; }
         .btn-sm { padding: 6px 12px; font-size: 11px; margin-bottom: 2px; } .btn-block { width: 100%; }
         
         .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
@@ -84,27 +84,51 @@
                 <span id="usuarioNomeDisplay" style="font-weight: 600;"></span> <span id="usuarioPerfilDisplay" class="badge"></span>
             </div>
             <div style="display: flex; gap: 10px;">
-                <button class="btn-warning" onclick="abrirNovaOSAvulsa()">+ NOVA O.S.</button>
+                <button class="btn-warning" onclick="abrirNovaOSAvulsa()" id="btnTopAbrirOS">+ NOVA O.S.</button>
                 <button onclick="fazerLogout()" class="btn-danger">Sair</button>
             </div>
         </div>
 
         <div id="navAdmin" class="nav-tabs hidden">
             <button id="tabDashboard" onclick="mudarAba('dashboard')">Dashboard</button>
+            <button id="tabAdmContratos" onclick="mudarAba('admContratos')">Contratos</button>
             <button id="tabAdmUsers" onclick="mudarAba('admUsers')">Usuários</button>
             <button id="tabGeralEqs" onclick="mudarAba('geralEqs')">Equipamentos</button>
             <button id="tabGeralOS" onclick="mudarAba('geralOS')">Gestão de O.S.</button>
         </div>
+        
+        <div id="navFiscal" class="nav-tabs hidden">
+            <button id="tabAdmUsersFiscal" onclick="mudarAba('admUsers')">Minha Equipe</button>
+            <button id="tabGeralEqsFiscal" onclick="mudarAba('geralEqs')">Meus Equipamentos</button>
+            <button id="tabGeralOSFiscal" onclick="mudarAba('geralOS')">Fiscalizar O.S.</button>
+        </div>
 
         <div id="navPadrao" class="nav-tabs hidden">
             <button id="tabGeralEqsPadrao" onclick="mudarAba('geralEqs')">Equipamentos</button>
-            <button id="tabGeralOSPadrao" onclick="mudarAba('geralOS')">Ordens de Serviço</button>
+            <button id="tabGeralOSPadrao" onclick="mudarAba('geralOS')">Minhas Ordens de Serviço</button>
         </div>
 
         <div id="conteudoAba" class="card"></div>
     </div>
 
-    <!-- MODAIS DE CADASTRO -->
+    <!-- MODAIS DE CONTRATO (SÓ ADMIN) -->
+    <div id="modalFormContrato" class="modal-overlay hidden">
+        <div class="modal-box" style="max-width: 500px;">
+            <h3 id="tituloModalContrato">Novo Contrato</h3>
+            <form id="formCriarContrato" onsubmit="salvarContrato(event)">
+                <input type="hidden" id="formContratoId">
+                <label>Nº do Contrato:</label><input type="text" id="formContratoNum" required placeholder="Ex: 015/2024">
+                <label>Nome da Empresa:</label><input type="text" id="formContratoEmpresa" required>
+                <label>CNPJ:</label><input type="text" id="formContratoCnpj">
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button type="submit" class="btn-success btn-block" id="btnSalvarContrato">Salvar</button>
+                    <button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalFormContrato')">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL DE EQUIPAMENTOS E USUARIOS COM O CAMPO CONTRATO -->
     <div id="modalFormEquip" class="modal-overlay hidden">
         <div class="modal-box" style="max-width: 700px;">
             <h3 id="tituloModalEquip">Novo Equipamento</h3>
@@ -127,7 +151,13 @@
                     <div class="col"><label>Marca:</label><input type="text" id="formEqMarca"></div>
                     <div class="col"><label>Tombo:</label><input type="text" id="formEqTombo"></div>
                 </div>
-                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                
+                <div id="boxEqContratoAdmin" class="hidden">
+                    <label>Vincular a um Contrato:</label>
+                    <select id="formEqContrato"></select>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
                     <button type="submit" class="btn-success btn-block" id="btnSalvarEq">Salvar</button>
                     <button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalFormEquip')">Cancelar</button>
                 </div>
@@ -141,119 +171,28 @@
             <form id="formCriarUsuario" onsubmit="salvarUsuario(event)">
                 <input type="hidden" id="formUserId">
                 <label>Nome Completo:</label><input type="text" id="formUserNome" required>
-                <label>Login de Acesso:</label><input type="text" id="formUserLogin" required>
+                <label>Login de Acesso (minúsculo):</label><input type="text" id="formUserLogin" required>
                 <label>Perfil:</label>
-                <select id="formUserPerfil" required>
-                    <option value="solicitante">Solicitante</option>
-                    <option value="fiscal">Fiscal</option>
-                    <option value="executante">Executante</option>
-                    <option value="contratada">Contratada</option>
-                    <option value="administrador">Administrador</option>
-                </select>
-                <div style="display: flex; gap: 10px; margin-top: 15px;">
-                    <button type="submit" class="btn-success btn-block" id="btnSalvarUser">Salvar</button>
-                    <button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalFormUser')">Cancelar</button>
+                <select id="formUserPerfil" required onchange="verificarExibicaoContratoUser()"></select>
+                
+                <div id="boxUserContrato" class="hidden">
+                    <label>Vincular a qual Contrato?</label>
+                    <select id="formUserContrato"></select>
                 </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 15px;"><button type="submit" class="btn-success btn-block" id="btnSalvarUser">Salvar</button><button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalFormUser')">Cancelar</button></div>
             </form>
         </div>
     </div>
 
-    <div id="modalNovaOSAvulsa" class="modal-overlay hidden">
-        <div class="modal-box" style="max-width: 600px;">
-            <h3>Abrir Nova Ordem de Serviço</h3>
-            
-            <div style="background: #f1f5f9; padding: 15px; border-radius: 6px; margin-bottom: 15px; border: 1px solid var(--border);">
-                <label style="color: var(--primary-dark);">Busca Rápida por Tombo:</label>
-                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                    <input type="text" id="buscaTombo" placeholder="Digite o número do tombo..." style="margin-bottom:0;">
-                    <button type="button" class="btn-primary" onclick="buscarEquipamentoPorTombo()">Buscar</button>
-                </div>
-                <hr style="border: 0; border-top: 1px dashed #cbd5e1; margin-bottom: 15px;">
-                <label style="color: var(--primary-dark);">Ou localize em lista:</label>
-                <div class="row">
-                    <div class="col"><label>Comarca:</label><select id="selAvulsoComarca" onchange="popularAvulsoPredios()"><option value="">Carregando...</option></select></div>
-                    <div class="col"><label>Prédio:</label><select id="selAvulsoPredio" onchange="popularAvulsoSalas()"><option value="">Aguardando comarca...</option></select></div>
-                </div>
-                <div class="row">
-                    <div class="col"><label>Sala / Local:</label><select id="selAvulsoSala" onchange="popularAvulsoEqs()"><option value="">Aguardando prédio...</option></select></div>
-                    <div class="col"><label>Equipamento:</label><select id="selAvulsoEq" required><option value="">Aguardando sala...</option></select></div>
-                </div>
-            </div>
+    <!-- MODAL ABRIR O.S. (AVULSA E TABELA) E TRATAR O.S. - IGUAIS AOS ANTERIORES, OMITIDOS PARA ESPAÇO, SÃO OS MESMOS HTML -->
+    <div id="modalNovaOSAvulsa" class="modal-overlay hidden"><div class="modal-box" style="max-width: 600px;"><h3>Abrir Nova Ordem de Serviço</h3><div style="background: #f1f5f9; padding: 15px; border-radius: 6px; margin-bottom: 15px; border: 1px solid var(--border);"><label style="color: var(--primary-dark);">Busca Rápida por Tombo:</label><div style="display: flex; gap: 10px; margin-bottom: 15px;"><input type="text" id="buscaTombo" placeholder="Digite o tombo..." style="margin-bottom:0;"><button type="button" class="btn-primary" onclick="buscarEquipamentoPorTombo()">Buscar</button></div><hr style="border: 0; border-top: 1px dashed #cbd5e1; margin-bottom: 15px;"><label style="color: var(--primary-dark);">Ou localize em lista:</label><div class="row"><div class="col"><label>Comarca:</label><select id="selAvulsoComarca" onchange="popularAvulsoPredios()"><option value="">Carregando...</option></select></div><div class="col"><label>Prédio:</label><select id="selAvulsoPredio" onchange="popularAvulsoSalas()"><option value="">Aguardando comarca...</option></select></div></div><div class="row"><div class="col"><label>Sala / Local:</label><select id="selAvulsoSala" onchange="popularAvulsoEqs()"><option value="">Aguardando prédio...</option></select></div><div class="col"><label>Equipamento:</label><select id="selAvulsoEq" required><option value="">Aguardando sala...</option></select></div></div></div><form id="formCriarOSAvulsa" onsubmit="enviarOSAvulsa(event)"><label>Relato do Defeito:</label><textarea id="osDescricaoAvulsa" rows="3" required placeholder="Descreva o problema..."></textarea><div style="display: flex; gap: 10px; margin-top: 10px;"><button type="submit" class="btn-success btn-block" id="btnRegistrarOSAvulsa">Registrar O.S.</button><button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalNovaOSAvulsa')">Cancelar</button></div></form></div></div>
+    
+    <div id="modalAbrirOS" class="modal-overlay hidden"><div class="modal-box" style="max-width: 500px;"><h3>Abrir O.S.</h3><div style="background: #f1f5f9; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 13px;"><strong id="osEquipDesc"></strong><br><span id="osEquipLocal"></span></div><form id="formCriarOS" onsubmit="enviarOS(event)"><input type="hidden" id="osEquipamentoId"><label>Relato do Defeito:</label><textarea id="osDescricao" rows="3" required placeholder="Descreva o problema..."></textarea><div style="display: flex; gap: 10px; margin-top: 10px;"><button type="submit" class="btn-success btn-block" id="btnRegistrarOS">Registrar O.S.</button><button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalAbrirOS')">Cancelar</button></div></form></div></div>
+    
+    <div id="modalHistoricoEqOS" class="modal-overlay hidden"><div class="modal-box" style="max-width: 700px;"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;"><h3 style="margin:0;">Histórico de O.S. do Equipamento</h3><button class="btn-danger btn-sm" onclick="fecharModal('modalHistoricoEqOS')">X</button></div><div style="overflow-x:auto;"><table style="margin-top: 0;"><thead><tr><th>O.S. / Data</th><th>Defeito</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tabelaHistoricoEqOS"></tbody></table></div></div></div>
 
-            <form id="formCriarOSAvulsa" onsubmit="enviarOSAvulsa(event)">
-                <label>Relato do Defeito:</label>
-                <textarea id="osDescricaoAvulsa" rows="3" required placeholder="Descreva o problema detalhadamente..."></textarea>
-                <div style="display: flex; gap: 10px; margin-top: 10px;">
-                    <button type="submit" class="btn-success btn-block" id="btnRegistrarOSAvulsa">Registrar O.S.</button>
-                    <button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalNovaOSAvulsa')">Cancelar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- MODAL ABRIR O.S. (PELA TABELA) -->
-    <div id="modalAbrirOS" class="modal-overlay hidden">
-        <div class="modal-box" style="max-width: 500px;">
-            <h3>Abrir O.S.</h3>
-            <div style="background: #f1f5f9; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 13px;">
-                <strong id="osEquipDesc"></strong><br><span id="osEquipLocal"></span>
-            </div>
-            <form id="formCriarOS" onsubmit="enviarOS(event)">
-                <input type="hidden" id="osEquipamentoId">
-                <label>Relato do Defeito:</label>
-                <textarea id="osDescricao" rows="3" required placeholder="Descreva o problema detalhadamente..."></textarea>
-                <div style="display: flex; gap: 10px; margin-top: 10px;">
-                    <button type="submit" class="btn-success btn-block" id="btnRegistrarOS">Registrar O.S.</button>
-                    <button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalAbrirOS')">Cancelar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div id="modalHistoricoEqOS" class="modal-overlay hidden">
-        <div class="modal-box" style="max-width: 700px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h3 style="margin:0;">Histórico de O.S. do Equipamento</h3>
-                <button class="btn-danger btn-sm" onclick="fecharModal('modalHistoricoEqOS')">X</button>
-            </div>
-            <div style="overflow-x:auto;">
-                <table style="margin-top: 0;">
-                    <thead><tr><th>O.S. / Data</th><th>Defeito</th><th>Status</th><th>Ações</th></tr></thead>
-                    <tbody id="tabelaHistoricoEqOS"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <div id="modalTratarOS" class="modal-overlay hidden">
-        <div class="modal-box">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h3 style="margin:0;">Detalhes da O.S. <span id="detalheOsId"></span></h3>
-                <span id="detalheOsBadge" class="badge"></span>
-            </div>
-            
-            <div style="background: #f8fafc; border: 1px solid var(--border); padding: 10px; border-radius: 6px; margin-top: 15px; font-size: 13px;">
-                <strong>Equipamento:</strong> <span id="detalheOsEquip"></span><br>
-                <strong>Local:</strong> <span id="detalheOsLocal"></span><br>
-                <strong>Defeito Inicial:</strong> <span id="detalheOsDefeito" style="color: var(--danger);"></span>
-            </div>
-
-            <div id="boxAcaoOS" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border);">
-                <h4>Atualizar / Tramitar Chamado</h4>
-                <form onsubmit="salvarTratamentoOS(event)">
-                    <input type="hidden" id="tratarOsId">
-                    <label>Novo Status:</label>
-                    <select id="tratarOsStatus" required><option value="em_analise">Em Análise</option><option value="aguardando_peca">Aguardando Peça</option><option value="em_execucao">Em Execução</option><option value="concluida">Concluída (Resolvido)</option><option value="cancelada">Cancelada (Improcedente / Erro)</option></select>
-                    <label>Relatório Técnico / Observação:</label><textarea id="tratarOsObs" rows="3" placeholder="O que foi feito?" required></textarea>
-                    <button type="submit" class="btn-success btn-block" id="btnSalvarTratamento">Gravar Atualização</button>
-                </form>
-            </div>
-
-            <h4 style="margin-top: 25px;">Histórico da O.S.</h4>
-            <div id="boxTimeline" class="timeline"></div>
-            <button class="btn-secondary btn-block" style="margin-top: 20px;" onclick="fecharModal('modalTratarOS')">Fechar Detalhes</button>
-        </div>
-    </div>
+    <div id="modalTratarOS" class="modal-overlay hidden"><div class="modal-box"><div style="display: flex; justify-content: space-between; align-items: center;"><h3 style="margin:0;">Detalhes da O.S. <span id="detalheOsId"></span></h3><span id="detalheOsBadge" class="badge"></span></div><div style="background: #f8fafc; border: 1px solid var(--border); padding: 10px; border-radius: 6px; margin-top: 15px; font-size: 13px;"><strong>Equipamento:</strong> <span id="detalheOsEquip"></span><br><strong>Local:</strong> <span id="detalheOsLocal"></span><br><strong>Defeito Inicial:</strong> <span id="detalheOsDefeito" style="color: var(--danger);"></span></div><div id="boxAcaoOS" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border);"><h4>Atualizar / Tramitar Chamado</h4><form onsubmit="salvarTratamentoOS(event)"><input type="hidden" id="tratarOsId"><label>Novo Status:</label><select id="tratarOsStatus" required><option value="em_analise">Em Análise</option><option value="aguardando_peca">Aguardando Peça</option><option value="em_execucao">Em Execução</option><option value="concluida">Concluída (Resolvido)</option><option value="cancelada">Cancelada (Improcedente / Erro)</option></select><label>Relatório Técnico / Observação:</label><textarea id="tratarOsObs" rows="3" placeholder="O que foi feito?" required></textarea><button type="submit" class="btn-success btn-block" id="btnSalvarTratamento">Gravar Atualização</button></form></div><h4 style="margin-top: 25px;">Histórico da O.S.</h4><div id="boxTimeline" class="timeline"></div><button class="btn-secondary btn-block" style="margin-top: 20px;" onclick="fecharModal('modalTratarOS')">Fechar Detalhes</button></div></div>
 
 </div>
 
@@ -261,44 +200,24 @@
     const IS_GITHUB_PAGES = window.location.hostname.includes('github.io');
     let servidorBaseUrl = "http://127.0.0.1:8083"; 
     let usuarioLogado = null;
-    let usuariosCache = []; // Adicione esta linha junto aos outros caches
-    let equipamentosCache = []; 
-    let osCache = [];
-    let eqSortCol = 'comarca'; let eqSortAsc = true;
-    let eqFiltros = { comarca: '', predio: '', sala: '', tipo: '', cap: '', tombo: '', status: '' };
+    let equipamentosCache = []; let osCache = []; let usuariosCache = []; let contratosCache = [];
+    let eqSortCol = 'comarca'; let eqSortAsc = true; let eqDebounceTimeout = null;
+    let eqFiltros = { comarca: '', predio: '', sala: '', tipo: '', cap: '', tombo: '', contrato: '', status: '' };
     let osFiltros = { id: '', comarca: '', status: '' };
-    let eqDebounceTimeout = null;
 
     const MUNICIPIOS_CE = ["Abaiara","Acarape","Acaraú","Acopiara","Aiuaba","Alcântaras","Altaneira","Alto Santo","Amontada","Antonina do Norte","Apuiarés","Aquiraz","Aracati","Aracoiaba","Ararendá","Araripe","Aratuba","Arneiroz","Assaré","Aurora","Baixio","Banabuiú","Barbalha","Barreira","Barro","Barroquinha","Baturité","Beberibe","Bela Cruz","Boa Viagem","Brejo Santo","Camocim","Campos Sales","Canindé","Capistrano","Caridade","Cariré","Caririaçu","Cariús","Carnaubal","Cascavel","Catarina","Catunda","Caucaia","Cedro","Chaval","Choró","Chorozinho","Coreaú","Crateús","Crato","Croatá","Cruz","Deputado Irapuan Pinheiro","Ererê","Eusébio","Farias Brito","Forquilha","Fortaleza","Fortim","Frecheirinha","General Sampaio","Graça","Granja","Granjeiro","Groaíras","Guaiúba","Guaraciaba do Norte","Guaramiranga","Hidrolândia","Horizonte","Ibaretama","Ibiapina","Ibicuitinga","Icapuí","Icó","Iguatu","Independência","Ipaporanga","Ipaumirim","Ipu","Ipueiras","Iracema","Irauçuba","Itaiçaba","Itaitinga","Itapajé","Itapipoca","Itapiúna","Itarema","Itatira","Jaguaretama","Jaguaribara","Jaguaribe","Jaguaruana","Jardim","Jati","Jijoca de Jericoacoara","Juazeiro do Norte","Jucás","Lavras da Mangabeira","Limoeiro do Norte","Madalena","Maracanaú","Maranguape","Marco","Martinópole","Massapê","Mauriti","Meruoca","Milagres","Milhã","Miraíma","Missão Velha","Mombaça","Monsenhor Tabosa","Morada Nova","Moraújo","Morrinhos","Mucambo","Mulungu","Nova Olinda","Nova Russas","Novo Oriente","Ocara","Orós","Pacajus","Pacatuba","Pacoti","Pacujá","Palhano","Palmácia","Paracuru","Paraipaba","Parambu","Paramoti","Pedra Branca","Penaforte","Pentecoste","Pereiro","Pindoretama","Piquet Carneiro","Pires Ferreira","Poranga","Porteiras","Potengi","Potiretama","Quiterianópolis","Quixadá","Quixelô","Quixeramobim","Quixeré","Redenção","Reriutaba","Russas","Saboeiro","Salitre","Santa Quitéria","Santana do Acaraú","Santana do Cariri","São Benedito","São Gonçalo do Amarante","São João do Jaguaribe","São Luís do Curu","Senador Pompeu","Senador Sá","Sobral","Solonópole","Tabuleiro do Norte","Tamboril","Tarrafas","Tauá","Tejuçuoca","Tianguá","Trairi","Tururu","Ubajara","Umari","Umirim","Uruburetama","Uruoca","Varjota","Várzea Alegre","Viçosa do Ceará"].map(m => m.toUpperCase());
 
-    // ESCAPE HTML (Proteção contra XSS)
-    function esc(str) {
-        if (!str) return '';
-        return String(str).replace(/[&<>'"]/g, match => ({
-            '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
-        }[match]));
-    }
+    function esc(str) { return str ? String(str).replace(/[&<>'"]/g, match => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[match])) : ''; }
 
-    // API FETCH CENTRAL (Gerecia o Token JWT em todas as requisições)
     async function apiFetch(endpoint, options = {}) {
         if (!options.headers) options.headers = {};
-        if (usuarioLogado && usuarioLogado.token) {
-            options.headers['Authorization'] = `Bearer ${usuarioLogado.token}`;
-        }
+        if (usuarioLogado && usuarioLogado.token) options.headers['Authorization'] = `Bearer ${usuarioLogado.token}`;
         options.headers['Content-Type'] = 'application/json';
-
         try {
             const res = await fetch(getApiUrl(endpoint), options);
-            if (res.status === 401 && endpoint !== '/api/login') {
-                alert("Sua sessão expirou por segurança. Faça login novamente.");
-                fazerLogout();
-                throw new Error("Sessão Expirada");
-            }
+            if (res.status === 401 && endpoint !== '/api/login') { alert("Sessão expirada. Faça login novamente."); fazerLogout(); throw new Error("Sessão Expirada"); }
             return res;
-        } catch (error) {
-            console.error("Erro na requisição:", error);
-            throw error;
-        }
+        } catch (error) { throw error; }
     }
 
     window.addEventListener('DOMContentLoaded', async () => {
@@ -308,54 +227,27 @@
         if (sessao) { usuarioLogado = JSON.parse(sessao); verificarPrimeiroAcesso(); }
     });
 
-    function carregarSelectMunicipios() {
-        const select = document.getElementById('formEqComarca');
-        if(select) select.innerHTML = '<option value="">SELECIONE A COMARCA...</option>' + MUNICIPIOS_CE.map(m => `<option value="${m}">${m}</option>`).join('');
-    }
-
-    async function descobrirUrlServidor() {
-        try { servidorBaseUrl = (await (await fetch(`servidor.json?t=${Date.now()}`)).json()).url.replace(/\/+$/, ''); } 
-        catch (err) { console.error("Servidor offline"); }
-    }
+    function carregarSelectMunicipios() { const s = document.getElementById('formEqComarca'); if(s) s.innerHTML = '<option value="">SELECIONE A COMARCA...</option>' + MUNICIPIOS_CE.map(m => `<option value="${m}">${m}</option>`).join(''); }
+    async function descobrirUrlServidor() { try { servidorBaseUrl = (await (await fetch(`servidor.json?t=${Date.now()}`)).json()).url.replace(/\/+$/, ''); } catch (err) { console.error("Servidor offline"); } }
     function getApiUrl(ep) { return `${servidorBaseUrl}${ep}`; }
     function fecharModal(id) { document.getElementById(id).classList.add('hidden'); }
     function dataFormatada(timestamp) { return new Date(timestamp).toLocaleString('pt-BR'); }
     
-    function exportarCSV(tipo) {
-        let dados = [], cabecalho = [], nomeArq = '';
-        if (tipo === 'equipamentos') {
-            cabecalho = ['ID', 'Comarca', 'Predio', 'Sala', 'Tipo', 'Capacidade', 'Marca', 'Tombo', 'Status'];
-            dados = equipamentosCache.map(eq => [eq.id, eq.comarca, eq.predio, eq.sala, eq.tipo_equipamento, eq.capacidade||'', eq.marca||'', eq.tombo, eq.ativo===1?'Ativo':'Inativo']);
-            nomeArq = 'relatorio_equipamentos.csv';
-        } else {
-            cabecalho = ['ID', 'Data Abertura', 'Comarca', 'Predio', 'Sala', 'Equipamento', 'Defeito', 'Status'];
-            dados = osCache.map(os => [os.id, new Date(os.data_abertura).toLocaleString('pt-BR'), os.comarca, os.predio, os.sala, `${os.tipo_equipamento} ${os.capacidade||''}`, os.descricao_falha, os.status.toUpperCase()]);
-            nomeArq = 'relatorio_os.csv';
-        }
-        let csvContent = "data:text/csv;charset=utf-8,\uFEFF" + cabecalho.join(";") + "\n" + dados.map(row => row.map(item => `"${String(item).replace(/"/g, '""')}"`).join(";")).join("\n");
-        const link = document.createElement("a"); link.setAttribute("href", encodeURI(csvContent)); link.setAttribute("download", nomeArq);
-        document.body.appendChild(link); link.click(); document.body.removeChild(link);
-    }
-
-    // ====== LOGIN & SEGURANÇA ======
+    // ====== LOGIN ======
     async function fazerLogin(e) {
         e.preventDefault(); const btn = document.getElementById('btnEntrar'); btn.disabled = true; btn.textContent = 'Autenticando...';
         try {
-            const payload = JSON.stringify({ login: document.getElementById('loginUser').value.trim().toLowerCase(), senha: document.getElementById('loginSenha').value });
-            const res = await fetch(getApiUrl('/api/login'), { method: 'POST', headers: {'Content-Type': 'application/json'}, body: payload });
+            const res = await apiFetch('/api/login', { method: 'POST', body: JSON.stringify({ login: document.getElementById('loginUser').value.trim().toLowerCase(), senha: document.getElementById('loginSenha').value }) });
             const data = await res.json();
             if (res.ok) { localStorage.setItem('os_usuario_logado', JSON.stringify(data)); usuarioLogado = data; verificarPrimeiroAcesso(); } else alert(data.erro);
-        } catch(e) { alert("Erro de conexão com o servidor."); }
+        } catch(e) { alert("Erro de conexão"); }
         btn.disabled = false; btn.textContent = 'Entrar no Sistema';
     }
-    
     function fazerLogout() { localStorage.removeItem('os_usuario_logado'); sessionStorage.removeItem('os_aba_ativa'); location.reload(); }
-    
     function verificarPrimeiroAcesso() {
         if (usuarioLogado.primeiro_acesso === 1) { document.getElementById('authSection').classList.add('hidden'); document.getElementById('modalSenha').classList.remove('hidden'); }
         else { document.getElementById('modalSenha').classList.add('hidden'); mostrarPainel(); }
     }
-    
     async function salvarNovaSenha(e) {
         e.preventDefault(); const nova = document.getElementById('novaSenhaInput').value;
         await apiFetch('/api/trocar-senha', { method: 'POST', body: JSON.stringify({ usuario_id: usuarioLogado.id, nova_senha: nova }) });
@@ -367,127 +259,151 @@
         document.getElementById('authSection').classList.add('hidden'); document.getElementById('appSection').classList.remove('hidden');
         document.getElementById('usuarioNomeDisplay').textContent = esc(usuarioLogado.nome); document.getElementById('usuarioPerfilDisplay').textContent = esc(usuarioLogado.perfil);
         
+        // Esconde botão global de abrir OS se não for solicitante ou admin
+        if(usuarioLogado.perfil === 'fiscal' || usuarioLogado.perfil === 'executante' || usuarioLogado.perfil === 'contratada') { document.getElementById('btnTopAbrirOS').classList.add('hidden'); }
+        
         let abaSalva = sessionStorage.getItem('os_aba_ativa');
-        if (usuarioLogado.perfil === 'administrador') { 
-            document.getElementById('navAdmin').classList.remove('hidden'); 
-            if(!['dashboard', 'admUsers', 'geralEqs', 'geralOS'].includes(abaSalva)) abaSalva = 'dashboard';
-            mudarAba(abaSalva); 
-        } else { 
-            document.getElementById('navPadrao').classList.remove('hidden'); 
-            if(!['geralEqs', 'geralOS'].includes(abaSalva)) abaSalva = 'geralEqs';
-            mudarAba(abaSalva); 
-        }
+        if (usuarioLogado.perfil === 'administrador') { document.getElementById('navAdmin').classList.remove('hidden'); if(!['dashboard', 'admContratos', 'admUsers', 'geralEqs', 'geralOS'].includes(abaSalva)) abaSalva = 'dashboard'; mudarAba(abaSalva); } 
+        else if (usuarioLogado.perfil === 'fiscal') { document.getElementById('navFiscal').classList.remove('hidden'); if(!['admUsers', 'geralEqs', 'geralOS'].includes(abaSalva)) abaSalva = 'geralEqs'; mudarAba(abaSalva); }
+        else { document.getElementById('navPadrao').classList.remove('hidden'); if(!['geralEqs', 'geralOS'].includes(abaSalva)) abaSalva = 'geralEqs'; mudarAba(abaSalva); }
     }
 
     function mudarAba(abaId) {
-        sessionStorage.setItem('os_aba_ativa', abaId);
-        document.querySelectorAll('.nav-tabs button').forEach(b => b.classList.remove('active'));
-        let btn = document.getElementById(`tab${abaId.charAt(0).toUpperCase() + abaId.slice(1)}${usuarioLogado.perfil === 'administrador' ? '' : 'Padrao'}`);
-        if(btn) btn.classList.add('active');
+        sessionStorage.setItem('os_aba_ativa', abaId); document.querySelectorAll('.nav-tabs button').forEach(b => b.classList.remove('active'));
+        let btnStr = `tab${abaId.charAt(0).toUpperCase() + abaId.slice(1)}`;
+        if(usuarioLogado.perfil === 'administrador') { let b = document.getElementById(btnStr); if(b) b.classList.add('active'); }
+        else if(usuarioLogado.perfil === 'fiscal') { let b = document.getElementById(btnStr+'Fiscal'); if(b) b.classList.add('active'); }
+        else { let b = document.getElementById(btnStr+'Padrao'); if(b) b.classList.add('active'); }
         
         const box = document.getElementById('conteudoAba');
         if (abaId === 'dashboard') renderDashboard(box);
+        if (abaId === 'admContratos') renderAdmContratos(box);
         if (abaId === 'admUsers') renderAdmUsers(box);
         if (abaId === 'geralEqs') carregarEquipamentosServer(box); 
         if (abaId === 'geralOS') carregarOSServer(box);
     }
 
-    // ====== DASHBOARD ======
-    async function renderDashboard(box) {
-        box.innerHTML = `<h3>Visão Geral (Indicadores)</h3><div id="dashContent">Carregando...</div>`;
-        const chamados = await (await apiFetch('/api/os')).json();
-        const equipamentos = await (await apiFetch('/api/equipamentos')).json();
-        let abertas = 0, andamento = 0, concluidas = 0;
-        chamados.forEach(os => { if (os.status === 'aberta') abertas++; else if (os.status === 'concluida') concluidas++; else if (os.status !== 'cancelada') andamento++; });
-
-        box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;">
-                <h3>Visão Geral (Indicadores)</h3><button onclick="renderDashboard(document.getElementById('conteudoAba'))">Atualizar</button>
-            </div>
-            <div class="dash-grid">
-                <div class="dash-card"><div style="color:#64748b;">Aguardando Atendimento</div><div class="dash-value" style="color:var(--primary);">${abertas}</div></div>
-                <div class="dash-card"><div style="color:#64748b;">O.S. Em Andamento</div><div class="dash-value" style="color:var(--warning);">${andamento}</div></div>
-                <div class="dash-card"><div style="color:#64748b;">O.S. Concluídas</div><div class="dash-value" style="color:var(--success);">${concluidas}</div></div>
-                <div class="dash-card"><div style="color:#64748b;">Total de Equipamentos</div><div class="dash-value" style="color:#475569;">${equipamentos.length}</div></div>
-            </div>`;
+    async function carregarListaContratosAtivos() {
+        if(usuarioLogado.perfil !== 'administrador') return;
+        contratosCache = await (await apiFetch('/api/contratos')).json();
+        const html = '<option value="">Nenhum Contrato (Avulso)</option>' + contratosCache.filter(c=>c.ativo===1).map(c => `<option value="${c.id}">${esc(c.numero_contrato)} - ${esc(c.nome_empresa)}</option>`).join('');
+        const selEq = document.getElementById('formEqContrato'); if(selEq) selEq.innerHTML = html;
+        const selUsr = document.getElementById('formUserContrato'); if(selUsr) selUsr.innerHTML = html;
     }
 
-    // ====== GESTÃO DE USUÁRIOS (ADMIN) ======
-    async function renderAdmUsers(box) {
-        box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h3>Gestão de Usuários</h3><button class="btn-success" onclick="abrirModalUser(null)">+ Novo Usuário</button></div><div id="tabelaUsers">Carregando...</div>`;
-        usuariosCache = await (await apiFetch('/api/usuarios')).json();
-        
-        let html = `<table><thead><tr><th>Nome</th><th>Login</th><th>Perfil</th><th>Status</th><th>Ações</th></tr></thead><tbody>`;
-        usuariosCache.forEach(u => {
-            const inativoStr = u.ativo === 0 ? 'class="inativo"' : '';
-            const statusLabel = u.ativo === 1 ? '<span style="color:var(--success);font-weight:bold;">Ativo</span>' : '<span style="color:var(--danger);font-weight:bold;">Inativo</span>';
-            
-            let btnAtivar = '';
-            if (u.id !== usuarioLogado.id) { // Esconde botão de inativar do próprio usuário logado
-                btnAtivar = u.ativo === 1 ? `<button class="btn-sm btn-danger" onclick="toggleAtivoUser(${u.id}, 0)">Inativar</button>` : `<button class="btn-sm" style="background:#10b981;" onclick="toggleAtivoUser(${u.id}, 1)">Ativar</button>`;
-            }
+    // ====== CONTRATOS (ADMIN) ======
+    async function renderAdmContratos(box) {
+        box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h3>Gestão de Contratos</h3><button class="btn-success" onclick="abrirModalContrato()">+ Novo Contrato</button></div><div id="tabelaContratos">Carregando...</div>`;
+        contratosCache = await (await apiFetch('/api/contratos')).json();
+        let html = `<table><thead><tr><th>Nº Contrato</th><th>Empresa</th><th>CNPJ</th><th>Status</th><th>Ações</th></tr></thead><tbody>`;
+        contratosCache.forEach(c => {
+            const inativo = c.ativo === 0 ? 'class="inativo"' : '';
+            const status = c.ativo === 1 ? '<span style="color:var(--success);font-weight:bold;">Ativo</span>' : '<span style="color:var(--danger);font-weight:bold;">Inativo</span>';
+            const btn = c.ativo === 1 ? `<button class="btn-sm btn-danger" onclick="toggleAtivoContrato(${c.id}, 0)">Inativar</button>` : `<button class="btn-sm btn-success" onclick="toggleAtivoContrato(${c.id}, 1)">Ativar</button>`;
+            html += `<tr ${inativo}><td><strong>${esc(c.numero_contrato)}</strong></td><td>${esc(c.nome_empresa)}</td><td>${esc(c.cnpj)}</td><td>${status}</td><td><button class="btn-sm btn-secondary" onclick="abrirModalContrato(${c.id})">Editar</button> ${btn}</td></tr>`;
+        });
+        document.getElementById('tabelaContratos').innerHTML = html + `</tbody></table>`;
+    }
+    
+    function abrirModalContrato(id) {
+        document.getElementById('formCriarContrato').reset(); document.getElementById('modalFormContrato').classList.remove('hidden');
+        if(id) {
+            const c = contratosCache.find(x => x.id === id); document.getElementById('tituloModalContrato').textContent = 'Editar Contrato';
+            document.getElementById('formContratoId').value = c.id; document.getElementById('formContratoNum').value = c.numero_contrato; document.getElementById('formContratoEmpresa').value = c.nome_empresa; document.getElementById('formContratoCnpj').value = c.cnpj;
+        } else { document.getElementById('tituloModalContrato').textContent = 'Novo Contrato'; document.getElementById('formContratoId').value = ''; }
+    }
+    
+    async function salvarContrato(e) {
+        e.preventDefault(); const id = document.getElementById('formContratoId').value;
+        const p = { numero_contrato: document.getElementById('formContratoNum').value.trim(), nome_empresa: document.getElementById('formContratoEmpresa').value.trim(), cnpj: document.getElementById('formContratoCnpj').value.trim(), ativo: id ? contratosCache.find(x=>x.id==id).ativo : 1 };
+        await apiFetch(id ? `/api/contratos/${id}` : '/api/contratos', { method: id ? 'PUT' : 'POST', body: JSON.stringify(p) });
+        fecharModal('modalFormContrato'); mudarAba('admContratos');
+    }
+    
+    async function toggleAtivoContrato(id, status) {
+        const c = contratosCache.find(x => x.id == id); c.ativo = status;
+        await apiFetch(`/api/contratos/${id}`, { method: 'PUT', body: JSON.stringify(c) }); mudarAba('admContratos');
+    }
 
-            html += `<tr ${inativoStr}>
-                <td>${esc(u.nome)}</td><td>${esc(u.login)}</td><td><span class="badge">${esc(u.perfil)}</span></td><td>${statusLabel}</td>
-                <td style="white-space: nowrap;"><button class="btn-sm btn-secondary" onclick="abrirModalUser(${u.id})">Editar</button> ${btnAtivar}</td>
-            </tr>`;
+    // ====== USUÁRIOS (ADMIN E FISCAL) ======
+    async function renderAdmUsers(box) {
+        box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h3>${usuarioLogado.perfil==='fiscal'?'Minha Equipe':'Gestão de Usuários'}</h3><button class="btn-success" onclick="abrirModalUser()">+ Novo Usuário</button></div><div id="tabelaUsers">Carregando...</div>`;
+        usuariosCache = await (await apiFetch('/api/usuarios')).json();
+        let html = `<table><thead><tr><th>Nome</th><th>Login</th><th>Perfil</th><th>Contrato</th><th>Status</th><th>Ações</th></tr></thead><tbody>`;
+        usuariosCache.forEach(u => {
+            const inativo = u.ativo === 0 ? 'class="inativo"' : '';
+            const status = u.ativo === 1 ? '<span style="color:var(--success);font-weight:bold;">Ativo</span>' : '<span style="color:var(--danger);font-weight:bold;">Inativo</span>';
+            let btnAtivar = '';
+            if (u.id !== usuarioLogado.id) btnAtivar = u.ativo === 1 ? `<button class="btn-sm btn-danger" onclick="toggleAtivoUser(${u.id}, 0)">Inativar</button>` : `<button class="btn-sm btn-success" onclick="toggleAtivoUser(${u.id}, 1)">Ativar</button>`;
+            html += `<tr ${inativo}><td>${esc(u.nome)}</td><td>${esc(u.login)}</td><td><span class="badge">${esc(u.perfil)}</span></td><td><small>${esc(u.contrato_nome)||'-'}</small></td><td>${status}</td><td><button class="btn-sm btn-secondary" onclick="abrirModalUser(${u.id})">Editar</button> ${btnAtivar}</td></tr>`;
         });
         document.getElementById('tabelaUsers').innerHTML = html + `</tbody></table>`;
     }
     
-    function abrirModalUser(id) { 
+    async function abrirModalUser(id) { 
         document.getElementById('formCriarUsuario').reset(); 
+        
+        let selPerfil = document.getElementById('formUserPerfil');
+        if(usuarioLogado.perfil === 'fiscal') {
+            selPerfil.innerHTML = '<option value="executante">Executante</option><option value="contratada">Contratada</option>';
+            document.getElementById('boxUserContrato').classList.add('hidden'); // Fiscal cria já pro contrato dele automático
+        } else {
+            selPerfil.innerHTML = '<option value="solicitante">Solicitante</option><option value="fiscal">Fiscal</option><option value="executante">Executante</option><option value="contratada">Contratada</option><option value="administrador">Administrador</option>';
+            await carregarListaContratosAtivos();
+        }
+
         document.getElementById('modalFormUser').classList.remove('hidden'); 
         if (id) {
-            const u = usuariosCache.find(x => x.id === id);
-            document.getElementById('tituloModalUser').textContent = 'Editar Usuário';
-            document.getElementById('formUserId').value = u.id;
-            document.getElementById('formUserNome').value = u.nome;
-            document.getElementById('formUserLogin').value = u.login;
-            document.getElementById('formUserPerfil').value = u.perfil;
+            const u = usuariosCache.find(x => x.id === id); document.getElementById('tituloModalUser').textContent = 'Editar Usuário';
+            document.getElementById('formUserId').value = u.id; document.getElementById('formUserNome').value = u.nome;
+            document.getElementById('formUserLogin').value = u.login; document.getElementById('formUserPerfil').value = u.perfil;
+            if(usuarioLogado.perfil === 'administrador') {
+                document.getElementById('formUserContrato').value = u.contrato_id || '';
+                verificarExibicaoContratoUser();
+            }
         } else {
-            document.getElementById('tituloModalUser').textContent = 'Novo Usuário';
-            document.getElementById('formUserId').value = '';
+            document.getElementById('tituloModalUser').textContent = 'Novo Usuário'; document.getElementById('formUserId').value = '';
+            verificarExibicaoContratoUser();
         }
     }
     
+    function verificarExibicaoContratoUser() {
+        if(usuarioLogado.perfil !== 'administrador') return;
+        const p = document.getElementById('formUserPerfil').value;
+        if(p === 'fiscal' || p === 'executante' || p === 'contratada') document.getElementById('boxUserContrato').classList.remove('hidden');
+        else document.getElementById('boxUserContrato').classList.add('hidden');
+    }
+
     async function salvarUsuario(e) {
-        e.preventDefault(); 
-        const btn = document.getElementById('btnSalvarUser'); btn.disabled = true; btn.textContent = 'Salvando...';
+        e.preventDefault(); const btn = document.getElementById('btnSalvarUser'); btn.disabled = true; btn.textContent = 'Salvando...';
         const id = document.getElementById('formUserId').value;
         try {
-            const p = { 
-                nome: document.getElementById('formUserNome').value.trim().toUpperCase(), 
-                login: document.getElementById('formUserLogin').value.trim().toLowerCase(), 
-                perfil: document.getElementById('formUserPerfil').value,
-                ativo: id ? usuariosCache.find(x => x.id == id).ativo : 1
-            };
+            const p = { nome: document.getElementById('formUserNome').value.trim().toUpperCase(), login: document.getElementById('formUserLogin').value.trim().toLowerCase(), perfil: document.getElementById('formUserPerfil').value, ativo: id ? usuariosCache.find(x => x.id == id).ativo : 1 };
+            if (usuarioLogado.perfil === 'administrador' && (p.perfil === 'fiscal' || p.perfil === 'executante' || p.perfil === 'contratada')) {
+                p.contrato_id = document.getElementById('formUserContrato').value || null;
+            }
             const res = await apiFetch(id ? `/api/usuarios/${id}` : '/api/usuarios', { method: id ? 'PUT' : 'POST', body: JSON.stringify(p) });
             const data = await res.json();
-            if(res.ok) { 
-                alert(id ? "Usuário atualizado com sucesso!" : "Usuário criado!\nSenha provisória igual ao login."); 
-                fecharModal('modalFormUser'); mudarAba('admUsers'); 
-            } else alert(data.erro || "Erro ao salvar usuário.");
+            if(res.ok) { alert(id ? "Atualizado!" : "Usuário criado!\nSenha provisória igual ao login."); fecharModal('modalFormUser'); mudarAba('admUsers'); } else alert(data.erro);
         } catch(err) { alert("Erro de conexão."); }
         btn.disabled = false; btn.textContent = 'Salvar';
     }
 
     async function toggleAtivoUser(id, status) {
-        if (status === 0 && !confirm("Deseja realmente inativar este usuário? Ele perderá o acesso ao sistema imediatamente.")) return;
+        if (status === 0 && !confirm("Inativar usuário?")) return;
         const u = usuariosCache.find(x => x.id == id); u.ativo = status;
-        await apiFetch(`/api/usuarios/${id}`, { method: 'PUT', body: JSON.stringify(u) });
-        mudarAba('admUsers');
+        await apiFetch(`/api/usuarios/${id}`, { method: 'PUT', body: JSON.stringify(u) }); mudarAba('admUsers');
     }
 
-    // ====== EQUIPAMENTOS (COM DEBOUNCE NOS FILTROS) ======
+    // ====== EQUIPAMENTOS ======
     async function carregarEquipamentosServer(box) {
         let btnAcoes = '';
         if(usuarioLogado.perfil === 'administrador'){
             btnAcoes = `<button class="btn-secondary" onclick="exportarCSV('equipamentos')" style="margin-right:10px;">⬇ Exportar CSV</button><button class="btn-success" onclick="abrirModalEquip(null)">+ Novo Equipamento</button>`;
+        } else if (usuarioLogado.perfil === 'fiscal') {
+            btnAcoes = `<button class="btn-success" onclick="abrirModalEquip(null)">+ Equipamento p/ Meu Contrato</button>`;
         }
-        box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;">
-            <h3>Base de Equipamentos</h3><div>${btnAcoes}</div></div>
-        <div style="overflow-x: auto;"><table><thead id="headFiltrosEq"></thead><tbody id="tabelaBoxEq"><tr><td colspan="8">Carregando dados...</td></tr></tbody></table></div>
-        <div id="totalEqs" style="font-size:12px; color:#64748b; margin-top:10px;"></div>`;
+        box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h3>${usuarioLogado.perfil==='fiscal'?'Equipamentos do meu Contrato':'Base de Equipamentos'}</h3><div>${btnAcoes}</div></div><div style="overflow-x: auto;"><table><thead id="headFiltrosEq"></thead><tbody id="tabelaBoxEq"><tr><td colspan="9">Carregando dados...</td></tr></tbody></table></div><div id="totalEqs" style="font-size:12px; color:#64748b; margin-top:10px;"></div>`;
         equipamentosCache = await (await apiFetch('/api/equipamentos')).json();
         renderizarCabecalhoEq(); desenharTabelaEquipamentos();
     }
@@ -495,7 +411,7 @@
     function renderizarCabecalhoEq() {
         const iconSort = eqSortAsc ? ' ▴' : ' ▾'; const col = (nome, cod) => `<th onclick="setEqSort('${cod}')">${nome}${eqSortCol === cod ? iconSort : ''}</th>`;
         document.getElementById('headFiltrosEq').innerHTML = `
-            <tr>${col('Comarca','comarca')}${col('Prédio','predio')}${col('Local','sala')}${col('Equipamento','tipo_equipamento')}${col('Cap','capacidade')}${col('Tombo','tombo')}${col('Status','status')}<th>Ações</th></tr>
+            <tr>${col('Comarca','comarca')}${col('Prédio','predio')}${col('Local','sala')}${col('Equipamento','tipo_equipamento')}${col('Cap','capacidade')}${col('Tombo','tombo')}${col('Contrato','contrato_nome')}${col('Status','status')}<th>Ações</th></tr>
             <tr class="filter-row">
                 <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('comarca', this.value)" value="${eqFiltros.comarca}"></td>
                 <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('predio', this.value)" value="${eqFiltros.predio}"></td>
@@ -503,29 +419,28 @@
                 <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('tipo', this.value)" value="${eqFiltros.tipo}"></td>
                 <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('cap', this.value)" value="${eqFiltros.cap}"></td>
                 <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('tombo', this.value)" value="${eqFiltros.tombo}"></td>
+                <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('contrato', this.value)" value="${eqFiltros.contrato}"></td>
                 <td><input type="text" placeholder="ativo/inativo" oninput="debounceFiltroEq('status', this.value)" value="${eqFiltros.status}"></td>
                 <td><button class="btn-sm btn-secondary" onclick="limparFiltrosEq()" style="padding:6px;width:100%;">Limpar</button></td>
             </tr>`;
     }
-    
-    function debounceFiltroEq(campo, valor) {
-        clearTimeout(eqDebounceTimeout);
-        eqDebounceTimeout = setTimeout(() => { eqFiltros[campo] = valor.toLowerCase(); desenharTabelaEquipamentos(); }, 250);
-    }
-    
-    function limparFiltrosEq() { eqFiltros = { comarca: '', predio: '', sala: '', tipo: '', cap: '', tombo: '', status: '' }; renderizarCabecalhoEq(); desenharTabelaEquipamentos(); }
+    function debounceFiltroEq(campo, valor) { clearTimeout(eqDebounceTimeout); eqDebounceTimeout = setTimeout(() => { eqFiltros[campo] = valor.toLowerCase(); desenharTabelaEquipamentos(); }, 250); }
+    function limparFiltrosEq() { eqFiltros = { comarca: '', predio: '', sala: '', tipo: '', cap: '', tombo: '', contrato: '', status: '' }; renderizarCabecalhoEq(); desenharTabelaEquipamentos(); }
     function setEqSort(coluna) { if(eqSortCol === coluna) { eqSortAsc = !eqSortAsc; } else { eqSortCol = coluna; eqSortAsc = true; } renderizarCabecalhoEq(); desenharTabelaEquipamentos(); }
 
     function desenharTabelaEquipamentos() {
         const tbody = document.getElementById('tabelaBoxEq');
         let filtrados = equipamentosCache.filter(eq => {
             if (usuarioLogado.perfil !== 'administrador' && eq.ativo !== 1) return false;
+            // Fiscal só vê equipamentos do contrato dele ou sem contrato (se ele for vincular). Mas o backend já filtra a regra, aqui refinamos pro front
+            if (usuarioLogado.perfil === 'fiscal' && eq.contrato_id != usuarioLogado.contrato_id) return false;
             if (eqFiltros.comarca && !(eq.comarca||'').toLowerCase().includes(eqFiltros.comarca)) return false;
             if (eqFiltros.predio && !(eq.predio||'').toLowerCase().includes(eqFiltros.predio)) return false;
             if (eqFiltros.sala && !(eq.sala||'').toLowerCase().includes(eqFiltros.sala)) return false;
             if (eqFiltros.tipo && !(eq.tipo_equipamento||'').toLowerCase().includes(eqFiltros.tipo)) return false;
             if (eqFiltros.cap && !(eq.capacidade||'').toLowerCase().includes(eqFiltros.cap)) return false;
             if (eqFiltros.tombo && !(eq.tombo||'').toLowerCase().includes(eqFiltros.tombo)) return false;
+            if (eqFiltros.contrato && !(eq.contrato_nome||'').toLowerCase().includes(eqFiltros.contrato)) return false;
             if (eqFiltros.status && !(eq.ativo === 1 ? 'ativo' : 'inativo').includes(eqFiltros.status)) return false;
             return true;
         });
@@ -540,29 +455,35 @@
             const statusLabel = eq.ativo === 1 ? '<span style="color:var(--success);font-weight:bold;">Ativo</span>' : '<span style="color:var(--danger);font-weight:bold;">Inativo</span>';
             
             let acoes = '';
-            if (eq.ativo === 1) acoes += `<button class="btn-sm btn-success" onclick="abrirOSPeloListaEq(${eq.id})">Abrir O.S.</button> `;
+            if (eq.ativo === 1 && (usuarioLogado.perfil === 'solicitante' || usuarioLogado.perfil === 'administrador')) acoes += `<button class="btn-sm btn-success" onclick="document.getElementById('selAvulsoEq').innerHTML='<option value=\\'${eq.id}\\'>Selecionado</option>'; document.getElementById('osEquipamentoId').value=${eq.id}; abrirModalNovaOSAvulsaPeloEq('${eq.tipo_equipamento}', '${eq.comarca} - ${eq.predio}')">Abrir O.S.</button> `;
             acoes += `<button class="btn-sm btn-warning" onclick="abrirHistoricoEqOS(${eq.id})">Ver O.S.</button> `;
-            if (usuarioLogado.perfil === 'administrador') {
+            if (usuarioLogado.perfil === 'administrador' || usuarioLogado.perfil === 'fiscal') {
                 acoes += `<br><button class="btn-sm btn-secondary" onclick="abrirModalEquip(${eq.id})">Editar</button> `;
                 if(eq.ativo === 1) acoes += `<button class="btn-sm btn-danger" onclick="toggleAtivoEq(${eq.id}, 0)">Inativar</button>`;
                 else acoes += `<button class="btn-sm" style="background:#10b981;" onclick="toggleAtivoEq(${eq.id}, 1)">Ativar</button>`;
             }
-            html += `<tr class="${rowClass}"><td>${esc(eq.comarca)}</td><td>${esc(eq.predio)}</td><td>${esc(eq.sala)}</td><td>${esc(eq.tipo_equipamento)}</td><td>${esc(eq.capacidade||'-')}</td><td>${eq.tombo === 'S/T' ? '<span class="badge" style="background:#e2e8f0;color:#64748b;">S/T</span>' : esc(eq.tombo)}</td><td>${statusLabel}</td><td style="white-space: nowrap;">${acoes}</td></tr>`;
+            html += `<tr class="${rowClass}"><td>${esc(eq.comarca)}</td><td>${esc(eq.predio)}</td><td>${esc(eq.sala)}</td><td>${esc(eq.tipo_equipamento)}</td><td>${esc(eq.capacidade||'-')}</td><td>${eq.tombo === 'S/T' ? '<span class="badge" style="background:#e2e8f0;color:#64748b;">S/T</span>' : esc(eq.tombo)}</td><td><small>${esc(eq.contrato_nome)||'-'}</small></td><td>${statusLabel}</td><td style="white-space: nowrap;">${acoes}</td></tr>`;
         });
-        tbody.innerHTML = html; document.getElementById('totalEqs').textContent = `Total listado: ${filtrados.length} equipamento(s).`;
+        document.getElementById('tabelaBoxEq').innerHTML = html; document.getElementById('totalEqs').textContent = `Total listado: ${filtrados.length} equipamento(s).`;
     }
 
-    function abrirModalEquip(id) {
-        document.getElementById('formCriarEquip').reset(); document.getElementById('modalFormEquip').classList.remove('hidden');
+    async function abrirModalEquip(id) {
+        document.getElementById('formCriarEquip').reset(); 
+        
+        if(usuarioLogado.perfil === 'administrador') {
+            await carregarListaContratosAtivos();
+            document.getElementById('boxEqContratoAdmin').classList.remove('hidden');
+        }
+
+        document.getElementById('modalFormEquip').classList.remove('hidden');
         if(id) {
             const eq = equipamentosCache.find(e => e.id === id); document.getElementById('tituloModalEquip').textContent = 'Editar Equipamento';
             document.getElementById('formEqId').value = eq.id; 
-            let selectComarca = document.getElementById('formEqComarca');
-            if(eq.comarca && !Array.from(selectComarca.options).some(opt => opt.value === eq.comarca)){ selectComarca.innerHTML += `<option value="${esc(eq.comarca)}">${esc(eq.comarca)}</option>`; }
-            selectComarca.value = eq.comarca;
+            let sC = document.getElementById('formEqComarca'); if(eq.comarca && !Array.from(sC.options).some(opt => opt.value === eq.comarca)){ sC.innerHTML += `<option value="${esc(eq.comarca)}">${esc(eq.comarca)}</option>`; } sC.value = eq.comarca;
             document.getElementById('formEqPredio').value = eq.predio; document.getElementById('formEqSala').value = eq.sala;
             document.getElementById('formEqTipo').value = eq.tipo_equipamento; document.getElementById('formEqCap').value = eq.capacidade || '';
             document.getElementById('formEqMarca').value = eq.marca || ''; document.getElementById('formEqTombo').value = eq.tombo === 'S/T' ? '' : eq.tombo;
+            if(usuarioLogado.perfil === 'administrador') document.getElementById('formEqContrato').value = eq.contrato_id || '';
         } else {
             document.getElementById('tituloModalEquip').textContent = 'Novo Equipamento'; document.getElementById('formEqId').value = '';
         }
@@ -571,6 +492,7 @@
     async function salvarEquipamento(e) {
         e.preventDefault(); const id = document.getElementById('formEqId').value;
         const payload = { comarca: document.getElementById('formEqComarca').value.trim().toUpperCase(), predio: document.getElementById('formEqPredio').value.trim().toUpperCase(), sala: document.getElementById('formEqSala').value.trim().toUpperCase(), tipo_equipamento: document.getElementById('formEqTipo').value.trim().toUpperCase(), capacidade: document.getElementById('formEqCap').value.trim().toUpperCase(), marca: document.getElementById('formEqMarca').value.trim().toUpperCase(), tombo: document.getElementById('formEqTombo').value.trim().toUpperCase() || 'S/T', ativo: id ? equipamentosCache.find(e => e.id == id).ativo : 1 };
+        if(usuarioLogado.perfil === 'administrador') payload.contrato_id = document.getElementById('formEqContrato').value || null;
         await apiFetch(id ? `/api/equipamentos/${id}` : '/api/equipamentos', { method: id ? 'PUT' : 'POST', body: JSON.stringify(payload) });
         fecharModal('modalFormEquip'); mudarAba('geralEqs');
     }
@@ -580,165 +502,29 @@
         mudarAba('geralEqs');
     }
 
-    // ====== NOVA O.S. AVULSA (CASCATA OU TOMBO) ======
+    // ====== O.S. (MANTIDO DO ANTERIOR, ROTINAS PADRÃO) ======
     async function abrirNovaOSAvulsa() {
-        document.getElementById('formCriarOSAvulsa').reset();
-        document.getElementById('buscaTombo').value = '';
+        document.getElementById('formCriarOSAvulsa').reset(); document.getElementById('buscaTombo').value = '';
         if (equipamentosCache.length === 0) equipamentosCache = await (await apiFetch('/api/equipamentos')).json();
         const comarcas = [...new Set(equipamentosCache.filter(e => e.ativo === 1).map(e => e.comarca))].sort();
         document.getElementById('selAvulsoComarca').innerHTML = '<option value="">1. Selecione a Comarca...</option>' + comarcas.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
-        document.getElementById('selAvulsoPredio').innerHTML = '<option value="">Aguardando comarca...</option>';
-        document.getElementById('selAvulsoSala').innerHTML = '<option value="">Aguardando prédio...</option>';
-        document.getElementById('selAvulsoEq').innerHTML = '<option value="">Aguardando sala...</option>';
+        document.getElementById('selAvulsoPredio').innerHTML = '<option value="">Aguardando comarca...</option>'; document.getElementById('selAvulsoSala').innerHTML = '<option value="">Aguardando prédio...</option>'; document.getElementById('selAvulsoEq').innerHTML = '<option value="">Aguardando sala...</option>';
         document.getElementById('modalNovaOSAvulsa').classList.remove('hidden');
     }
-
-    function abrirOSPeloListaEq(eqId) {
-        const eq = equipamentosCache.find(e => e.id === eqId);
-        abrirNovaOSAvulsa();
-        document.getElementById('selAvulsoComarca').innerHTML = `<option value="">Preenchido via Tabela</option>`;
-        document.getElementById('selAvulsoPredio').innerHTML = `<option value="">${esc(eq.comarca)} - ${esc(eq.predio)}</option>`;
-        document.getElementById('selAvulsoSala').innerHTML = `<option value="">${esc(eq.tipo_equipamento)}</option>`;
-        document.getElementById('selAvulsoEq').innerHTML = `<option value="${eq.id}">Selecionado</option>`;
-        document.getElementById('selAvulsoEq').value = eq.id;
-    }
-
-    function popularAvulsoPredios() {
-        const com = document.getElementById('selAvulsoComarca').value;
-        const predios = [...new Set(equipamentosCache.filter(e => e.ativo === 1 && e.comarca === com).map(e => e.predio))].sort();
-        document.getElementById('selAvulsoPredio').innerHTML = '<option value="">2. Selecione o Prédio...</option>' + predios.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
-    }
-
-    function popularAvulsoSalas() {
-        const com = document.getElementById('selAvulsoComarca').value; const pre = document.getElementById('selAvulsoPredio').value;
-        const salas = [...new Set(equipamentosCache.filter(e => e.ativo === 1 && e.comarca === com && e.predio === pre).map(e => e.sala))].sort();
-        document.getElementById('selAvulsoSala').innerHTML = '<option value="">3. Selecione a Sala...</option>' + salas.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
-    }
-
-    function popularAvulsoEqs() {
-        const com = document.getElementById('selAvulsoComarca').value; const pre = document.getElementById('selAvulsoPredio').value; const sal = document.getElementById('selAvulsoSala').value;
-        const eqs = equipamentosCache.filter(e => e.ativo === 1 && e.comarca === com && e.predio === pre && e.sala === sal);
-        document.getElementById('selAvulsoEq').innerHTML = '<option value="">4. Selecione o Equipamento...</option>' + eqs.map(e => `<option value="${e.id}">${esc(e.tipo_equipamento)} ${esc(e.capacidade||'')} (Tombo: ${esc(e.tombo)})</option>`).join('');
-    }
-
-    function buscarEquipamentoPorTombo() {
-        const tombo = document.getElementById('buscaTombo').value.trim().toUpperCase();
-        const eq = equipamentosCache.find(e => e.ativo === 1 && e.tombo === tombo && e.tombo !== 'S/T');
-        if (eq) {
-            document.getElementById('selAvulsoComarca').innerHTML = `<option value="${esc(eq.comarca)}">${esc(eq.comarca)}</option>`;
-            document.getElementById('selAvulsoPredio').innerHTML = `<option value="${esc(eq.predio)}">${esc(eq.predio)}</option>`;
-            document.getElementById('selAvulsoSala').innerHTML = `<option value="${esc(eq.sala)}">${esc(eq.sala)}</option>`;
-            document.getElementById('selAvulsoEq').innerHTML = `<option value="${eq.id}">${esc(eq.tipo_equipamento)} ${esc(eq.capacidade||'')} (Tombo: ${esc(eq.tombo)})</option>`;
-        } else { alert("Tombo não encontrado ou equipamento inativo."); }
-    }
-
-    async function enviarOSAvulsa(e) {
-        e.preventDefault();
-        const eqId = document.getElementById('selAvulsoEq').value;
-        if (!eqId) return alert("Selecione um equipamento na lista.");
-        const payload = { equipamento_id: eqId, descricao_falha: document.getElementById('osDescricaoAvulsa').value.trim().toUpperCase() };
-        await apiFetch('/api/os', { method: 'POST', body: JSON.stringify(payload) });
-        fecharModal('modalNovaOSAvulsa'); mudarAba('geralOS'); 
-    }
-
-    // ====== HISTÓRICO DE O.S. DO EQUIPAMENTO ======
-    async function abrirHistoricoEqOS(eq_id) {
-        document.getElementById('modalHistoricoEqOS').classList.remove('hidden');
-        const tbody = document.getElementById('tabelaHistoricoEqOS');
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Carregando histórico...</td></tr>';
-        try {
-            const chamados = await (await apiFetch(`/api/equipamentos/${eq_id}/os`)).json();
-            if (chamados.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhuma O.S. registrada para este equipamento.</td></tr>'; return; }
-            let html = '';
-            chamados.forEach(os => {
-                let cor = '#3b82f6'; if(os.status==='concluida') cor='#10b981'; if(os.status==='cancelada') cor='#ef4444'; if(os.status.includes('execucao')) cor='#f59e0b'; if(os.status.includes('peca')) cor='#8b5cf6';
-                html += `<tr><td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td><td><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td><td><span class="badge" style="background:${cor};color:white;">${os.status.replace('_', ' ').toUpperCase()}</span></td><td><button class="btn-sm btn-secondary" onclick="fecharModal('modalHistoricoEqOS'); abrirDetalhesOS(${os.id});">Detalhes</button></td></tr>`;
-            });
-            tbody.innerHTML = html;
-        } catch (err) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:red;">Falha de comunicação.</td></tr>'; }
-    }
-
-    // ====== GESTÃO GERAL DE O.S. ======
-    async function carregarOSServer(box) {
-        let btnAcoes = '';
-        if(usuarioLogado.perfil === 'administrador') btnAcoes = `<button class="btn-secondary" onclick="exportarCSV('os')" style="margin-right:10px;">⬇ Exportar CSV</button>`;
-        box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h3>Ordens de Serviço</h3><div>${btnAcoes}<button onclick="carregarOSServer(document.getElementById('conteudoAba'))">Atualizar O.S.</button></div></div><div style="overflow-x:auto;"><table><thead id="headFiltrosOS"></thead><tbody id="tabelaBoxOS"><tr><td colspan="5">Carregando...</td></tr></tbody></table></div>`;
-        osCache = await (await apiFetch('/api/os')).json();
-        renderizarCabecalhoOS(); desenharTabelaOS();
-    }
-
-    function renderizarCabecalhoOS() {
-        document.getElementById('headFiltrosOS').innerHTML = `<tr><th>ID / Data</th><th>Local (Comarca/Prédio)</th><th>Equipamento / Defeito</th><th>Status</th><th>Ações</th></tr>
-            <tr class="filter-row">
-                <td><input type="text" placeholder="Buscar ID..." oninput="setOsFiltro('id', this.value)" value="${osFiltros.id}"></td>
-                <td><input type="text" placeholder="Buscar Comarca..." oninput="setOsFiltro('comarca', this.value)" value="${osFiltros.comarca}"></td><td></td>
-                <td><input type="text" placeholder="Buscar Status..." oninput="setOsFiltro('status', this.value)" value="${osFiltros.status}"></td>
-                <td><button class="btn-sm btn-secondary" onclick="limparFiltrosOS()" style="padding:6px;width:100%;">Limpar</button></td>
-            </tr>`;
-    }
-    function limparFiltrosOS() { osFiltros = { id: '', comarca: '', status: '' }; renderizarCabecalhoOS(); desenharTabelaOS(); }
+    function abrirModalNovaOSAvulsaPeloEq(tipo, local) { abrirNovaOSAvulsa(); document.getElementById('selAvulsoComarca').innerHTML = `<option value="">Preenchido via Tabela</option>`; document.getElementById('selAvulsoPredio').innerHTML = `<option value="">${local}</option>`; document.getElementById('selAvulsoSala').innerHTML = `<option value="">${tipo}</option>`; }
+    function popularAvulsoPredios() { const com = document.getElementById('selAvulsoComarca').value; const predios = [...new Set(equipamentosCache.filter(e => e.ativo === 1 && e.comarca === com).map(e => e.predio))].sort(); document.getElementById('selAvulsoPredio').innerHTML = '<option value="">2. Selecione o Prédio...</option>' + predios.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join(''); }
+    function popularAvulsoSalas() { const com = document.getElementById('selAvulsoComarca').value; const pre = document.getElementById('selAvulsoPredio').value; const salas = [...new Set(equipamentosCache.filter(e => e.ativo === 1 && e.comarca === com && e.predio === pre).map(e => e.sala))].sort(); document.getElementById('selAvulsoSala').innerHTML = '<option value="">3. Selecione a Sala...</option>' + salas.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join(''); }
+    function popularAvulsoEqs() { const com = document.getElementById('selAvulsoComarca').value; const pre = document.getElementById('selAvulsoPredio').value; const sal = document.getElementById('selAvulsoSala').value; const eqs = equipamentosCache.filter(e => e.ativo === 1 && e.comarca === com && e.predio === pre && e.sala === sal); document.getElementById('selAvulsoEq').innerHTML = '<option value="">4. Selecione o Equipamento...</option>' + eqs.map(e => `<option value="${e.id}">${esc(e.tipo_equipamento)} ${esc(e.capacidade||'')} (Tombo: ${esc(e.tombo)})</option>`).join(''); }
+    function buscarEquipamentoPorTombo() { const tombo = document.getElementById('buscaTombo').value.trim().toUpperCase(); const eq = equipamentosCache.find(e => e.ativo === 1 && e.tombo === tombo && e.tombo !== 'S/T'); if (eq) { document.getElementById('selAvulsoComarca').innerHTML = `<option value="${esc(eq.comarca)}">${esc(eq.comarca)}</option>`; document.getElementById('selAvulsoPredio').innerHTML = `<option value="${esc(eq.predio)}">${esc(eq.predio)}</option>`; document.getElementById('selAvulsoSala').innerHTML = `<option value="${esc(eq.sala)}">${esc(eq.sala)}</option>`; document.getElementById('selAvulsoEq').innerHTML = `<option value="${eq.id}">${esc(eq.tipo_equipamento)} ${esc(eq.capacidade||'')} (Tombo: ${esc(eq.tombo)})</option>`; } else { alert("Tombo não encontrado ou equipamento inativo."); } }
+    async function enviarOSAvulsa(e) { e.preventDefault(); const eqId = document.getElementById('selAvulsoEq').value; if (!eqId) return alert("Selecione um equipamento."); await apiFetch('/api/os', { method: 'POST', body: JSON.stringify({ equipamento_id: eqId, descricao_falha: document.getElementById('osDescricaoAvulsa').value.trim().toUpperCase() }) }); fecharModal('modalNovaOSAvulsa'); mudarAba('geralOS'); }
+    async function abrirHistoricoEqOS(eq_id) { document.getElementById('modalHistoricoEqOS').classList.remove('hidden'); const tbody = document.getElementById('tabelaHistoricoEqOS'); tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Carregando histórico...</td></tr>'; try { const chamados = await (await apiFetch(`/api/equipamentos/${eq_id}/os`)).json(); if (chamados.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhuma O.S. para este equipamento.</td></tr>'; return; } let html = ''; chamados.forEach(os => { let cor = '#3b82f6'; if(os.status==='concluida') cor='#10b981'; if(os.status==='cancelada') cor='#ef4444'; if(os.status.includes('execucao')) cor='#f59e0b'; if(os.status.includes('peca')) cor='#8b5cf6'; html += `<tr><td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td><td><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td><td><span class="badge" style="background:${cor};color:white;">${os.status.replace('_', ' ').toUpperCase()}</span></td><td><button class="btn-sm btn-secondary" onclick="fecharModal('modalHistoricoEqOS'); abrirDetalhesOS(${os.id});">Detalhes</button></td></tr>`; }); tbody.innerHTML = html; } catch (err) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:red;">Falha de comunicação.</td></tr>'; } }
+    async function carregarOSServer(box) { box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h3>Ordens de Serviço</h3><div>${usuarioLogado.perfil === 'administrador'?`<button class="btn-secondary" onclick="exportarCSV('os')" style="margin-right:10px;">⬇ Exportar CSV</button>`:''}<button onclick="carregarOSServer(document.getElementById('conteudoAba'))">Atualizar O.S.</button></div></div><div style="overflow-x:auto;"><table><thead id="headFiltrosOS"><tr><th>ID / Data</th><th>Local (Comarca/Prédio)</th><th>Equipamento / Defeito</th><th>Status</th><th>Ações</th></tr><tr class="filter-row"><td><input type="text" placeholder="Buscar ID..." oninput="setOsFiltro('id', this.value)"></td><td><input type="text" placeholder="Buscar Comarca..." oninput="setOsFiltro('comarca', this.value)"></td><td></td><td><input type="text" placeholder="Buscar Status..." oninput="setOsFiltro('status', this.value)"></td><td><button class="btn-sm btn-secondary" onclick="limparFiltrosOS()" style="padding:6px;width:100%;">Limpar</button></td></tr></thead><tbody id="tabelaBoxOS"><tr><td colspan="5">Carregando...</td></tr></tbody></table></div>`; osCache = await (await apiFetch('/api/os')).json(); desenharTabelaOS(); }
+    function limparFiltrosOS() { osFiltros = { id: '', comarca: '', status: '' }; document.querySelectorAll('#headFiltrosOS input').forEach(i=>i.value=''); desenharTabelaOS(); }
     function setOsFiltro(campo, valor) { osFiltros[campo] = valor.toLowerCase(); desenharTabelaOS(); }
-
-    function desenharTabelaOS() {
-        const tbody = document.getElementById('tabelaBoxOS');
-        let filtrados = osCache.filter(os => {
-            if (osFiltros.id && !os.id.toString().includes(osFiltros.id)) return false;
-            if (osFiltros.comarca && !(os.comarca||'').toLowerCase().includes(osFiltros.comarca)) return false;
-            if (osFiltros.status && !(os.status||'').toLowerCase().includes(osFiltros.status)) return false;
-            return true;
-        });
-        let html = '';
-        filtrados.forEach(os => {
-            let cor = '#3b82f6'; if(os.status==='concluida') cor='#10b981'; if(os.status==='cancelada') cor='#ef4444'; if(os.status.includes('execucao')) cor='#f59e0b'; if(os.status.includes('peca')) cor='#8b5cf6';
-            let btnCancelar = (usuarioLogado.perfil === 'administrador' && os.status !== 'cancelada' && os.status !== 'concluida') ? `<button class="btn-sm btn-danger" style="margin-top:4px;" onclick="cancelarOSDireto(${os.id})">Cancelar</button>` : '';
-
-            html += `<tr><td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td>
-                <td><strong>${esc(os.comarca)}</strong><br><small>${esc(os.predio)} (${esc(os.sala)})</small></td>
-                <td style="max-width:250px;"><strong>${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')}</strong><br><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td>
-                <td><span class="badge" style="background:${cor};color:white;">${os.status.replace('_', ' ').toUpperCase()}</span></td>
-                <td><button class="btn-sm btn-secondary" onclick="abrirDetalhesOS(${os.id})">Detalhes / Tratar</button><br>${btnCancelar}</td></tr>`;
-        });
-        tbody.innerHTML = html;
-    }
-
-    async function cancelarOSDireto(os_id) {
-        const motivo = prompt("Motivo do cancelamento:");
-        if (!motivo) return; 
-        await apiFetch(`/api/os/${os_id}/status`, { method: 'PUT', body: JSON.stringify({ status: 'cancelada', observacao: 'CANCELADO PELO ADMIN: ' + motivo.toUpperCase() }) });
-        mudarAba('geralOS');
-    }
-
-    async function abrirDetalhesOS(os_id) {
-        document.getElementById('modalTratarOS').classList.remove('hidden');
-        document.getElementById('boxTimeline').innerHTML = "Carregando...";
-        document.getElementById('boxAcaoOS').classList.add('hidden'); document.getElementById('tratarOsObs').value = '';
-        
-        try {
-            const data = await (await apiFetch(`/api/os/${os_id}`)).json();
-            const os = data.os; const hist = data.historico;
-
-            document.getElementById('detalheOsId').textContent = `#${os.id}`; document.getElementById('detalheOsBadge').textContent = os.status.replace('_', ' ').toUpperCase();
-            document.getElementById('detalheOsEquip').textContent = `${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')} (Tombo: ${esc(os.tombo)})`;
-            document.getElementById('detalheOsLocal').textContent = `${esc(os.comarca)} - ${esc(os.predio)} / ${esc(os.sala)}`; document.getElementById('detalheOsDefeito').textContent = esc(os.descricao_falha);
-
-            let htmlHist = '';
-            hist.forEach(h => { htmlHist += `<div class="timeline-item"><div class="timeline-date">${dataFormatada(h.data_registro)}</div><div class="timeline-user">${esc(h.nome_usuario)} <span class="badge" style="background:#e2e8f0; color:#475569;">${h.acao}</span></div>${h.observacao ? `<div class="timeline-text">${esc(h.observacao)}</div>` : ''}</div>`; });
-            document.getElementById('boxTimeline').innerHTML = htmlHist;
-
-            let podeTratar = false;
-            if (usuarioLogado.perfil === 'administrador') podeTratar = true; 
-            else if (usuarioLogado.perfil !== 'solicitante' && os.status !== 'concluida' && os.status !== 'cancelada') podeTratar = true; 
-
-            if (podeTratar) { document.getElementById('boxAcaoOS').classList.remove('hidden'); document.getElementById('tratarOsId').value = os.id; }
-        } catch (err) { document.getElementById('boxTimeline').innerHTML = `<span style="color:red;">Falha de comunicação.</span>`; }
-    }
-
-    async function salvarTratamentoOS(e) {
-        e.preventDefault(); const btn = document.getElementById('btnSalvarTratamento'); btn.disabled = true; btn.textContent = 'Gravando...';
-        const p = { status: document.getElementById('tratarOsStatus').value, observacao: document.getElementById('tratarOsObs').value.trim().toUpperCase() };
-        await apiFetch(`/api/os/${document.getElementById('tratarOsId').value}/status`, { method: 'PUT', body: JSON.stringify(p) });
-        btn.disabled = false; btn.textContent = 'Gravar Atualização'; fecharModal('modalTratarOS'); mudarAba('geralOS');
-    }
+    function desenharTabelaOS() { const tbody = document.getElementById('tabelaBoxOS'); let filtrados = osCache.filter(os => { if (osFiltros.id && !os.id.toString().includes(osFiltros.id)) return false; if (osFiltros.comarca && !(os.comarca||'').toLowerCase().includes(osFiltros.comarca)) return false; if (osFiltros.status && !(os.status||'').toLowerCase().includes(osFiltros.status)) return false; return true; }); let html = ''; filtrados.forEach(os => { let cor = '#3b82f6'; if(os.status==='concluida') cor='#10b981'; if(os.status==='cancelada') cor='#ef4444'; if(os.status.includes('execucao')) cor='#f59e0b'; if(os.status.includes('peca')) cor='#8b5cf6'; html += `<tr><td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td><td><strong>${esc(os.comarca)}</strong><br><small>${esc(os.predio)} (${esc(os.sala)})</small></td><td style="max-width:250px;"><strong>${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')}</strong><br><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td><td><span class="badge" style="background:${cor};color:white;">${os.status.replace('_', ' ').toUpperCase()}</span></td><td><button class="btn-sm btn-secondary" onclick="abrirDetalhesOS(${os.id})">Detalhes</button>${(usuarioLogado.perfil === 'administrador' && os.status !== 'cancelada' && os.status !== 'concluida') ? `<br><button class="btn-sm btn-danger" style="margin-top:4px;" onclick="cancelarOSDireto(${os.id})">Cancelar</button>` : ''}</td></tr>`; }); tbody.innerHTML = html; }
+    async function cancelarOSDireto(os_id) { const motivo = prompt("Motivo do cancelamento:"); if (!motivo) return; await apiFetch(`/api/os/${os_id}/status`, { method: 'PUT', body: JSON.stringify({ status: 'cancelada', observacao: 'CANCELADO PELO ADMIN: ' + motivo.toUpperCase() }) }); mudarAba('geralOS'); }
+    async function abrirDetalhesOS(os_id) { document.getElementById('modalTratarOS').classList.remove('hidden'); document.getElementById('boxTimeline').innerHTML = "Carregando..."; document.getElementById('boxAcaoOS').classList.add('hidden'); document.getElementById('tratarOsObs').value = ''; try { const data = await (await apiFetch(`/api/os/${os_id}`)).json(); const os = data.os; const hist = data.historico; document.getElementById('detalheOsId').textContent = `#${os.id}`; document.getElementById('detalheOsBadge').textContent = os.status.replace('_', ' ').toUpperCase(); document.getElementById('detalheOsEquip').textContent = `${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')} (Tombo: ${esc(os.tombo)})`; document.getElementById('detalheOsLocal').textContent = `${esc(os.comarca)} - ${esc(os.predio)} / ${esc(os.sala)}`; document.getElementById('detalheOsDefeito').textContent = esc(os.descricao_falha); let htmlHist = ''; hist.forEach(h => { htmlHist += `<div class="timeline-item"><div class="timeline-date">${dataFormatada(h.data_registro)}</div><div class="timeline-user">${esc(h.nome_usuario)} <span class="badge" style="background:#e2e8f0; color:#475569;">${h.acao}</span></div>${h.observacao ? `<div class="timeline-text">${esc(h.observacao)}</div>` : ''}</div>`; }); document.getElementById('boxTimeline').innerHTML = htmlHist; if ((usuarioLogado.perfil === 'administrador') || (usuarioLogado.perfil !== 'solicitante' && os.status !== 'concluida' && os.status !== 'cancelada')) { document.getElementById('boxAcaoOS').classList.remove('hidden'); document.getElementById('tratarOsId').value = os.id; } } catch (err) { document.getElementById('boxTimeline').innerHTML = `<span style="color:red;">Falha de comunicação.</span>`; } }
+    async function salvarTratamentoOS(e) { e.preventDefault(); const btn = document.getElementById('btnSalvarTratamento'); btn.disabled = true; btn.textContent = 'Gravando...'; await apiFetch(`/api/os/${document.getElementById('tratarOsId').value}/status`, { method: 'PUT', body: JSON.stringify({ status: document.getElementById('tratarOsStatus').value, observacao: document.getElementById('tratarOsObs').value.trim().toUpperCase() }) }); btn.disabled = false; btn.textContent = 'Gravar Atualização'; fecharModal('modalTratarOS'); mudarAba('geralOS'); }
 </script>
 </body>
 </html>
