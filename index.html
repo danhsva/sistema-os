@@ -13,7 +13,12 @@
         .card { background: var(--card); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 20px; border: 1px solid var(--border); }
         h2, h3 { color: var(--primary-dark); margin-bottom: 15px; }
         label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: #475569; }
-        input, select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 15px; font-size: 14px; background: #f8fafc; }
+        
+        /* FORÇA CAIXA ALTA VISUALMENTE (MENOS NOS LOGINS E SENHAS) */
+        input[type="text"], textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 15px; font-size: 14px; background: #f8fafc; text-transform: uppercase; }
+        select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 15px; font-size: 14px; background: #f8fafc; }
+        input[type="password"], input#loginUser, input#formUserLogin { text-transform: lowercase; }
+
         button { background: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; }
         button:hover { background: var(--primary-dark); }
         button:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -22,7 +27,7 @@
         .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .badge { background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
         .nav-tabs { display: flex; gap: 5px; border-bottom: 2px solid var(--border); margin-bottom: 20px; flex-wrap: wrap; }
-        .nav-tabs button { background: none; color: #64748b; border: none; padding: 12px 20px; font-size: 14px; border-bottom: 3px solid transparent; }
+        .nav-tabs button { background: none; color: #64748b; border: none; padding: 12px 20px; font-size: 14px; border-bottom: 3px solid transparent; text-transform: none; }
         .nav-tabs button.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 800; }
         
         table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
@@ -95,6 +100,7 @@
         <div id="conteudoAba" class="card"></div>
     </div>
 
+    <!-- MODAIS DE CADASTRO -->
     <div id="modalFormEquip" class="modal-overlay hidden">
         <div class="modal-box" style="max-width: 700px;">
             <h3 id="tituloModalEquip">Novo Equipamento</h3>
@@ -120,6 +126,7 @@
                             <option value="MULTI SPLIT">MULTI SPLIT</option>
                             <option value="SELF">SELF</option>
                             <option value="CORTINA DE AR">CORTINA DE AR</option>
+                            <option value="SPLITÃO">SPLITÃO</option>
                             <option value="OUTRO">OUTRO</option>
                         </select>
                     </div>
@@ -164,7 +171,7 @@
             <h3>Novo Usuário</h3>
             <form id="formCriarUsuario" onsubmit="salvarUsuario(event)">
                 <label>Nome Completo:</label><input type="text" id="formUserNome" required>
-                <label>Login de Acesso:</label><input type="text" id="formUserLogin" required>
+                <label>Login de Acesso (minúsculo):</label><input type="text" id="formUserLogin" required>
                 <label>Perfil:</label>
                 <select id="formUserPerfil" required>
                     <option value="solicitante">Solicitante</option>
@@ -181,6 +188,7 @@
         </div>
     </div>
 
+    <!-- MODAIS DE O.S. -->
     <div id="modalAbrirOS" class="modal-overlay hidden">
         <div class="modal-box" style="max-width: 500px;">
             <h3>Abrir O.S.</h3>
@@ -249,15 +257,14 @@
     const IS_GITHUB_PAGES = window.location.hostname.includes('github.io');
     let servidorBaseUrl = "http://127.0.0.1:8083"; 
     let usuarioLogado = null;
+    
     let equipamentosCache = []; 
     let osCache = [];
-    
     let eqSortCol = 'comarca'; let eqSortAsc = true;
     let eqFiltros = { comarca: '', predio: '', sala: '', tipo: '', cap: '', tombo: '', status: '' };
     let osFiltros = { id: '', comarca: '', status: '' };
 
-    // Lista Oficial dos 184 Municípios do Ceará
-    const MUNICIPIOS_CE = ["Abaiara","Acarape","Acaraú","Acopiara","Aiuaba","Alcântaras","Altaneira","Alto Santo","Amontada","Antonina do Norte","Apuiarés","Aquiraz","Aracati","Aracoiaba","Ararendá","Araripe","Aratuba","Arneiroz","Assaré","Aurora","Baixio","Banabuiú","Barbalha","Barreira","Barro","Barroquinha","Baturité","Beberibe","Bela Cruz","Boa Viagem","Brejo Santo","Camocim","Campos Sales","Canindé","Capistrano","Caridade","Cariré","Caririaçu","Cariús","Carnaubal","Cascavel","Catarina","Catunda","Caucaia","Cedro","Chaval","Choró","Chorozinho","Coreaú","Crateús","Crato","Croatá","Cruz","Deputado Irapuan Pinheiro","Ererê","Eusébio","Farias Brito","Forquilha","Fortaleza","Fortim","Frecheirinha","General Sampaio","Graça","Granja","Granjeiro","Groaíras","Guaiúba","Guaraciaba do Norte","Guaramiranga","Hidrolândia","Horizonte","Ibaretama","Ibiapina","Ibicuitinga","Icapuí","Icó","Iguatu","Independência","Ipaporanga","Ipaumirim","Ipu","Ipueiras","Iracema","Irauçuba","Itaiçaba","Itaitinga","Itapajé","Itapipoca","Itapiúna","Itarema","Itatira","Jaguaretama","Jaguaribara","Jaguaribe","Jaguaruana","Jardim","Jati","Jijoca de Jericoacoara","Juazeiro do Norte","Jucás","Lavras da Mangabeira","Limoeiro do Norte","Madalena","Maracanaú","Maranguape","Marco","Martinópole","Massapê","Mauriti","Meruoca","Milagres","Milhã","Miraíma","Missão Velha","Mombaça","Monsenhor Tabosa","Morada Nova","Moraújo","Morrinhos","Mucambo","Mulungu","Nova Olinda","Nova Russas","Novo Oriente","Ocara","Orós","Pacajus","Pacatuba","Pacoti","Pacujá","Palhano","Palmácia","Paracuru","Paraipaba","Parambu","Paramoti","Pedra Branca","Penaforte","Pentecoste","Pereiro","Pindoretama","Piquet Carneiro","Pires Ferreira","Poranga","Porteiras","Potengi","Potiretama","Quiterianópolis","Quixadá","Quixelô","Quixeramobim","Quixeré","Redenção","Reriutaba","Russas","Saboeiro","Salitre","Santa Quitéria","Santana do Acaraú","Santana do Cariri","São Benedito","São Gonçalo do Amarante","São João do Jaguaribe","São Luís do Curu","Senador Pompeu","Senador Sá","Sobral","Solonópole","Tabuleiro do Norte","Tamboril","Tarrafas","Tauá","Tejuçuoca","Tianguá","Trairi","Tururu","Ubajara","Umari","Umirim","Uruburetama","Uruoca","Varjota","Várzea Alegre","Viçosa do Ceará"];
+    const MUNICIPIOS_CE = ["Abaiara","Acarape","Acaraú","Acopiara","Aiuaba","Alcântaras","Altaneira","Alto Santo","Amontada","Antonina do Norte","Apuiarés","Aquiraz","Aracati","Aracoiaba","Ararendá","Araripe","Aratuba","Arneiroz","Assaré","Aurora","Baixio","Banabuiú","Barbalha","Barreira","Barro","Barroquinha","Baturité","Beberibe","Bela Cruz","Boa Viagem","Brejo Santo","Camocim","Campos Sales","Canindé","Capistrano","Caridade","Cariré","Caririaçu","Cariús","Carnaubal","Cascavel","Catarina","Catunda","Caucaia","Cedro","Chaval","Choró","Chorozinho","Coreaú","Crateús","Crato","Croatá","Cruz","Deputado Irapuan Pinheiro","Ererê","Eusébio","Farias Brito","Forquilha","Fortaleza","Fortim","Frecheirinha","General Sampaio","Graça","Granja","Granjeiro","Groaíras","Guaiúba","Guaraciaba do Norte","Guaramiranga","Hidrolândia","Horizonte","Ibaretama","Ibiapina","Ibicuitinga","Icapuí","Icó","Iguatu","Independência","Ipaporanga","Ipaumirim","Ipu","Ipueiras","Iracema","Irauçuba","Itaiçaba","Itaitinga","Itapajé","Itapipoca","Itapiúna","Itarema","Itatira","Jaguaretama","Jaguaribara","Jaguaribe","Jaguaruana","Jardim","Jati","Jijoca de Jericoacoara","Juazeiro do Norte","Jucás","Lavras da Mangabeira","Limoeiro do Norte","Madalena","Maracanaú","Maranguape","Marco","Martinópole","Massapê","Mauriti","Meruoca","Milagres","Milhã","Miraíma","Missão Velha","Mombaça","Monsenhor Tabosa","Morada Nova","Moraújo","Morrinhos","Mucambo","Mulungu","Nova Olinda","Nova Russas","Novo Oriente","Ocara","Orós","Pacajus","Pacatuba","Pacoti","Pacujá","Palhano","Palmácia","Paracuru","Paraipaba","Parambu","Paramoti","Pedra Branca","Penaforte","Pentecoste","Pereiro","Pindoretama","Piquet Carneiro","Pires Ferreira","Poranga","Porteiras","Potengi","Potiretama","Quiterianópolis","Quixadá","Quixelô","Quixeramobim","Quixeré","Redenção","Reriutaba","Russas","Saboeiro","Salitre","Santa Quitéria","Santana do Acaraú","Santana do Cariri","São Benedito","São Gonçalo do Amarante","São João do Jaguaribe","São Luís do Curu","Senador Pompeu","Senador Sá","Sobral","Solonópole","Tabuleiro do Norte","Tamboril","Tarrafas","Tauá","Tejuçuoca","Tianguá","Trairi","Tururu","Ubajara","Umari","Umirim","Uruburetama","Uruoca","Varjota","Várzea Alegre","Viçosa do Ceará"].map(m => m.toUpperCase());
 
     window.addEventListener('DOMContentLoaded', async () => {
         carregarSelectMunicipios();
@@ -268,7 +275,7 @@
 
     function carregarSelectMunicipios() {
         const select = document.getElementById('formEqComarca');
-        select.innerHTML = '<option value="">Selecione a Comarca...</option>' + MUNICIPIOS_CE.map(m => `<option value="${m}">${m}</option>`).join('');
+        select.innerHTML = '<option value="">SELECIONE A COMARCA...</option>' + MUNICIPIOS_CE.map(m => `<option value="${m}">${m}</option>`).join('');
     }
 
     async function descobrirUrlServidor() {
@@ -280,7 +287,6 @@
     function fecharModal(id) { document.getElementById(id).classList.add('hidden'); }
     function dataFormatada(timestamp) { return new Date(timestamp).toLocaleString('pt-BR'); }
 
-    // Exportar para CSV/Excel
     function exportarCSV(tipo) {
         let dados = [], cabecalho = [], nomeArq = '';
         if (tipo === 'equipamentos') {
@@ -297,12 +303,11 @@
         document.body.appendChild(link); link.click(); document.body.removeChild(link);
     }
 
-    // ====== LOGIN & SEGURANÇA ======
     async function fazerLogin(e) {
         e.preventDefault();
         const btn = document.getElementById('btnEntrar'); btn.disabled = true; btn.textContent = 'Autenticando...';
         try {
-            const res = await fetch(getApiUrl('/api/login'), { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ login: document.getElementById('loginUser').value.trim(), senha: document.getElementById('loginSenha').value }) });
+            const res = await fetch(getApiUrl('/api/login'), { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ login: document.getElementById('loginUser').value.trim().toLowerCase(), senha: document.getElementById('loginSenha').value }) });
             const data = await res.json();
             if (res.ok) { localStorage.setItem('os_usuario_logado', JSON.stringify(data)); usuarioLogado = data; verificarPrimeiroAcesso(); } else alert(data.erro);
         } catch(e) { alert("Erro de conexão"); }
@@ -322,7 +327,6 @@
         usuarioLogado.primeiro_acesso = 0; localStorage.setItem('os_usuario_logado', JSON.stringify(usuarioLogado)); verificarPrimeiroAcesso();
     }
 
-    // ====== NAVEGAÇÃO ======
     function mostrarPainel() {
         document.getElementById('authSection').classList.add('hidden');
         document.getElementById('appSection').classList.remove('hidden');
@@ -357,7 +361,6 @@
         if (abaId === 'geralOS') carregarOSServer(box);
     }
 
-    // ====== DASHBOARD ======
     async function renderDashboard(box) {
         box.innerHTML = `<h3>Visão Geral (Indicadores)</h3><div id="dashContent">Carregando...</div>`;
         const chamados = await (await fetch(getApiUrl('/api/os'))).json();
@@ -376,7 +379,6 @@
             </div>`;
     }
 
-    // ====== USUÁRIOS ======
     async function renderAdmUsers(box) {
         box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h3>Gestão de Usuários</h3><button class="btn-success" onclick="abrirModalUser()">+ Novo Usuário</button></div><div id="tabelaUsers">Carregando...</div>`;
         const users = await (await fetch(getApiUrl('/api/usuarios'))).json();
@@ -391,7 +393,11 @@
         e.preventDefault(); 
         const btn = document.getElementById('btnSalvarUser'); btn.disabled = true; btn.textContent = 'Salvando...';
         try {
-            const p = { nome: document.getElementById('formUserNome').value, login: document.getElementById('formUserLogin').value, perfil: document.getElementById('formUserPerfil').value };
+            const p = { 
+                nome: document.getElementById('formUserNome').value.trim().toUpperCase(), 
+                login: document.getElementById('formUserLogin').value.trim().toLowerCase(), 
+                perfil: document.getElementById('formUserPerfil').value 
+            };
             const res = await fetch(getApiUrl('/api/usuarios'), { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(p) });
             const data = await res.json();
             if(res.ok) { alert("Usuário criado com sucesso!"); fecharModal('modalFormUser'); mudarAba('admUsers'); } else alert(data.erro || "Erro ao criar usuário.");
@@ -399,19 +405,15 @@
         btn.disabled = false; btn.textContent = 'Salvar';
     }
 
-    // ====== EQUIPAMENTOS ======
     async function carregarEquipamentosServer(box) {
         let btnAcoes = '';
         if(usuarioLogado.perfil === 'administrador'){
             btnAcoes = `<button class="btn-secondary" onclick="exportarCSV('equipamentos')" style="margin-right:10px;">⬇ Exportar CSV</button><button class="btn-success" onclick="abrirModalEquip(null)">+ Novo Equipamento</button>`;
         }
-        
         box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;">
-            <h3>Base de Equipamentos</h3><div>${btnAcoes}</div>
-        </div>
+            <h3>Base de Equipamentos</h3><div>${btnAcoes}</div></div>
         <div style="overflow-x: auto;"><table><thead id="headFiltrosEq"></thead><tbody id="tabelaBoxEq"><tr><td colspan="8">Carregando dados...</td></tr></tbody></table></div>
         <div id="totalEqs" style="font-size:12px; color:#64748b; margin-top:10px;"></div>`;
-        
         equipamentosCache = await (await fetch(getApiUrl('/api/equipamentos'))).json();
         renderizarCabecalhoEq(); desenharTabelaEquipamentos();
     }
@@ -477,36 +479,22 @@
             document.getElementById('tituloModalEquip').textContent = 'Editar Equipamento';
             document.getElementById('formEqId').value = eq.id; 
             
-            // Tratamento especial para o Select Comarca
             let selectComarca = document.getElementById('formEqComarca');
-            if(!Array.from(selectComarca.options).some(opt => opt.value === eq.comarca)){
-                selectComarca.innerHTML += `<option value="${eq.comarca}">${eq.comarca}</option>`;
-            }
+            if(eq.comarca && !Array.from(selectComarca.options).some(opt => opt.value === eq.comarca)){ selectComarca.innerHTML += `<option value="${eq.comarca}">${eq.comarca}</option>`; }
             selectComarca.value = eq.comarca;
             
-            document.getElementById('formEqPredio').value = eq.predio; 
-            document.getElementById('formEqSala').value = eq.sala;
-            
-            // Tratamento especial para o Select Tipo
             let selectTipo = document.getElementById('formEqTipo');
-            if(!Array.from(selectTipo.options).some(opt => opt.value === eq.tipo_equipamento)){
-                selectTipo.innerHTML += `<option value="${eq.tipo_equipamento}">${eq.tipo_equipamento}</option>`;
-            }
+            if(eq.tipo_equipamento && !Array.from(selectTipo.options).some(opt => opt.value === eq.tipo_equipamento)){ selectTipo.innerHTML += `<option value="${eq.tipo_equipamento}">${eq.tipo_equipamento}</option>`; }
             selectTipo.value = eq.tipo_equipamento; 
             
-            // Tratamento especial para o Select Capacidade
-            let cap = eq.capacidade || '';
-            let selectCap = document.getElementById('formEqCap');
-            if(cap && !Array.from(selectCap.options).some(opt => opt.value === cap)){
-                selectCap.innerHTML += `<option value="${cap}">${cap}</option>`;
-            }
+            let cap = eq.capacidade || ''; let selectCap = document.getElementById('formEqCap');
+            if(cap && !Array.from(selectCap.options).some(opt => opt.value === cap)){ selectCap.innerHTML += `<option value="${cap}">${cap}</option>`; }
             selectCap.value = cap;
             
-            document.getElementById('formEqMarca').value = eq.marca || ''; 
-            document.getElementById('formEqTombo').value = eq.tombo === 'S/T' ? '' : eq.tombo;
+            document.getElementById('formEqPredio').value = eq.predio; document.getElementById('formEqSala').value = eq.sala;
+            document.getElementById('formEqMarca').value = eq.marca || ''; document.getElementById('formEqTombo').value = eq.tombo === 'S/T' ? '' : eq.tombo;
         } else {
-            document.getElementById('tituloModalEquip').textContent = 'Novo Equipamento'; 
-            document.getElementById('formEqId').value = '';
+            document.getElementById('tituloModalEquip').textContent = 'Novo Equipamento'; document.getElementById('formEqId').value = '';
         }
     }
     
@@ -514,7 +502,16 @@
         e.preventDefault();
         const btn = document.getElementById('btnSalvarEq'); btn.disabled = true; btn.textContent = "Salvando...";
         const id = document.getElementById('formEqId').value;
-        const payload = { comarca: document.getElementById('formEqComarca').value.trim(), predio: document.getElementById('formEqPredio').value.trim(), sala: document.getElementById('formEqSala').value.trim(), tipo_equipamento: document.getElementById('formEqTipo').value.trim(), capacidade: document.getElementById('formEqCap').value.trim(), marca: document.getElementById('formEqMarca').value.trim(), tombo: document.getElementById('formEqTombo').value.trim() || 'S/T', ativo: id ? equipamentosCache.find(e => e.id == id).ativo : 1 };
+        const payload = { 
+            comarca: document.getElementById('formEqComarca').value.trim().toUpperCase(), 
+            predio: document.getElementById('formEqPredio').value.trim().toUpperCase(), 
+            sala: document.getElementById('formEqSala').value.trim().toUpperCase(), 
+            tipo_equipamento: document.getElementById('formEqTipo').value.trim().toUpperCase(), 
+            capacidade: document.getElementById('formEqCap').value.trim().toUpperCase(), 
+            marca: document.getElementById('formEqMarca').value.trim().toUpperCase(), 
+            tombo: document.getElementById('formEqTombo').value.trim().toUpperCase() || 'S/T', 
+            ativo: id ? equipamentosCache.find(e => e.id == id).ativo : 1 
+        };
         await fetch(getApiUrl(id ? `/api/equipamentos/${id}` : '/api/equipamentos'), { method: id ? 'PUT' : 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
         btn.disabled = false; btn.textContent = "Salvar"; fecharModal('modalFormEquip'); mudarAba('geralEqs');
     }
@@ -534,7 +531,7 @@
     async function enviarOS(e) {
         e.preventDefault();
         const btn = document.getElementById('btnRegistrarOS'); btn.disabled = true; btn.textContent = "Registrando...";
-        const payload = { equipamento_id: document.getElementById('osEquipamentoId').value, solicitante_id: usuarioLogado.id, descricao_falha: document.getElementById('osDescricao').value, prioridade: document.getElementById('osPrioridade').value };
+        const payload = { equipamento_id: document.getElementById('osEquipamentoId').value, solicitante_id: usuarioLogado.id, descricao_falha: document.getElementById('osDescricao').value.trim().toUpperCase(), prioridade: document.getElementById('osPrioridade').value };
         await fetch(getApiUrl('/api/os'), { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
         btn.disabled = false; btn.textContent = "Registrar O.S."; fecharModal('modalAbrirOS'); mudarAba('geralOS');
     }
@@ -546,7 +543,6 @@
         box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;">
             <h3>Ordens de Serviço</h3><div>${btnAcoes}<button onclick="carregarOSServer(document.getElementById('conteudoAba'))">Atualizar O.S.</button></div>
             </div><div style="overflow-x:auto;"><table><thead id="headFiltrosOS"></thead><tbody id="tabelaBoxOS"><tr><td colspan="5">Carregando...</td></tr></tbody></table></div>`;
-        
         osCache = await (await fetch(getApiUrl('/api/os'))).json();
         renderizarCabecalhoOS(); desenharTabelaOS();
     }
@@ -590,7 +586,7 @@
     async function cancelarOSDireto(os_id) {
         const motivo = prompt("Motivo do cancelamento:");
         if (!motivo) return; 
-        await fetch(getApiUrl(`/api/os/${os_id}/status`), { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ status: 'cancelada', observacao: 'Cancelado pelo Administrador: ' + motivo, usuario_id: usuarioLogado.id }) });
+        await fetch(getApiUrl(`/api/os/${os_id}/status`), { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ status: 'cancelada', observacao: 'CANCELADO PELO ADMINISTRADOR: ' + motivo.toUpperCase(), usuario_id: usuarioLogado.id }) });
         mudarAba('geralOS');
     }
 
@@ -620,7 +616,7 @@
     async function salvarTratamentoOS(e) {
         e.preventDefault();
         const btn = document.getElementById('btnSalvarTratamento'); btn.disabled = true; btn.textContent = 'Gravando...';
-        const p = { status: document.getElementById('tratarOsStatus').value, observacao: document.getElementById('tratarOsObs').value.trim(), usuario_id: usuarioLogado.id };
+        const p = { status: document.getElementById('tratarOsStatus').value, observacao: document.getElementById('tratarOsObs').value.trim().toUpperCase(), usuario_id: usuarioLogado.id };
         await fetch(getApiUrl(`/api/os/${document.getElementById('tratarOsId').value}/status`), { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(p) });
         btn.disabled = false; btn.textContent = 'Gravar Atualização'; fecharModal('modalTratarOS'); mudarAba('geralOS');
     }
