@@ -104,6 +104,7 @@
         <div id="conteudoAba" class="card"></div>
     </div>
 
+    <!-- MODAIS DE CADASTRO -->
     <div id="modalFormEquip" class="modal-overlay hidden">
         <div class="modal-box" style="max-width: 700px;">
             <h3 id="tituloModalEquip">Novo Equipamento</h3>
@@ -180,7 +181,25 @@
         </div>
     </div>
 
-    <!-- MODAL LISTA DE OS DE UM EQUIPAMENTO (HISTÓRICO) BLINDADO -->
+    <!-- MODAL ABRIR O.S. (PELA TABELA) -->
+    <div id="modalAbrirOS" class="modal-overlay hidden">
+        <div class="modal-box" style="max-width: 500px;">
+            <h3>Abrir O.S.</h3>
+            <div style="background: #f1f5f9; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 13px;">
+                <strong id="osEquipDesc"></strong><br><span id="osEquipLocal"></span>
+            </div>
+            <form id="formCriarOS" onsubmit="enviarOS(event)">
+                <input type="hidden" id="osEquipamentoId">
+                <label>Relato do Defeito:</label>
+                <textarea id="osDescricao" rows="3" required placeholder="Descreva o problema detalhadamente..."></textarea>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button type="submit" class="btn-success btn-block" id="btnRegistrarOS">Registrar O.S.</button>
+                    <button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalAbrirOS')">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div id="modalHistoricoEqOS" class="modal-overlay hidden">
         <div class="modal-box" style="max-width: 700px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -238,8 +257,39 @@
     let eqSortCol = 'comarca'; let eqSortAsc = true;
     let eqFiltros = { comarca: '', predio: '', sala: '', tipo: '', cap: '', tombo: '', status: '' };
     let osFiltros = { id: '', comarca: '', status: '' };
+    let eqDebounceTimeout = null;
 
     const MUNICIPIOS_CE = ["Abaiara","Acarape","Acaraú","Acopiara","Aiuaba","Alcântaras","Altaneira","Alto Santo","Amontada","Antonina do Norte","Apuiarés","Aquiraz","Aracati","Aracoiaba","Ararendá","Araripe","Aratuba","Arneiroz","Assaré","Aurora","Baixio","Banabuiú","Barbalha","Barreira","Barro","Barroquinha","Baturité","Beberibe","Bela Cruz","Boa Viagem","Brejo Santo","Camocim","Campos Sales","Canindé","Capistrano","Caridade","Cariré","Caririaçu","Cariús","Carnaubal","Cascavel","Catarina","Catunda","Caucaia","Cedro","Chaval","Choró","Chorozinho","Coreaú","Crateús","Crato","Croatá","Cruz","Deputado Irapuan Pinheiro","Ererê","Eusébio","Farias Brito","Forquilha","Fortaleza","Fortim","Frecheirinha","General Sampaio","Graça","Granja","Granjeiro","Groaíras","Guaiúba","Guaraciaba do Norte","Guaramiranga","Hidrolândia","Horizonte","Ibaretama","Ibiapina","Ibicuitinga","Icapuí","Icó","Iguatu","Independência","Ipaporanga","Ipaumirim","Ipu","Ipueiras","Iracema","Irauçuba","Itaiçaba","Itaitinga","Itapajé","Itapipoca","Itapiúna","Itarema","Itatira","Jaguaretama","Jaguaribara","Jaguaribe","Jaguaruana","Jardim","Jati","Jijoca de Jericoacoara","Juazeiro do Norte","Jucás","Lavras da Mangabeira","Limoeiro do Norte","Madalena","Maracanaú","Maranguape","Marco","Martinópole","Massapê","Mauriti","Meruoca","Milagres","Milhã","Miraíma","Missão Velha","Mombaça","Monsenhor Tabosa","Morada Nova","Moraújo","Morrinhos","Mucambo","Mulungu","Nova Olinda","Nova Russas","Novo Oriente","Ocara","Orós","Pacajus","Pacatuba","Pacoti","Pacujá","Palhano","Palmácia","Paracuru","Paraipaba","Parambu","Paramoti","Pedra Branca","Penaforte","Pentecoste","Pereiro","Pindoretama","Piquet Carneiro","Pires Ferreira","Poranga","Porteiras","Potengi","Potiretama","Quiterianópolis","Quixadá","Quixelô","Quixeramobim","Quixeré","Redenção","Reriutaba","Russas","Saboeiro","Salitre","Santa Quitéria","Santana do Acaraú","Santana do Cariri","São Benedito","São Gonçalo do Amarante","São João do Jaguaribe","São Luís do Curu","Senador Pompeu","Senador Sá","Sobral","Solonópole","Tabuleiro do Norte","Tamboril","Tarrafas","Tauá","Tejuçuoca","Tianguá","Trairi","Tururu","Ubajara","Umari","Umirim","Uruburetama","Uruoca","Varjota","Várzea Alegre","Viçosa do Ceará"].map(m => m.toUpperCase());
+
+    // ESCAPE HTML (Proteção contra XSS)
+    function esc(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>'"]/g, match => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+        }[match]));
+    }
+
+    // API FETCH CENTRAL (Gerecia o Token JWT em todas as requisições)
+    async function apiFetch(endpoint, options = {}) {
+        if (!options.headers) options.headers = {};
+        if (usuarioLogado && usuarioLogado.token) {
+            options.headers['Authorization'] = `Bearer ${usuarioLogado.token}`;
+        }
+        options.headers['Content-Type'] = 'application/json';
+
+        try {
+            const res = await fetch(getApiUrl(endpoint), options);
+            if (res.status === 401 && endpoint !== '/api/login') {
+                alert("Sua sessão expirou por segurança. Faça login novamente.");
+                fazerLogout();
+                throw new Error("Sessão Expirada");
+            }
+            return res;
+        } catch (error) {
+            console.error("Erro na requisição:", error);
+            throw error;
+        }
+    }
 
     window.addEventListener('DOMContentLoaded', async () => {
         carregarSelectMunicipios();
@@ -277,29 +327,35 @@
         document.body.appendChild(link); link.click(); document.body.removeChild(link);
     }
 
+    // ====== LOGIN & SEGURANÇA ======
     async function fazerLogin(e) {
         e.preventDefault(); const btn = document.getElementById('btnEntrar'); btn.disabled = true; btn.textContent = 'Autenticando...';
         try {
-            const res = await fetch(getApiUrl('/api/login'), { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ login: document.getElementById('loginUser').value.trim().toLowerCase(), senha: document.getElementById('loginSenha').value }) });
+            const payload = JSON.stringify({ login: document.getElementById('loginUser').value.trim().toLowerCase(), senha: document.getElementById('loginSenha').value });
+            const res = await fetch(getApiUrl('/api/login'), { method: 'POST', headers: {'Content-Type': 'application/json'}, body: payload });
             const data = await res.json();
             if (res.ok) { localStorage.setItem('os_usuario_logado', JSON.stringify(data)); usuarioLogado = data; verificarPrimeiroAcesso(); } else alert(data.erro);
-        } catch(e) { alert("Erro de conexão"); }
+        } catch(e) { alert("Erro de conexão com o servidor."); }
         btn.disabled = false; btn.textContent = 'Entrar no Sistema';
     }
+    
     function fazerLogout() { localStorage.removeItem('os_usuario_logado'); sessionStorage.removeItem('os_aba_ativa'); location.reload(); }
+    
     function verificarPrimeiroAcesso() {
         if (usuarioLogado.primeiro_acesso === 1) { document.getElementById('authSection').classList.add('hidden'); document.getElementById('modalSenha').classList.remove('hidden'); }
         else { document.getElementById('modalSenha').classList.add('hidden'); mostrarPainel(); }
     }
+    
     async function salvarNovaSenha(e) {
         e.preventDefault(); const nova = document.getElementById('novaSenhaInput').value;
-        await fetch(getApiUrl('/api/trocar-senha'), { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ usuario_id: usuarioLogado.id, nova_senha: nova }) });
+        await apiFetch('/api/trocar-senha', { method: 'POST', body: JSON.stringify({ usuario_id: usuarioLogado.id, nova_senha: nova }) });
         usuarioLogado.primeiro_acesso = 0; localStorage.setItem('os_usuario_logado', JSON.stringify(usuarioLogado)); verificarPrimeiroAcesso();
     }
 
+    // ====== NAVEGAÇÃO ======
     function mostrarPainel() {
         document.getElementById('authSection').classList.add('hidden'); document.getElementById('appSection').classList.remove('hidden');
-        document.getElementById('usuarioNomeDisplay').textContent = usuarioLogado.nome; document.getElementById('usuarioPerfilDisplay').textContent = usuarioLogado.perfil;
+        document.getElementById('usuarioNomeDisplay').textContent = esc(usuarioLogado.nome); document.getElementById('usuarioPerfilDisplay').textContent = esc(usuarioLogado.perfil);
         
         let abaSalva = sessionStorage.getItem('os_aba_ativa');
         if (usuarioLogado.perfil === 'administrador') { 
@@ -326,10 +382,11 @@
         if (abaId === 'geralOS') carregarOSServer(box);
     }
 
+    // ====== DASHBOARD ======
     async function renderDashboard(box) {
         box.innerHTML = `<h3>Visão Geral (Indicadores)</h3><div id="dashContent">Carregando...</div>`;
-        const chamados = await (await fetch(getApiUrl('/api/os'))).json();
-        const equipamentos = await (await fetch(getApiUrl('/api/equipamentos'))).json();
+        const chamados = await (await apiFetch('/api/os')).json();
+        const equipamentos = await (await apiFetch('/api/equipamentos')).json();
         let abertas = 0, andamento = 0, concluidas = 0;
         chamados.forEach(os => { if (os.status === 'aberta') abertas++; else if (os.status === 'concluida') concluidas++; else if (os.status !== 'cancelada') andamento++; });
 
@@ -344,21 +401,23 @@
             </div>`;
     }
 
+    // ====== USUÁRIOS ======
     async function renderAdmUsers(box) {
         box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h3>Gestão de Usuários</h3><button class="btn-success" onclick="abrirModalUser()">+ Novo Usuário</button></div><div id="tabelaUsers">Carregando...</div>`;
-        const users = await (await fetch(getApiUrl('/api/usuarios'))).json();
+        const users = await (await apiFetch('/api/usuarios')).json();
         let html = `<table><thead><tr><th>Nome</th><th>Login</th><th>Perfil</th></tr></thead><tbody>`;
-        users.forEach(u => html += `<tr><td>${u.nome}</td><td>${u.login}</td><td><span class="badge">${u.perfil}</span></td></tr>`);
+        users.forEach(u => html += `<tr><td>${esc(u.nome)}</td><td>${esc(u.login)}</td><td><span class="badge">${esc(u.perfil)}</span></td></tr>`);
         document.getElementById('tabelaUsers').innerHTML = html + `</tbody></table>`;
     }
     
     function abrirModalUser() { document.getElementById('formCriarUsuario').reset(); document.getElementById('modalFormUser').classList.remove('hidden'); }
     async function salvarUsuario(e) {
         e.preventDefault(); const p = { nome: document.getElementById('formUserNome').value.trim().toUpperCase(), login: document.getElementById('formUserLogin').value.trim().toLowerCase(), perfil: document.getElementById('formUserPerfil').value };
-        const res = await fetch(getApiUrl('/api/usuarios'), { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(p) });
-        if(res.ok) { alert("Usuário criado!"); fecharModal('modalFormUser'); mudarAba('admUsers'); } else alert((await res.json()).erro);
+        const res = await apiFetch('/api/usuarios', { method: 'POST', body: JSON.stringify(p) });
+        if(res.ok) { alert("Usuário criado!\nSenha provisória igual ao login."); fecharModal('modalFormUser'); mudarAba('admUsers'); } else alert((await res.json()).erro);
     }
 
+    // ====== EQUIPAMENTOS (COM DEBOUNCE NOS FILTROS) ======
     async function carregarEquipamentosServer(box) {
         let btnAcoes = '';
         if(usuarioLogado.perfil === 'administrador'){
@@ -368,7 +427,7 @@
             <h3>Base de Equipamentos</h3><div>${btnAcoes}</div></div>
         <div style="overflow-x: auto;"><table><thead id="headFiltrosEq"></thead><tbody id="tabelaBoxEq"><tr><td colspan="8">Carregando dados...</td></tr></tbody></table></div>
         <div id="totalEqs" style="font-size:12px; color:#64748b; margin-top:10px;"></div>`;
-        equipamentosCache = await (await fetch(getApiUrl('/api/equipamentos'))).json();
+        equipamentosCache = await (await apiFetch('/api/equipamentos')).json();
         renderizarCabecalhoEq(); desenharTabelaEquipamentos();
     }
 
@@ -377,18 +436,23 @@
         document.getElementById('headFiltrosEq').innerHTML = `
             <tr>${col('Comarca','comarca')}${col('Prédio','predio')}${col('Local','sala')}${col('Equipamento','tipo_equipamento')}${col('Cap','capacidade')}${col('Tombo','tombo')}${col('Status','status')}<th>Ações</th></tr>
             <tr class="filter-row">
-                <td><input type="text" placeholder="Buscar..." oninput="setEqFiltro('comarca', this.value)" value="${eqFiltros.comarca}"></td>
-                <td><input type="text" placeholder="Buscar..." oninput="setEqFiltro('predio', this.value)" value="${eqFiltros.predio}"></td>
-                <td><input type="text" placeholder="Buscar..." oninput="setEqFiltro('sala', this.value)" value="${eqFiltros.sala}"></td>
-                <td><input type="text" placeholder="Buscar..." oninput="setEqFiltro('tipo', this.value)" value="${eqFiltros.tipo}"></td>
-                <td><input type="text" placeholder="Buscar..." oninput="setEqFiltro('cap', this.value)" value="${eqFiltros.cap}"></td>
-                <td><input type="text" placeholder="Buscar..." oninput="setEqFiltro('tombo', this.value)" value="${eqFiltros.tombo}"></td>
-                <td><input type="text" placeholder="ativo/inativo" oninput="setEqFiltro('status', this.value)" value="${eqFiltros.status}"></td>
+                <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('comarca', this.value)" value="${eqFiltros.comarca}"></td>
+                <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('predio', this.value)" value="${eqFiltros.predio}"></td>
+                <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('sala', this.value)" value="${eqFiltros.sala}"></td>
+                <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('tipo', this.value)" value="${eqFiltros.tipo}"></td>
+                <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('cap', this.value)" value="${eqFiltros.cap}"></td>
+                <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('tombo', this.value)" value="${eqFiltros.tombo}"></td>
+                <td><input type="text" placeholder="ativo/inativo" oninput="debounceFiltroEq('status', this.value)" value="${eqFiltros.status}"></td>
                 <td><button class="btn-sm btn-secondary" onclick="limparFiltrosEq()" style="padding:6px;width:100%;">Limpar</button></td>
             </tr>`;
     }
+    
+    function debounceFiltroEq(campo, valor) {
+        clearTimeout(eqDebounceTimeout);
+        eqDebounceTimeout = setTimeout(() => { eqFiltros[campo] = valor.toLowerCase(); desenharTabelaEquipamentos(); }, 250);
+    }
+    
     function limparFiltrosEq() { eqFiltros = { comarca: '', predio: '', sala: '', tipo: '', cap: '', tombo: '', status: '' }; renderizarCabecalhoEq(); desenharTabelaEquipamentos(); }
-    function setEqFiltro(campo, valor) { eqFiltros[campo] = valor.toLowerCase(); desenharTabelaEquipamentos(); }
     function setEqSort(coluna) { if(eqSortCol === coluna) { eqSortAsc = !eqSortAsc; } else { eqSortCol = coluna; eqSortAsc = true; } renderizarCabecalhoEq(); desenharTabelaEquipamentos(); }
 
     function desenharTabelaEquipamentos() {
@@ -415,14 +479,14 @@
             const statusLabel = eq.ativo === 1 ? '<span style="color:var(--success);font-weight:bold;">Ativo</span>' : '<span style="color:var(--danger);font-weight:bold;">Inativo</span>';
             
             let acoes = '';
-            if (eq.ativo === 1) acoes += `<button class="btn-sm btn-success" onclick="document.getElementById('selAvulsoEq').innerHTML='<option value=\\'${eq.id}\\'>Selecionado</option>'; document.getElementById('osEquipamentoId').value=${eq.id}; abrirModalNovaOSAvulsaPeloEq('${eq.tipo_equipamento}', '${eq.comarca} - ${eq.predio}')">Abrir O.S.</button> `;
+            if (eq.ativo === 1) acoes += `<button class="btn-sm btn-success" onclick="abrirOSPeloListaEq(${eq.id})">Abrir O.S.</button> `;
             acoes += `<button class="btn-sm btn-warning" onclick="abrirHistoricoEqOS(${eq.id})">Ver O.S.</button> `;
             if (usuarioLogado.perfil === 'administrador') {
                 acoes += `<br><button class="btn-sm btn-secondary" onclick="abrirModalEquip(${eq.id})">Editar</button> `;
                 if(eq.ativo === 1) acoes += `<button class="btn-sm btn-danger" onclick="toggleAtivoEq(${eq.id}, 0)">Inativar</button>`;
                 else acoes += `<button class="btn-sm" style="background:#10b981;" onclick="toggleAtivoEq(${eq.id}, 1)">Ativar</button>`;
             }
-            html += `<tr class="${rowClass}"><td>${eq.comarca}</td><td>${eq.predio}</td><td>${eq.sala}</td><td>${eq.tipo_equipamento}</td><td>${eq.capacidade||'-'}</td><td>${eq.tombo === 'S/T' ? '<span class="badge" style="background:#e2e8f0;color:#64748b;">S/T</span>' : eq.tombo}</td><td>${statusLabel}</td><td style="white-space: nowrap;">${acoes}</td></tr>`;
+            html += `<tr class="${rowClass}"><td>${esc(eq.comarca)}</td><td>${esc(eq.predio)}</td><td>${esc(eq.sala)}</td><td>${esc(eq.tipo_equipamento)}</td><td>${esc(eq.capacidade||'-')}</td><td>${eq.tombo === 'S/T' ? '<span class="badge" style="background:#e2e8f0;color:#64748b;">S/T</span>' : esc(eq.tombo)}</td><td>${statusLabel}</td><td style="white-space: nowrap;">${acoes}</td></tr>`;
         });
         tbody.innerHTML = html; document.getElementById('totalEqs').textContent = `Total listado: ${filtrados.length} equipamento(s).`;
     }
@@ -431,7 +495,10 @@
         document.getElementById('formCriarEquip').reset(); document.getElementById('modalFormEquip').classList.remove('hidden');
         if(id) {
             const eq = equipamentosCache.find(e => e.id === id); document.getElementById('tituloModalEquip').textContent = 'Editar Equipamento';
-            document.getElementById('formEqId').value = eq.id; document.getElementById('formEqComarca').value = eq.comarca;
+            document.getElementById('formEqId').value = eq.id; 
+            let selectComarca = document.getElementById('formEqComarca');
+            if(eq.comarca && !Array.from(selectComarca.options).some(opt => opt.value === eq.comarca)){ selectComarca.innerHTML += `<option value="${esc(eq.comarca)}">${esc(eq.comarca)}</option>`; }
+            selectComarca.value = eq.comarca;
             document.getElementById('formEqPredio').value = eq.predio; document.getElementById('formEqSala').value = eq.sala;
             document.getElementById('formEqTipo').value = eq.tipo_equipamento; document.getElementById('formEqCap').value = eq.capacidade || '';
             document.getElementById('formEqMarca').value = eq.marca || ''; document.getElementById('formEqTombo').value = eq.tombo === 'S/T' ? '' : eq.tombo;
@@ -439,132 +506,103 @@
             document.getElementById('tituloModalEquip').textContent = 'Novo Equipamento'; document.getElementById('formEqId').value = '';
         }
     }
+    
     async function salvarEquipamento(e) {
         e.preventDefault(); const id = document.getElementById('formEqId').value;
         const payload = { comarca: document.getElementById('formEqComarca').value.trim().toUpperCase(), predio: document.getElementById('formEqPredio').value.trim().toUpperCase(), sala: document.getElementById('formEqSala').value.trim().toUpperCase(), tipo_equipamento: document.getElementById('formEqTipo').value.trim().toUpperCase(), capacidade: document.getElementById('formEqCap').value.trim().toUpperCase(), marca: document.getElementById('formEqMarca').value.trim().toUpperCase(), tombo: document.getElementById('formEqTombo').value.trim().toUpperCase() || 'S/T', ativo: id ? equipamentosCache.find(e => e.id == id).ativo : 1 };
-        await fetch(getApiUrl(id ? `/api/equipamentos/${id}` : '/api/equipamentos'), { method: id ? 'PUT' : 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+        await apiFetch(id ? `/api/equipamentos/${id}` : '/api/equipamentos', { method: id ? 'PUT' : 'POST', body: JSON.stringify(payload) });
         fecharModal('modalFormEquip'); mudarAba('geralEqs');
     }
     async function toggleAtivoEq(id, status) {
         const eq = equipamentosCache.find(e => e.id == id); eq.ativo = status;
-        await fetch(getApiUrl(`/api/equipamentos/${id}`), { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(eq) });
+        await apiFetch(`/api/equipamentos/${id}`, { method: 'PUT', body: JSON.stringify(eq) });
         mudarAba('geralEqs');
     }
 
+    // ====== NOVA O.S. AVULSA (CASCATA OU TOMBO) ======
     async function abrirNovaOSAvulsa() {
         document.getElementById('formCriarOSAvulsa').reset();
         document.getElementById('buscaTombo').value = '';
-        if (equipamentosCache.length === 0) equipamentosCache = await (await fetch(getApiUrl('/api/equipamentos'))).json();
+        if (equipamentosCache.length === 0) equipamentosCache = await (await apiFetch('/api/equipamentos')).json();
         const comarcas = [...new Set(equipamentosCache.filter(e => e.ativo === 1).map(e => e.comarca))].sort();
-        document.getElementById('selAvulsoComarca').innerHTML = '<option value="">1. Selecione a Comarca...</option>' + comarcas.map(c => `<option value="${c}">${c}</option>`).join('');
+        document.getElementById('selAvulsoComarca').innerHTML = '<option value="">1. Selecione a Comarca...</option>' + comarcas.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
         document.getElementById('selAvulsoPredio').innerHTML = '<option value="">Aguardando comarca...</option>';
         document.getElementById('selAvulsoSala').innerHTML = '<option value="">Aguardando prédio...</option>';
         document.getElementById('selAvulsoEq').innerHTML = '<option value="">Aguardando sala...</option>';
         document.getElementById('modalNovaOSAvulsa').classList.remove('hidden');
     }
 
-    function abrirModalNovaOSAvulsaPeloEq(tipo, local) {
+    function abrirOSPeloListaEq(eqId) {
+        const eq = equipamentosCache.find(e => e.id === eqId);
         abrirNovaOSAvulsa();
         document.getElementById('selAvulsoComarca').innerHTML = `<option value="">Preenchido via Tabela</option>`;
-        document.getElementById('selAvulsoPredio').innerHTML = `<option value="">${local}</option>`;
-        document.getElementById('selAvulsoSala').innerHTML = `<option value="">${tipo}</option>`;
+        document.getElementById('selAvulsoPredio').innerHTML = `<option value="">${esc(eq.comarca)} - ${esc(eq.predio)}</option>`;
+        document.getElementById('selAvulsoSala').innerHTML = `<option value="">${esc(eq.tipo_equipamento)}</option>`;
+        document.getElementById('selAvulsoEq').innerHTML = `<option value="${eq.id}">Selecionado</option>`;
+        document.getElementById('selAvulsoEq').value = eq.id;
     }
 
     function popularAvulsoPredios() {
         const com = document.getElementById('selAvulsoComarca').value;
         const predios = [...new Set(equipamentosCache.filter(e => e.ativo === 1 && e.comarca === com).map(e => e.predio))].sort();
-        document.getElementById('selAvulsoPredio').innerHTML = '<option value="">2. Selecione o Prédio...</option>' + predios.map(p => `<option value="${p}">${p}</option>`).join('');
-        document.getElementById('selAvulsoSala').innerHTML = '<option value="">Aguardando prédio...</option>';
-        document.getElementById('selAvulsoEq').innerHTML = '<option value="">Aguardando sala...</option>';
+        document.getElementById('selAvulsoPredio').innerHTML = '<option value="">2. Selecione o Prédio...</option>' + predios.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
     }
 
     function popularAvulsoSalas() {
-        const com = document.getElementById('selAvulsoComarca').value;
-        const pre = document.getElementById('selAvulsoPredio').value;
+        const com = document.getElementById('selAvulsoComarca').value; const pre = document.getElementById('selAvulsoPredio').value;
         const salas = [...new Set(equipamentosCache.filter(e => e.ativo === 1 && e.comarca === com && e.predio === pre).map(e => e.sala))].sort();
-        document.getElementById('selAvulsoSala').innerHTML = '<option value="">3. Selecione a Sala...</option>' + salas.map(s => `<option value="${s}">${s}</option>`).join('');
-        document.getElementById('selAvulsoEq').innerHTML = '<option value="">Aguardando sala...</option>';
+        document.getElementById('selAvulsoSala').innerHTML = '<option value="">3. Selecione a Sala...</option>' + salas.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
     }
 
     function popularAvulsoEqs() {
-        const com = document.getElementById('selAvulsoComarca').value;
-        const pre = document.getElementById('selAvulsoPredio').value;
-        const sal = document.getElementById('selAvulsoSala').value;
+        const com = document.getElementById('selAvulsoComarca').value; const pre = document.getElementById('selAvulsoPredio').value; const sal = document.getElementById('selAvulsoSala').value;
         const eqs = equipamentosCache.filter(e => e.ativo === 1 && e.comarca === com && e.predio === pre && e.sala === sal);
-        document.getElementById('selAvulsoEq').innerHTML = '<option value="">4. Selecione o Equipamento...</option>' + eqs.map(e => `<option value="${e.id}">${e.tipo_equipamento} ${e.capacidade||''} (Tombo: ${e.tombo})</option>`).join('');
+        document.getElementById('selAvulsoEq').innerHTML = '<option value="">4. Selecione o Equipamento...</option>' + eqs.map(e => `<option value="${e.id}">${esc(e.tipo_equipamento)} ${esc(e.capacidade||'')} (Tombo: ${esc(e.tombo)})</option>`).join('');
     }
 
     function buscarEquipamentoPorTombo() {
         const tombo = document.getElementById('buscaTombo').value.trim().toUpperCase();
-        if(!tombo) return;
         const eq = equipamentosCache.find(e => e.ativo === 1 && e.tombo === tombo && e.tombo !== 'S/T');
         if (eq) {
-            document.getElementById('selAvulsoComarca').innerHTML = `<option value="${eq.comarca}">${eq.comarca}</option>`;
-            document.getElementById('selAvulsoPredio').innerHTML = `<option value="${eq.predio}">${eq.predio}</option>`;
-            document.getElementById('selAvulsoSala').innerHTML = `<option value="${eq.sala}">${eq.sala}</option>`;
-            document.getElementById('selAvulsoEq').innerHTML = `<option value="${eq.id}">${eq.tipo_equipamento} ${eq.capacidade||''} (Tombo: ${eq.tombo})</option>`;
-        } else {
-            alert("Tombo não encontrado ou equipamento inativo.");
-        }
+            document.getElementById('selAvulsoComarca').innerHTML = `<option value="${esc(eq.comarca)}">${esc(eq.comarca)}</option>`;
+            document.getElementById('selAvulsoPredio').innerHTML = `<option value="${esc(eq.predio)}">${esc(eq.predio)}</option>`;
+            document.getElementById('selAvulsoSala').innerHTML = `<option value="${esc(eq.sala)}">${esc(eq.sala)}</option>`;
+            document.getElementById('selAvulsoEq').innerHTML = `<option value="${eq.id}">${esc(eq.tipo_equipamento)} ${esc(eq.capacidade||'')} (Tombo: ${esc(eq.tombo)})</option>`;
+        } else { alert("Tombo não encontrado ou equipamento inativo."); }
     }
 
     async function enviarOSAvulsa(e) {
         e.preventDefault();
-        const eqId = document.getElementById('selAvulsoEq').value || document.getElementById('osEquipamentoId').value;
+        const eqId = document.getElementById('selAvulsoEq').value;
         if (!eqId) return alert("Selecione um equipamento na lista.");
-        const payload = { equipamento_id: eqId, solicitante_id: usuarioLogado.id, descricao_falha: document.getElementById('osDescricaoAvulsa').value.trim().toUpperCase() };
-        await fetch(getApiUrl('/api/os'), { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        const payload = { equipamento_id: eqId, descricao_falha: document.getElementById('osDescricaoAvulsa').value.trim().toUpperCase() };
+        await apiFetch('/api/os', { method: 'POST', body: JSON.stringify(payload) });
         fecharModal('modalNovaOSAvulsa'); mudarAba('geralOS'); 
     }
 
-    // ====== HISTÓRICO DE O.S. DO EQUIPAMENTO (BLINDADO COM TRY...CATCH) ======
+    // ====== HISTÓRICO DE O.S. DO EQUIPAMENTO ======
     async function abrirHistoricoEqOS(eq_id) {
         document.getElementById('modalHistoricoEqOS').classList.remove('hidden');
         const tbody = document.getElementById('tabelaHistoricoEqOS');
         tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Carregando histórico...</td></tr>';
-        
         try {
-            const res = await fetch(getApiUrl(`/api/equipamentos/${eq_id}/os`));
-            
-            if (res.status === 404) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--danger);font-weight:bold;">ERRO 404: Rota não encontrada.<br><br>Por favor, execute o comando <span style="background:#e2e8f0;padding:2px 6px;border-radius:4px;">sudo systemctl restart backend-os.service</span> no terminal da Raspberry Pi e tente novamente.</td></tr>';
-                return;
-            }
-
-            const chamados = await res.json();
-            
-            if (!res.ok) {
-                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:red;">Erro: ${chamados.erro || 'Falha na API'}</td></tr>`;
-                return;
-            }
-
-            if (chamados.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhuma O.S. registrada para este equipamento.</td></tr>';
-                return;
-            }
-
+            const chamados = await (await apiFetch(`/api/equipamentos/${eq_id}/os`)).json();
+            if (chamados.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhuma O.S. registrada para este equipamento.</td></tr>'; return; }
             let html = '';
             chamados.forEach(os => {
                 let cor = '#3b82f6'; if(os.status==='concluida') cor='#10b981'; if(os.status==='cancelada') cor='#ef4444'; if(os.status.includes('execucao')) cor='#f59e0b'; if(os.status.includes('peca')) cor='#8b5cf6';
-                html += `<tr>
-                    <td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td>
-                    <td><small style="color:#64748b;">${os.descricao_falha}</small></td>
-                    <td><span class="badge" style="background:${cor};color:white;">${os.status.replace('_', ' ').toUpperCase()}</span></td>
-                    <td><button class="btn-sm btn-secondary" onclick="fecharModal('modalHistoricoEqOS'); abrirDetalhesOS(${os.id});">Detalhes</button></td>
-                </tr>`;
+                html += `<tr><td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td><td><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td><td><span class="badge" style="background:${cor};color:white;">${os.status.replace('_', ' ').toUpperCase()}</span></td><td><button class="btn-sm btn-secondary" onclick="fecharModal('modalHistoricoEqOS'); abrirDetalhesOS(${os.id});">Detalhes</button></td></tr>`;
             });
             tbody.innerHTML = html;
-        } catch (err) {
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:red;">Falha de comunicação com o servidor.<br>Verifique se o Cloudflare Tunnel está online.</td></tr>';
-            console.error("Erro na busca de histórico: ", err);
-        }
+        } catch (err) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:red;">Falha de comunicação.</td></tr>'; }
     }
 
+    // ====== GESTÃO GERAL DE O.S. ======
     async function carregarOSServer(box) {
         let btnAcoes = '';
         if(usuarioLogado.perfil === 'administrador') btnAcoes = `<button class="btn-secondary" onclick="exportarCSV('os')" style="margin-right:10px;">⬇ Exportar CSV</button>`;
         box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h3>Ordens de Serviço</h3><div>${btnAcoes}<button onclick="carregarOSServer(document.getElementById('conteudoAba'))">Atualizar O.S.</button></div></div><div style="overflow-x:auto;"><table><thead id="headFiltrosOS"></thead><tbody id="tabelaBoxOS"><tr><td colspan="5">Carregando...</td></tr></tbody></table></div>`;
-        osCache = await (await fetch(getApiUrl('/api/os'))).json();
+        osCache = await (await apiFetch('/api/os')).json();
         renderizarCabecalhoOS(); desenharTabelaOS();
     }
 
@@ -586,18 +624,16 @@
             if (osFiltros.id && !os.id.toString().includes(osFiltros.id)) return false;
             if (osFiltros.comarca && !(os.comarca||'').toLowerCase().includes(osFiltros.comarca)) return false;
             if (osFiltros.status && !(os.status||'').toLowerCase().includes(osFiltros.status)) return false;
-            if (usuarioLogado.perfil === 'solicitante' && os.solicitante_id !== usuarioLogado.id) return false;
             return true;
         });
-
         let html = '';
         filtrados.forEach(os => {
             let cor = '#3b82f6'; if(os.status==='concluida') cor='#10b981'; if(os.status==='cancelada') cor='#ef4444'; if(os.status.includes('execucao')) cor='#f59e0b'; if(os.status.includes('peca')) cor='#8b5cf6';
             let btnCancelar = (usuarioLogado.perfil === 'administrador' && os.status !== 'cancelada' && os.status !== 'concluida') ? `<button class="btn-sm btn-danger" style="margin-top:4px;" onclick="cancelarOSDireto(${os.id})">Cancelar</button>` : '';
 
             html += `<tr><td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td>
-                <td><strong>${os.comarca}</strong><br><small>${os.predio} (${os.sala})</small></td>
-                <td style="max-width:250px;"><strong>${os.tipo_equipamento} ${os.capacidade||''}</strong><br><small style="color:#64748b;">${os.descricao_falha}</small></td>
+                <td><strong>${esc(os.comarca)}</strong><br><small>${esc(os.predio)} (${esc(os.sala)})</small></td>
+                <td style="max-width:250px;"><strong>${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')}</strong><br><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td>
                 <td><span class="badge" style="background:${cor};color:white;">${os.status.replace('_', ' ').toUpperCase()}</span></td>
                 <td><button class="btn-sm btn-secondary" onclick="abrirDetalhesOS(${os.id})">Detalhes / Tratar</button><br>${btnCancelar}</td></tr>`;
         });
@@ -607,7 +643,7 @@
     async function cancelarOSDireto(os_id) {
         const motivo = prompt("Motivo do cancelamento:");
         if (!motivo) return; 
-        await fetch(getApiUrl(`/api/os/${os_id}/status`), { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ status: 'cancelada', observacao: 'CANCELADO PELO ADMINISTRADOR: ' + motivo.toUpperCase(), usuario_id: usuarioLogado.id }) });
+        await apiFetch(`/api/os/${os_id}/status`, { method: 'PUT', body: JSON.stringify({ status: 'cancelada', observacao: 'CANCELADO PELO ADMIN: ' + motivo.toUpperCase() }) });
         mudarAba('geralOS');
     }
 
@@ -617,22 +653,15 @@
         document.getElementById('boxAcaoOS').classList.add('hidden'); document.getElementById('tratarOsObs').value = '';
         
         try {
-            const res = await fetch(getApiUrl(`/api/os/${os_id}`));
-            const data = await res.json();
-            
-            if (!res.ok) {
-                document.getElementById('boxTimeline').innerHTML = `<span style="color:red;">Erro: ${data.erro}</span>`;
-                return;
-            }
-
+            const data = await (await apiFetch(`/api/os/${os_id}`)).json();
             const os = data.os; const hist = data.historico;
 
             document.getElementById('detalheOsId').textContent = `#${os.id}`; document.getElementById('detalheOsBadge').textContent = os.status.replace('_', ' ').toUpperCase();
-            document.getElementById('detalheOsEquip').textContent = `${os.tipo_equipamento} ${os.capacidade||''} (Tombo: ${os.tombo})`;
-            document.getElementById('detalheOsLocal').textContent = `${os.comarca} - ${os.predio} / ${os.sala}`; document.getElementById('detalheOsDefeito').textContent = os.descricao_falha;
+            document.getElementById('detalheOsEquip').textContent = `${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')} (Tombo: ${esc(os.tombo)})`;
+            document.getElementById('detalheOsLocal').textContent = `${esc(os.comarca)} - ${esc(os.predio)} / ${esc(os.sala)}`; document.getElementById('detalheOsDefeito').textContent = esc(os.descricao_falha);
 
             let htmlHist = '';
-            hist.forEach(h => { htmlHist += `<div class="timeline-item"><div class="timeline-date">${dataFormatada(h.data_registro)}</div><div class="timeline-user">${h.nome_usuario} <span class="badge" style="background:#e2e8f0; color:#475569;">${h.acao}</span></div>${h.observacao ? `<div class="timeline-text">${h.observacao}</div>` : ''}</div>`; });
+            hist.forEach(h => { htmlHist += `<div class="timeline-item"><div class="timeline-date">${dataFormatada(h.data_registro)}</div><div class="timeline-user">${esc(h.nome_usuario)} <span class="badge" style="background:#e2e8f0; color:#475569;">${h.acao}</span></div>${h.observacao ? `<div class="timeline-text">${esc(h.observacao)}</div>` : ''}</div>`; });
             document.getElementById('boxTimeline').innerHTML = htmlHist;
 
             let podeTratar = false;
@@ -640,16 +669,13 @@
             else if (usuarioLogado.perfil !== 'solicitante' && os.status !== 'concluida' && os.status !== 'cancelada') podeTratar = true; 
 
             if (podeTratar) { document.getElementById('boxAcaoOS').classList.remove('hidden'); document.getElementById('tratarOsId').value = os.id; }
-        } catch (err) {
-            document.getElementById('boxTimeline').innerHTML = `<span style="color:red;">Falha de comunicação com o servidor.</span>`;
-        }
+        } catch (err) { document.getElementById('boxTimeline').innerHTML = `<span style="color:red;">Falha de comunicação.</span>`; }
     }
 
     async function salvarTratamentoOS(e) {
-        e.preventDefault();
-        const btn = document.getElementById('btnSalvarTratamento'); btn.disabled = true; btn.textContent = 'Gravando...';
-        const p = { status: document.getElementById('tratarOsStatus').value, observacao: document.getElementById('tratarOsObs').value.trim().toUpperCase(), usuario_id: usuarioLogado.id };
-        await fetch(getApiUrl(`/api/os/${document.getElementById('tratarOsId').value}/status`), { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(p) });
+        e.preventDefault(); const btn = document.getElementById('btnSalvarTratamento'); btn.disabled = true; btn.textContent = 'Gravando...';
+        const p = { status: document.getElementById('tratarOsStatus').value, observacao: document.getElementById('tratarOsObs').value.trim().toUpperCase() };
+        await apiFetch(`/api/os/${document.getElementById('tratarOsId').value}/status`, { method: 'PUT', body: JSON.stringify(p) });
         btn.disabled = false; btn.textContent = 'Gravar Atualização'; fecharModal('modalTratarOS'); mudarAba('geralOS');
     }
 </script>
