@@ -14,9 +14,13 @@
         h2, h3 { color: var(--primary-dark); margin-bottom: 15px; }
         label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: #475569; }
         
-        input[type="text"], textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 15px; font-size: 14px; background: #f8fafc; text-transform: uppercase; }
-        select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 15px; font-size: 14px; background: #f8fafc; }
-        input[type="password"], input#loginUser, input#formUserLogin { text-transform: lowercase; }
+        /* Visual padrão e largura de 100% para TODOS os campos de formulário */
+        input[type="text"], input[type="password"], select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 15px; font-size: 14px; background: #f8fafc; }
+        
+        /* Regras exclusivas de Maiúsculas e Minúsculas */
+        input[type="text"], textarea { text-transform: uppercase; }
+        input#loginUser, input#formUserLogin { text-transform: lowercase; }
+        input[type="password"] { text-transform: none; } /* Senha livre e do tamanho exato */
 
         button { background: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; }
         button:hover { background: var(--primary-dark); }
