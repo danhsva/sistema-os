@@ -657,11 +657,32 @@
     async function enviarOS(e) { e.preventDefault(); await apiFetch('/api/os', { method: 'POST', body: JSON.stringify({ equipamento_id: document.getElementById('osEquipamentoId').value, descricao_falha: document.getElementById('osDescricao').value.trim().toUpperCase() }) }); fecharModal('modalAbrirOS'); mudarAba('geralOS'); }
 
     async function abrirHistoricoEqOS(eq_id) { 
-        document.getElementById('modalHistoricoEqOS').classList.remove('hidden'); const tbody = document.getElementById('tabelaHistoricoEqOS'); tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Carregando histórico...</td></tr>'; 
+        document.getElementById('modalHistoricoEqOS').classList.remove('hidden'); 
+        const tbody = document.getElementById('tabelaHistoricoEqOS'); 
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Carregando histórico...</td></tr>'; 
+        
         try { 
-            const chamados = await (await apiFetch(`/api/equipamentos/${eq_id}/os`)).json(); if(chamados.length===0){ tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhuma O.S. para este equipamento.</td></tr>'; return; }
-            let html = ''; chamados.forEach(os => { let cor = '#3b82f6'; if(os.status==='concluida') cor='#10b981'; if(os.status==='cancelada') cor='#ef4444'; if(os.status.includes('execucao')) cor='#f59e0b'; if(os.status.includes('peca')) cor='#8b5cf6'; html += `<tr><td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td><td><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td><td><span class="badge" style="background:${cor};color:white;">${os.status.replace('_', ' ').toUpperCase()}</span></td><td><button class="btn-sm btn-secondary" onclick="fecharModal('modalHistoricoEqOS'); abrirDetalhesOS(${os.id});">Detalhes</button></td></tr>`; }); tbody.innerHTML = html; 
-        } catch(err) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:red;">Falha de comunicação.</td></tr>'; } 
+            const res = await apiFetch(`/api/equipamentos/${eq_id}/os`); 
+            if(res.status===404){ tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:red;">Erro 404.</td></tr>'; return; } 
+            
+            let chamados = await res.json(); 
+
+            // REGRA DE VISIBILIDADE: Contratada e Executante NÃO enxergam OS com status 'aberta' aqui também
+            if (usuarioLogado.perfil === 'contratada' || usuarioLogado.perfil === 'executante') {
+                chamados = chamados.filter(os => os.status !== 'aberta');
+            }
+
+            if(chamados.length===0){ tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhuma O.S. visível para este equipamento.</td></tr>'; return; } 
+            
+            let html = ''; 
+            chamados.forEach(os => { 
+                let cor = '#3b82f6'; if(os.status==='concluida') cor='#10b981'; if(os.status==='cancelada') cor='#ef4444'; if(os.status.includes('execucao')) cor='#f59e0b'; if(os.status.includes('peca')) cor='#8b5cf6'; if(os.status==='aprovada') cor='#0ea5e9'; 
+                html += `<tr><td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td><td><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td><td><span class="badge" style="background:${cor};color:white;">${os.status.replace('_', ' ').toUpperCase()}</span></td><td><button class="btn-sm btn-secondary" onclick="fecharModal('modalHistoricoEqOS'); abrirDetalhesOS(${os.id});">Detalhes</button></td></tr>`; 
+            }); 
+            tbody.innerHTML = html; 
+        } catch(err) { 
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:red;">Falha de comunicação.</td></tr>'; 
+        } 
     }
 
     async function carregarOSServer(box) {
@@ -757,17 +778,14 @@
 
     async function salvarTratamentoOS(e) { 
         e.preventDefault(); 
-        
         const statusNovo = document.getElementById('tratarOsStatus').value;
         let obsTexto = document.getElementById('tratarOsObs').value.trim().toUpperCase();
 
-        // Regra de Observação: Obrigatória para todo mundo, EXCETO para Fiscais quando escolhem "Aprovar"
         if (obsTexto === '') {
             if (usuarioLogado.perfil === 'fiscal' && statusNovo === 'aprovada') {
                 obsTexto = "O.S. APROVADA PELO FISCAL. AUTORIZADO INÍCIO DO ATENDIMENTO.";
             } else {
                 alert("É obrigatório preencher o Relatório Técnico / Observação para esta ação.");
-                document.getElementById('tratarOsObs').focus();
                 return;
             }
         }
@@ -775,12 +793,30 @@
         const btn = document.getElementById('btnSalvarTratamento'); 
         btn.disabled = true; btn.textContent = 'Gravando...'; 
         
-        const p = { status: statusNovo, observacao: obsTexto, usuario_id: usuarioLogado.id };
-        await apiFetch(`/api/os/${document.getElementById('tratarOsId').value}/status`, { method: 'PUT', body: JSON.stringify(p) }); 
+        try {
+            const p = { status: statusNovo, observacao: obsTexto, usuario_id: usuarioLogado.id };
+            // Await garante que o JS espere a Raspberry Pi responder "Status Atualizado" antes de prosseguir
+            const res = await apiFetch(`/api/os/${document.getElementById('tratarOsId').value}/status`, { method: 'PUT', body: JSON.stringify(p) }); 
+            
+            if (res.ok) {
+                fecharModal('modalTratarOS'); 
+                
+                // Força a recarga total dos dados da nuvem para a tabela ficar fiel ao banco de dados
+                const abaAtiva = sessionStorage.getItem('os_aba_ativa');
+                if (abaAtiva === 'geralOS') {
+                    await carregarOSServer(document.getElementById('conteudoAba'));
+                } else {
+                    mudarAba('geralOS');
+                }
+            } else {
+                const data = await res.json();
+                alert(data.erro || "Falha ao gravar atualização.");
+            }
+        } catch (err) {
+            alert("Erro de comunicação com o servidor.");
+        }
         
         btn.disabled = false; btn.textContent = 'Gravar Atualização'; 
-        fecharModal('modalTratarOS'); 
-        mudarAba('geralOS'); 
     }
 
 </script>
