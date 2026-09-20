@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão de O.S.</title>
     <style>
-        :root { --primary: #2563eb; --primary-dark: #1d4ed8; --bg: #f8fafc; --card: #ffffff; --text: #1e293b; --border: #e2e8f0; --danger: #ef4444; --success: #10b981; --warning: #f59e0b; --row-alert: #fffbeb; }
+        :root { --primary: #2563eb; --primary-dark: #1d4ed8; --bg: #f4f7f6; --card: #ffffff; --text: #1e293b; --border: #e2e8f0; --danger: #ef4444; --success: #10b981; --warning: #f59e0b; --row-alert: #fffbeb; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
-        body { background: var(--bg); color: var(--text); padding: 15px; }
-        .container { max-width: 1200px; margin: 0 auto; }
+        body { background: var(--bg); color: var(--text); display: flex; min-height: 100vh; overflow-x: hidden; }
+        
         .hidden { display: none !important; }
         .card { background: var(--card); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 20px; border: 1px solid var(--border); }
         h2, h3 { color: var(--primary-dark); margin-bottom: 15px; }
@@ -19,17 +19,50 @@
         input#loginUser, input#formUserLogin { text-transform: lowercase; }
         input[type="password"] { text-transform: none; }
 
-        button { background: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        button { background: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         button:hover { background: var(--primary-dark); }
         button:disabled { opacity: 0.6; cursor: not-allowed; }
-        .btn-danger { background: var(--danger); } .btn-success { background: var(--success); } .btn-secondary { background: #64748b; } .btn-warning { background: var(--warning); color: #fff; } .btn-warning:hover { background: #d97706; }
+        .btn-danger { background: var(--danger); } .btn-success { background: var(--success); } .btn-secondary { background: #64748b; } .btn-warning { background: var(--warning); color: #fff; }
         .btn-sm { padding: 6px 12px; font-size: 11px; margin-bottom: 2px; } .btn-block { width: 100%; }
-        
-        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .badge { background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
-        .nav-tabs { display: flex; gap: 5px; border-bottom: 2px solid var(--border); margin-bottom: 20px; flex-wrap: wrap; }
-        .nav-tabs button { background: none; color: #64748b; border: none; padding: 12px 20px; font-size: 14px; border-bottom: 3px solid transparent; text-transform: none; }
-        .nav-tabs button.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 800; }
+
+        /* ======== LAYOUT DA SIDEBAR (NOVO MENU LATERAL) ======== */
+        .auth-container { width: 100%; display: flex; align-items: center; justify-content: center; }
+        .app-layout { display: flex; width: 100%; }
+        
+        .sidebar {
+            width: 65px; background: var(--card); border-right: 1px solid var(--border);
+            position: fixed; top: 0; left: 0; bottom: 0; z-index: 999;
+            display: flex; flex-direction: column; overflow-x: hidden;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 2px 0 5px rgba(0,0,0,0.05); white-space: nowrap;
+        }
+        .sidebar:hover { width: 250px; }
+        
+        .sidebar-logo {
+            padding: 20px; font-size: 18px; font-weight: bold; color: var(--primary-dark);
+            border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 15px;
+        }
+        .sidebar-menu { display: flex; flex-direction: column; padding: 10px 0; }
+        .sidebar-item {
+            display: flex; align-items: center; gap: 15px; padding: 14px 20px;
+            cursor: pointer; background: none; border: none; color: #475569;
+            font-size: 14px; font-weight: 600; text-align: left; width: 100%;
+            border-left: 4px solid transparent; border-radius: 0;
+        }
+        .sidebar-item:hover { background: #f1f5f9; color: var(--primary); }
+        .sidebar-item.active { background: #e0f2fe; color: var(--primary-dark); border-left-color: var(--primary); }
+        
+        .sidebar-icon { font-size: 18px; min-width: 20px; text-align: center; }
+        .sidebar-text { opacity: 0; transition: opacity 0.3s; }
+        .sidebar:hover .sidebar-text { opacity: 1; }
+
+        .main-content {
+            margin-left: 65px; padding: 20px; width: calc(100% - 65px);
+            transition: margin-left 0.3s, width 0.3s;
+        }
+
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: #fff; padding: 15px 20px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid var(--border);}
         
         table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
         th, td { border: 1px solid var(--border); padding: 8px; text-align: left; }
@@ -56,19 +89,69 @@
     </style>
 </head>
 <body>
-<div class="container">
 
-    <!-- LOGIN -->
-    <div id="authSection" class="card" style="max-width: 400px; margin: 40px auto; text-align: center;">
-        <h2>Gest&atilde;o de O.S.</h2>
-        <form onsubmit="fazerLogin(event)" style="text-align: left; margin-top: 20px;">
-            <label>Login:</label><input type="text" id="loginUser" required>
-            <label>Senha:</label><input type="password" id="loginSenha" required>
-            <button type="submit" id="btnEntrar" class="btn-block">Entrar no Sistema</button>
-        </form>
+    <!-- SESSÃO DE LOGIN -->
+    <div id="authSection" class="auth-container">
+        <div class="card" style="width: 100%; max-width: 400px; text-align: center;">
+            <h2 style="font-size: 24px;">Gest&atilde;o de O.S.</h2>
+            <form onsubmit="fazerLogin(event)" style="text-align: left; margin-top: 25px;">
+                <label>Login:</label><input type="text" id="loginUser" required>
+                <label>Senha:</label><input type="password" id="loginSenha" required>
+                <button type="submit" id="btnEntrar" class="btn-block" style="padding: 12px; font-size: 16px;">Entrar no Sistema</button>
+            </form>
+        </div>
     </div>
 
-    <!-- MODAL DE SENHA -->
+    <!-- SESSÃO DO APLICATIVO -->
+    <div id="appSection" class="app-layout hidden">
+        
+        <!-- SIDEBAR (MENU LATERAL) -->
+        <nav class="sidebar">
+            <div class="sidebar-logo">
+                <span class="sidebar-icon">❄️</span><span class="sidebar-text">Gestão O.S.</span>
+            </div>
+            
+            <div id="navAdmin" class="sidebar-menu hidden">
+                <button id="tabDashboard" class="sidebar-item" onclick="mudarAba('dashboard')"><span class="sidebar-icon">📊</span><span class="sidebar-text">Dashboard</span></button>
+                <button id="tabAdmContratos" class="sidebar-item" onclick="mudarAba('admContratos')"><span class="sidebar-icon">📄</span><span class="sidebar-text">Contratos</span></button>
+                <button id="tabAdmUsers" class="sidebar-item" onclick="mudarAba('admUsers')"><span class="sidebar-icon">👥</span><span class="sidebar-text">Usuários</span></button>
+                <button id="tabGeralEqs" class="sidebar-item" onclick="mudarAba('geralEqs')"><span class="sidebar-icon">⚙️</span><span class="sidebar-text">Equipamentos</span></button>
+                <button id="tabGeralOS" class="sidebar-item" onclick="mudarAba('geralOS')"><span class="sidebar-icon">🛠️</span><span class="sidebar-text">Gestão de O.S.</span></button>
+            </div>
+
+            <div id="navFiscal" class="sidebar-menu hidden">
+                <button id="tabAdmUsersFiscal" class="sidebar-item" onclick="mudarAba('admUsers')"><span class="sidebar-icon">👥</span><span class="sidebar-text">Minha Equipe</span></button>
+                <button id="tabGeralEqsFiscal" class="sidebar-item" onclick="mudarAba('geralEqs')"><span class="sidebar-icon">⚙️</span><span class="sidebar-text">Meus Equipamentos</span></button>
+                <button id="tabGeralOSFiscal" class="sidebar-item" onclick="mudarAba('geralOS')"><span class="sidebar-icon">🛠️</span><span class="sidebar-text">Fiscalizar O.S.</span></button>
+            </div>
+
+            <div id="navPadrao" class="sidebar-menu hidden">
+                <button id="tabGeralEqsPadrao" class="sidebar-item" onclick="mudarAba('geralEqs')"><span class="sidebar-icon">⚙️</span><span class="sidebar-text">Equipamentos</span></button>
+                <button id="tabGeralOSPadrao" class="sidebar-item" onclick="mudarAba('geralOS')"><span class="sidebar-icon">🛠️</span><span class="sidebar-text">Minhas O.S.</span></button>
+            </div>
+        </nav>
+
+        <!-- CONTEÚDO PRINCIPAL -->
+        <main class="main-content">
+            <div class="top-bar">
+                <div>
+                    <h3 style="margin: 0; color: #334155;">Painel de Controle</h3>
+                    <div style="margin-top: 4px;">
+                        <span id="usuarioNomeDisplay" style="font-weight: 600; font-size: 14px;"></span> 
+                        <span id="usuarioPerfilDisplay" class="badge"></span>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-warning" onclick="abrirNovaOSAvulsa()" id="btnTopAbrirOS">+ NOVA O.S.</button>
+                    <button onclick="fazerLogout()" class="btn-danger">Sair</button>
+                </div>
+            </div>
+
+            <div id="conteudoAba" class="card"></div>
+        </main>
+    </div>
+
+    <!-- MODAL SENHA -->
     <div id="modalSenha" class="modal-overlay hidden">
         <div class="modal-box" style="max-width: 400px;">
             <h3>Defina sua Senha</h3>
@@ -77,41 +160,6 @@
                 <button type="submit" class="btn-success btn-block">Salvar Senha</button>
             </form>
         </div>
-    </div>
-
-    <!-- PAINEL PRINCIPAL -->
-    <div id="appSection" class="hidden">
-        <div class="top-bar">
-            <div>
-                <h2 style="margin-bottom: 5px;">Sistema de O.S.</h2>
-                <span id="usuarioNomeDisplay" style="font-weight: 600;"></span> <span id="usuarioPerfilDisplay" class="badge"></span>
-            </div>
-            <div style="display: flex; gap: 10px;">
-                <button class="btn-warning" onclick="abrirNovaOSAvulsa()" id="btnTopAbrirOS">+ NOVA O.S.</button>
-                <button onclick="fazerLogout()" class="btn-danger">Sair</button>
-            </div>
-        </div>
-
-        <div id="navAdmin" class="nav-tabs hidden">
-            <button id="tabDashboard" onclick="mudarAba('dashboard')">Dashboard</button>
-            <button id="tabAdmContratos" onclick="mudarAba('admContratos')">Contratos</button>
-            <button id="tabAdmUsers" onclick="mudarAba('admUsers')">Usuários</button>
-            <button id="tabGeralEqs" onclick="mudarAba('geralEqs')">Equipamentos</button>
-            <button id="tabGeralOS" onclick="mudarAba('geralOS')">Gestão de O.S.</button>
-        </div>
-
-        <div id="navFiscal" class="nav-tabs hidden">
-            <button id="tabAdmUsersFiscal" onclick="mudarAba('admUsers')">Minha Equipe</button>
-            <button id="tabGeralEqsFiscal" onclick="mudarAba('geralEqs')">Meus Equipamentos</button>
-            <button id="tabGeralOSFiscal" onclick="mudarAba('geralOS')">Fiscalizar O.S.</button>
-        </div>
-
-        <div id="navPadrao" class="nav-tabs hidden">
-            <button id="tabGeralEqsPadrao" onclick="mudarAba('geralEqs')">Equipamentos</button>
-            <button id="tabGeralOSPadrao" onclick="mudarAba('geralOS')">Minhas Ordens de Serviço</button>
-        </div>
-
-        <div id="conteudoAba" class="card"></div>
     </div>
 
     <!-- MODAL DE CONTRATOS (ADMIN) -->
@@ -131,7 +179,7 @@
         </div>
     </div>
 
-    <!-- MODAL EQUIPAMENTO -->
+    <!-- MODAL DE EQUIPAMENTOS -->
     <div id="modalFormEquip" class="modal-overlay hidden">
         <div class="modal-box" style="max-width: 700px;">
             <h3 id="tituloModalEquip">Novo Equipamento</h3>
@@ -154,12 +202,10 @@
                     <div class="col"><label>Marca:</label><input type="text" id="formEqMarca"></div>
                     <div class="col"><label>Tombo:</label><input type="text" id="formEqTombo"></div>
                 </div>
-                
                 <div id="boxEqContratoAdmin" class="hidden">
                     <label>Vincular a um Contrato:</label>
                     <select id="formEqContrato"></select>
                 </div>
-
                 <div style="display: flex; gap: 10px; margin-top: 15px;">
                     <button type="submit" class="btn-success btn-block" id="btnSalvarEq">Salvar</button>
                     <button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalFormEquip')">Cancelar</button>
@@ -168,121 +214,32 @@
         </div>
     </div>
 
-    <!-- MODAL USUÁRIO -->
+    <!-- MODAL DE USUÁRIOS -->
     <div id="modalFormUser" class="modal-overlay hidden">
         <div class="modal-box" style="max-width: 400px;">
             <h3 id="tituloModalUser">Novo Usuário</h3>
             <form id="formCriarUsuario" onsubmit="salvarUsuario(event)">
                 <input type="hidden" id="formUserId">
                 <label>Nome Completo:</label><input type="text" id="formUserNome" required>
-                <label>Login de Acesso:</label><input type="text" id="formUserLogin" required>
+                <label>Login de Acesso (minúsculo):</label><input type="text" id="formUserLogin" required>
                 <label>Perfil:</label>
                 <select id="formUserPerfil" required onchange="verificarExibicaoContratoUser()"></select>
-                
                 <div id="boxUserContrato" class="hidden">
                     <label>Vincular a qual Contrato?</label>
                     <select id="formUserContrato"></select>
                 </div>
-
                 <div style="display: flex; gap: 10px; margin-top: 15px;"><button type="submit" class="btn-success btn-block" id="btnSalvarUser">Salvar</button><button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalFormUser')">Cancelar</button></div>
             </form>
         </div>
     </div>
 
-    <!-- MODAL NOVA O.S. AVULSA -->
-    <div id="modalNovaOSAvulsa" class="modal-overlay hidden">
-        <div class="modal-box" style="max-width: 600px;">
-            <h3>Abrir Nova Ordem de Serviço</h3>
-            <div style="background: #f1f5f9; padding: 15px; border-radius: 6px; margin-bottom: 15px; border: 1px solid var(--border);">
-                <label style="color: var(--primary-dark);">Busca Rápida por Tombo:</label>
-                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                    <input type="text" id="buscaTombo" placeholder="Digite o tombo..." style="margin-bottom:0;">
-                    <button type="button" class="btn-primary" onclick="buscarEquipamentoPorTombo()">Buscar</button>
-                </div>
-                <hr style="border: 0; border-top: 1px dashed #cbd5e1; margin-bottom: 15px;">
-                <label style="color: var(--primary-dark);">Ou localize em lista:</label>
-                <div class="row">
-                    <div class="col"><label>Comarca:</label><select id="selAvulsoComarca" onchange="popularAvulsoPredios()"><option value="">Carregando...</option></select></div>
-                    <div class="col"><label>Prédio:</label><select id="selAvulsoPredio" onchange="popularAvulsoSalas()"><option value="">Aguardando comarca...</option></select></div>
-                </div>
-                <div class="row">
-                    <div class="col"><label>Sala / Local:</label><select id="selAvulsoSala" onchange="popularAvulsoEqs()"><option value="">Aguardando prédio...</option></select></div>
-                    <div class="col"><label>Equipamento:</label><select id="selAvulsoEq" required><option value="">Aguardando sala...</option></select></div>
-                </div>
-            </div>
-            <form id="formCriarOSAvulsa" onsubmit="enviarOSAvulsa(event)">
-                <label>Relato do Defeito:</label>
-                <textarea id="osDescricaoAvulsa" rows="3" required placeholder="Descreva o problema..."></textarea>
-                <div style="display: flex; gap: 10px; margin-top: 10px;">
-                    <button type="submit" class="btn-success btn-block" id="btnRegistrarOSAvulsa">Registrar O.S.</button>
-                    <button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalNovaOSAvulsa')">Cancelar</button>
-                </div>
-            </form>
-        </div>
-    </div>
+    <div id="modalNovaOSAvulsa" class="modal-overlay hidden"><div class="modal-box" style="max-width: 600px;"><h3>Abrir Nova Ordem de Serviço</h3><div style="background: #f1f5f9; padding: 15px; border-radius: 6px; margin-bottom: 15px; border: 1px solid var(--border);"><label style="color: var(--primary-dark);">Busca Rápida por Tombo:</label><div style="display: flex; gap: 10px; margin-bottom: 15px;"><input type="text" id="buscaTombo" placeholder="Digite o tombo..." style="margin-bottom:0;"><button type="button" class="btn-primary" onclick="buscarEquipamentoPorTombo()">Buscar</button></div><hr style="border: 0; border-top: 1px dashed #cbd5e1; margin-bottom: 15px;"><label style="color: var(--primary-dark);">Ou localize em lista:</label><div class="row"><div class="col"><label>Comarca:</label><select id="selAvulsoComarca" onchange="popularAvulsoPredios()"><option value="">Carregando...</option></select></div><div class="col"><label>Prédio:</label><select id="selAvulsoPredio" onchange="popularAvulsoSalas()"><option value="">Aguardando comarca...</option></select></div></div><div class="row"><div class="col"><label>Sala / Local:</label><select id="selAvulsoSala" onchange="popularAvulsoEqs()"><option value="">Aguardando prédio...</option></select></div><div class="col"><label>Equipamento:</label><select id="selAvulsoEq" required><option value="">Aguardando sala...</option></select></div></div></div><form id="formCriarOSAvulsa" onsubmit="enviarOSAvulsa(event)"><label>Relato do Defeito:</label><textarea id="osDescricaoAvulsa" rows="3" required placeholder="Descreva o problema..."></textarea><div style="display: flex; gap: 10px; margin-top: 10px;"><button type="submit" class="btn-success btn-block" id="btnRegistrarOSAvulsa">Registrar O.S.</button><button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalNovaOSAvulsa')">Cancelar</button></div></form></div></div>
+    
+    <div id="modalAbrirOS" class="modal-overlay hidden"><div class="modal-box" style="max-width: 500px;"><h3>Abrir O.S.</h3><div style="background: #f1f5f9; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 13px;"><strong id="osEquipDesc"></strong><br><span id="osEquipLocal"></span></div><form id="formCriarOS" onsubmit="enviarOS(event)"><input type="hidden" id="osEquipamentoId"><label>Relato do Defeito:</label><textarea id="osDescricao" rows="3" required placeholder="Descreva o problema..."></textarea><div style="display: flex; gap: 10px; margin-top: 10px;"><button type="submit" class="btn-success btn-block" id="btnRegistrarOS">Registrar O.S.</button><button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalAbrirOS')">Cancelar</button></div></form></div></div>
+    
+    <div id="modalHistoricoEqOS" class="modal-overlay hidden"><div class="modal-box" style="max-width: 700px;"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;"><h3 style="margin:0;">Histórico de O.S. do Equipamento</h3><button class="btn-danger btn-sm" onclick="fecharModal('modalHistoricoEqOS')">X</button></div><div style="overflow-x:auto;"><table style="margin-top: 0;"><thead><tr><th>O.S. / Data</th><th>Defeito</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tabelaHistoricoEqOS"></tbody></table></div></div></div>
 
-    <!-- MODAL ABRIR O.S. (PELA TABELA) -->
-    <div id="modalAbrirOS" class="modal-overlay hidden">
-        <div class="modal-box" style="max-width: 500px;">
-            <h3>Abrir O.S.</h3>
-            <div style="background: #f1f5f9; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 13px;">
-                <strong id="osEquipDesc"></strong><br><span id="osEquipLocal"></span>
-            </div>
-            <form id="formCriarOS" onsubmit="enviarOS(event)">
-                <input type="hidden" id="osEquipamentoId">
-                <label>Relato do Defeito:</label>
-                <textarea id="osDescricao" rows="3" required placeholder="Descreva o problema..."></textarea>
-                <div style="display: flex; gap: 10px; margin-top: 10px;">
-                    <button type="submit" class="btn-success btn-block" id="btnRegistrarOS">Registrar O.S.</button>
-                    <button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalAbrirOS')">Cancelar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- MODAL HISTÓRICO -->
-    <div id="modalHistoricoEqOS" class="modal-overlay hidden">
-        <div class="modal-box" style="max-width: 700px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h3 style="margin:0;">Histórico de O.S. do Equipamento</h3>
-                <button class="btn-danger btn-sm" onclick="fecharModal('modalHistoricoEqOS')">X</button>
-            </div>
-            <div style="overflow-x:auto;">
-                <table style="margin-top: 0;">
-                    <thead><tr><th>O.S. / Data</th><th>Defeito</th><th>Status</th><th>Ações</th></tr></thead>
-                    <tbody id="tabelaHistoricoEqOS"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL TRATAR O.S. -->
-    <div id="modalTratarOS" class="modal-overlay hidden">
-        <div class="modal-box">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h3 style="margin:0;">Detalhes da O.S. <span id="detalheOsId"></span></h3>
-                <span id="detalheOsBadge" class="badge"></span>
-            </div>
-            <div style="background: #f8fafc; border: 1px solid var(--border); padding: 10px; border-radius: 6px; margin-top: 15px; font-size: 13px;">
-                <strong>Equipamento:</strong> <span id="detalheOsEquip"></span><br>
-                <strong>Local:</strong> <span id="detalheOsLocal"></span><br>
-                <strong>Defeito Inicial:</strong> <span id="detalheOsDefeito" style="color: var(--danger);"></span>
-            </div>
-            <div id="boxAcaoOS" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border);">
-                <h4>Atualizar / Tramitar Chamado</h4>
-                <form onsubmit="salvarTratamentoOS(event)">
-                    <input type="hidden" id="tratarOsId">
-                    <label>Novo Status:</label>
-                    <select id="tratarOsStatus" required><option value="em_analise">Em Análise</option><option value="aguardando_peca">Aguardando Peça</option><option value="em_execucao">Em Execução</option><option value="concluida">Concluída (Resolvido)</option><option value="cancelada">Cancelada (Improcedente / Erro)</option></select>
-                    <label>Relatório Técnico / Observação:</label><textarea id="tratarOsObs" rows="3" placeholder="O que foi feito?" required></textarea>
-                    <button type="submit" class="btn-success btn-block" id="btnSalvarTratamento">Gravar Atualização</button>
-                </form>
-            </div>
-            <h4 style="margin-top: 25px;">Histórico da O.S.</h4>
-            <div id="boxTimeline" class="timeline"></div>
-            <button class="btn-secondary btn-block" style="margin-top: 20px;" onclick="fecharModal('modalTratarOS')">Fechar Detalhes</button>
-        </div>
-    </div>
+    <div id="modalTratarOS" class="modal-overlay hidden"><div class="modal-box"><div style="display: flex; justify-content: space-between; align-items: center;"><h3 style="margin:0;">Detalhes da O.S. <span id="detalheOsId"></span></h3><span id="detalheOsBadge" class="badge"></span></div><div style="background: #f8fafc; border: 1px solid var(--border); padding: 10px; border-radius: 6px; margin-top: 15px; font-size: 13px;"><strong>Equipamento:</strong> <span id="detalheOsEquip"></span><br><strong>Local:</strong> <span id="detalheOsLocal"></span><br><strong>Defeito Inicial:</strong> <span id="detalheOsDefeito" style="color: var(--danger);"></span></div><div id="boxAcaoOS" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border);"><h4>Atualizar / Tramitar Chamado</h4><form onsubmit="salvarTratamentoOS(event)"><input type="hidden" id="tratarOsId"><label>Novo Status:</label><select id="tratarOsStatus" required><option value="em_analise">Em Análise</option><option value="aguardando_peca">Aguardando Peça</option><option value="em_execucao">Em Execução</option><option value="concluida">Concluída (Resolvido)</option><option value="cancelada">Cancelada (Improcedente / Erro)</option></select><label>Relatório Técnico / Observação:</label><textarea id="tratarOsObs" rows="3" placeholder="O que foi feito?" required></textarea><button type="submit" class="btn-success btn-block" id="btnSalvarTratamento">Gravar Atualização</button></form></div><h4 style="margin-top: 25px;">Histórico da O.S.</h4><div id="boxTimeline" class="timeline"></div><button class="btn-secondary btn-block" style="margin-top: 20px;" onclick="fecharModal('modalTratarOS')">Fechar Detalhes</button></div></div>
 
 </div>
 
@@ -297,10 +254,8 @@
 
     const MUNICIPIOS_CE = ["Abaiara","Acarape","Acaraú","Acopiara","Aiuaba","Alcântaras","Altaneira","Alto Santo","Amontada","Antonina do Norte","Apuiarés","Aquiraz","Aracati","Aracoiaba","Ararendá","Araripe","Aratuba","Arneiroz","Assaré","Aurora","Baixio","Banabuiú","Barbalha","Barreira","Barro","Barroquinha","Baturité","Beberibe","Bela Cruz","Boa Viagem","Brejo Santo","Camocim","Campos Sales","Canindé","Capistrano","Caridade","Cariré","Caririaçu","Cariús","Carnaubal","Cascavel","Catarina","Catunda","Caucaia","Cedro","Chaval","Choró","Chorozinho","Coreaú","Crateús","Crato","Croatá","Cruz","Deputado Irapuan Pinheiro","Ererê","Eusébio","Farias Brito","Forquilha","Fortaleza","Fortim","Frecheirinha","General Sampaio","Graça","Granja","Granjeiro","Groaíras","Guaiúba","Guaraciaba do Norte","Guaramiranga","Hidrolândia","Horizonte","Ibaretama","Ibiapina","Ibicuitinga","Icapuí","Icó","Iguatu","Independência","Ipaporanga","Ipaumirim","Ipu","Ipueiras","Iracema","Irauçuba","Itaiçaba","Itaitinga","Itapajé","Itapipoca","Itapiúna","Itarema","Itatira","Jaguaretama","Jaguaribara","Jaguaribe","Jaguaruana","Jardim","Jati","Jijoca de Jericoacoara","Juazeiro do Norte","Jucás","Lavras da Mangabeira","Limoeiro do Norte","Madalena","Maracanaú","Maranguape","Marco","Martinópole","Massapê","Mauriti","Meruoca","Milagres","Milhã","Miraíma","Missão Velha","Mombaça","Monsenhor Tabosa","Morada Nova","Moraújo","Morrinhos","Mucambo","Mulungu","Nova Olinda","Nova Russas","Novo Oriente","Ocara","Orós","Pacajus","Pacatuba","Pacoti","Pacujá","Palhano","Palmácia","Paracuru","Paraipaba","Parambu","Paramoti","Pedra Branca","Penaforte","Pentecoste","Pereiro","Pindoretama","Piquet Carneiro","Pires Ferreira","Poranga","Porteiras","Potengi","Potiretama","Quiterianópolis","Quixadá","Quixelô","Quixeramobim","Quixeré","Redenção","Reriutaba","Russas","Saboeiro","Salitre","Santa Quitéria","Santana do Acaraú","Santana do Cariri","São Benedito","São Gonçalo do Amarante","São João do Jaguaribe","São Luís do Curu","Senador Pompeu","Senador Sá","Sobral","Solonópole","Tabuleiro do Norte","Tamboril","Tarrafas","Tauá","Tejuçuoca","Tianguá","Trairi","Tururu","Ubajara","Umari","Umirim","Uruburetama","Uruoca","Varjota","Várzea Alegre","Viçosa do Ceará"].map(m => m.toUpperCase());
 
-    // ESCAPE HTML (Proteção)
     function esc(str) { return str ? String(str).replace(/[&<>'"]/g, match => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[match])) : ''; }
 
-    // API FETCH CENTRAL
     async function apiFetch(endpoint, options = {}) {
         if (!options.headers) options.headers = {};
         if (usuarioLogado && usuarioLogado.token) options.headers['Authorization'] = `Bearer ${usuarioLogado.token}`;
@@ -341,7 +296,6 @@
         document.body.appendChild(link); link.click(); document.body.removeChild(link);
     }
 
-    // ====== LOGIN ======
     async function fazerLogin(e) {
         e.preventDefault(); const btn = document.getElementById('btnEntrar'); btn.disabled = true; btn.textContent = 'Autenticando...';
         try {
@@ -362,7 +316,6 @@
         usuarioLogado.primeiro_acesso = 0; localStorage.setItem('os_usuario_logado', JSON.stringify(usuarioLogado)); verificarPrimeiroAcesso();
     }
 
-    // ====== NAVEGAÇÃO E ABAS ======
     function mostrarPainel() {
         document.getElementById('authSection').classList.add('hidden'); document.getElementById('appSection').classList.remove('hidden');
         document.getElementById('usuarioNomeDisplay').textContent = esc(usuarioLogado.nome); document.getElementById('usuarioPerfilDisplay').textContent = esc(usuarioLogado.perfil);
@@ -376,7 +329,7 @@
     }
 
     function mudarAba(abaId) {
-        sessionStorage.setItem('os_aba_ativa', abaId); document.querySelectorAll('.nav-tabs button').forEach(b => b.classList.remove('active'));
+        sessionStorage.setItem('os_aba_ativa', abaId); document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
         let btnStr = `tab${abaId.charAt(0).toUpperCase() + abaId.slice(1)}`;
         if(usuarioLogado.perfil === 'administrador') { let b = document.getElementById(btnStr); if(b) b.classList.add('active'); }
         else if(usuarioLogado.perfil === 'fiscal') { let b = document.getElementById(btnStr+'Fiscal'); if(b) b.classList.add('active'); }
@@ -390,36 +343,33 @@
         if (abaId === 'geralOS') carregarOSServer(box);
     }
 
-    // ====== DASHBOARD (ROBUSTO COM PROMISE.ALL) ======
+    async function carregarListaContratosAtivos() {
+        if(usuarioLogado.perfil !== 'administrador') return;
+        contratosCache = await (await apiFetch('/api/contratos')).json();
+        // Aqui mostramos O NÚMERO DO CONTRATO nos Dropdowns
+        const html = '<option value="">Nenhum Contrato (Avulso)</option>' + contratosCache.filter(c=>c.ativo===1).map(c => `<option value="${c.id}">${esc(c.numero_contrato)}</option>`).join('');
+        const selEq = document.getElementById('formEqContrato'); if(selEq) selEq.innerHTML = html;
+        const selUsr = document.getElementById('formUserContrato'); if(selUsr) selUsr.innerHTML = html;
+    }
+
     async function renderDashboard(box) {
-        box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h3>Visão Geral (Indicadores)</h3><button disabled>Carregando...</button></div><div style="text-align:center;color:#64748b;padding:20px;">Sincronizando dados com o servidor...</div>`;
+        box.innerHTML = `<h3>Visão Geral (Indicadores)</h3><div id="dashContent">Carregando...</div>`;
         try {
             const [resOS, resEq] = await Promise.all([ apiFetch('/api/os'), apiFetch('/api/equipamentos') ]);
             if (!resOS.ok || !resEq.ok) throw new Error("Falha na API");
             const chamados = await resOS.json(); const equipamentos = await resEq.json();
             let abertas = 0, andamento = 0, concluidas = 0;
             chamados.forEach(os => { if (os.status === 'aberta') abertas++; else if (os.status === 'concluida') concluidas++; else if (os.status !== 'cancelada') andamento++; });
-            box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h3>Visão Geral (Indicadores)</h3><button onclick="renderDashboard(document.getElementById('conteudoAba'))">Atualizar</button></div>
+            box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h3>Visão Geral</h3><button onclick="renderDashboard(document.getElementById('conteudoAba'))">Atualizar</button></div>
                 <div class="dash-grid">
                     <div class="dash-card"><div style="color:#64748b;">Aguardando Atendimento</div><div class="dash-value" style="color:var(--primary);">${abertas}</div></div>
                     <div class="dash-card"><div style="color:#64748b;">O.S. Em Andamento</div><div class="dash-value" style="color:var(--warning);">${andamento}</div></div>
                     <div class="dash-card"><div style="color:#64748b;">O.S. Concluídas</div><div class="dash-value" style="color:var(--success);">${concluidas}</div></div>
                     <div class="dash-card"><div style="color:#64748b;">Total de Equipamentos</div><div class="dash-value" style="color:#475569;">${equipamentos.length}</div></div>
                 </div>`;
-        } catch (err) {
-            box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h3>Visão Geral (Indicadores)</h3><button onclick="renderDashboard(document.getElementById('conteudoAba'))">Tentar Novamente</button></div><div style="color:red;padding:20px;">Falha ao carregar Dashboard.</div>`;
-        }
+        } catch (err) { box.innerHTML = `<div style="color:red;padding:20px;">Falha ao carregar Dashboard.</div>`; }
     }
 
-    async function carregarListaContratosAtivos() {
-        if(usuarioLogado.perfil !== 'administrador') return;
-        contratosCache = await (await apiFetch('/api/contratos')).json();
-        const html = '<option value="">Nenhum Contrato (Avulso)</option>' + contratosCache.filter(c=>c.ativo===1).map(c => `<option value="${c.id}">${esc(c.numero_contrato)} - ${esc(c.nome_empresa)}</option>`).join('');
-        const selEq = document.getElementById('formEqContrato'); if(selEq) selEq.innerHTML = html;
-        const selUsr = document.getElementById('formUserContrato'); if(selUsr) selUsr.innerHTML = html;
-    }
-
-    // ====== CONTRATOS (ADMIN) ======
     async function renderAdmContratos(box) {
         box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h3>Gestão de Contratos</h3><button class="btn-success" onclick="abrirModalContrato()">+ Novo Contrato</button></div><div id="tabelaContratos">Carregando...</div>`;
         contratosCache = await (await apiFetch('/api/contratos')).json();
@@ -447,10 +397,8 @@
         await apiFetch(id ? `/api/contratos/${id}` : '/api/contratos', { method: id ? 'PUT' : 'POST', body: JSON.stringify(p) });
         fecharModal('modalFormContrato'); mudarAba('admContratos');
     }
-    
     async function toggleAtivoContrato(id, status) { const c = contratosCache.find(x => x.id == id); c.ativo = status; await apiFetch(`/api/contratos/${id}`, { method: 'PUT', body: JSON.stringify(c) }); mudarAba('admContratos'); }
 
-    // ====== USUÁRIOS ======
     async function renderAdmUsers(box) {
         box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h3>${usuarioLogado.perfil==='fiscal'?'Minha Equipe':'Gestão de Usuários'}</h3><button class="btn-success" onclick="abrirModalUser(null)">+ Novo Usuário</button></div><div id="tabelaUsers">Carregando...</div>`;
         usuariosCache = await (await apiFetch('/api/usuarios')).json();
@@ -460,7 +408,7 @@
             const status = u.ativo === 1 ? '<span style="color:var(--success);font-weight:bold;">Ativo</span>' : '<span style="color:var(--danger);font-weight:bold;">Inativo</span>';
             let btnAtivar = '';
             if (u.id !== usuarioLogado.id) btnAtivar = u.ativo === 1 ? `<button class="btn-sm btn-danger" onclick="toggleAtivoUser(${u.id}, 0)">Inativar</button>` : `<button class="btn-sm btn-success" onclick="toggleAtivoUser(${u.id}, 1)">Ativar</button>`;
-            html += `<tr ${inativo}><td>${esc(u.nome)}</td><td>${esc(u.login)}</td><td><span class="badge">${esc(u.perfil)}</span></td><td><small>${esc(u.contrato_nome)||'-'}</small></td><td>${status}</td><td style="white-space:nowrap;"><button class="btn-sm btn-secondary" onclick="abrirModalUser(${u.id})">Editar</button> ${btnAtivar}</td></tr>`;
+            html += `<tr ${inativo}><td>${esc(u.nome)}</td><td>${esc(u.login)}</td><td><span class="badge">${esc(u.perfil)}</span></td><td><strong>${esc(u.contrato_nome)||'-'}</strong></td><td>${status}</td><td style="white-space:nowrap;"><button class="btn-sm btn-secondary" onclick="abrirModalUser(${u.id})">Editar</button> ${btnAtivar}</td></tr>`;
         });
         document.getElementById('tabelaUsers').innerHTML = html + `</tbody></table>`;
     }
@@ -496,18 +444,13 @@
         } catch(err) { alert("Erro de conexão."); }
         btn.disabled = false; btn.textContent = 'Salvar';
     }
-
-    async function toggleAtivoUser(id, status) {
-        if (status === 0 && !confirm("Inativar usuário?")) return;
-        const u = usuariosCache.find(x => x.id == id); u.ativo = status;
-        await apiFetch(`/api/usuarios/${id}`, { method: 'PUT', body: JSON.stringify(u) }); mudarAba('admUsers');
-    }
+    async function toggleAtivoUser(id, status) { if (status === 0 && !confirm("Inativar usuário?")) return; const u = usuariosCache.find(x => x.id == id); u.ativo = status; await apiFetch(`/api/usuarios/${id}`, { method: 'PUT', body: JSON.stringify(u) }); mudarAba('admUsers'); }
 
     // ====== EQUIPAMENTOS ======
     async function carregarEquipamentosServer(box) {
         let btnAcoes = '';
-        if(usuarioLogado.perfil === 'administrador') btnAcoes = `<button class="btn-secondary" onclick="exportarCSV('equipamentos')" style="margin-right:10px;">⬇ Exportar CSV</button><button class="btn-success" onclick="abrirModalEquip(null)">+ Novo Equipamento</button>`;
-        else if (usuarioLogado.perfil === 'fiscal') btnAcoes = `<button class="btn-success" onclick="abrirModalEquip(null)">+ Equipamento p/ Meu Contrato</button>`;
+        if(usuarioLogado.perfil === 'administrador'){ btnAcoes = `<button class="btn-secondary" onclick="exportarCSV('equipamentos')" style="margin-right:10px;">⬇ Exportar CSV</button><button class="btn-success" onclick="abrirModalEquip(null)">+ Novo Equipamento</button>`; }
+        else if (usuarioLogado.perfil === 'fiscal') { btnAcoes = `<button class="btn-success" onclick="abrirModalEquip(null)">+ Equipamento p/ Meu Contrato</button>`; }
         box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h3>${usuarioLogado.perfil==='fiscal'?'Equipamentos do meu Contrato':'Base de Equipamentos'}</h3><div>${btnAcoes}</div></div><div style="overflow-x: auto;"><table><thead id="headFiltrosEq"></thead><tbody id="tabelaBoxEq"><tr><td colspan="9">Carregando dados...</td></tr></tbody></table></div><div id="totalEqs" style="font-size:12px; color:#64748b; margin-top:10px;"></div>`;
         equipamentosCache = await (await apiFetch('/api/equipamentos')).json();
         renderizarCabecalhoEq(); desenharTabelaEquipamentos();
@@ -557,7 +500,6 @@
         filtrados.forEach(eq => {
             const rowClass = eq.ativo === 0 ? 'inativo' : (eq.tem_os_ativa > 0 ? 'row-os-ativa' : '');
             const statusLabel = eq.ativo === 1 ? '<span style="color:var(--success);font-weight:bold;">Ativo</span>' : '<span style="color:var(--danger);font-weight:bold;">Inativo</span>';
-            
             let acoes = '';
             if (eq.ativo === 1 && (usuarioLogado.perfil === 'solicitante' || usuarioLogado.perfil === 'administrador')) acoes += `<button class="btn-sm btn-success" onclick="document.getElementById('selAvulsoEq').innerHTML='<option value=\\'${eq.id}\\'>Selecionado</option>'; document.getElementById('osEquipamentoId').value=${eq.id}; abrirModalNovaOSAvulsaPeloEq('${eq.tipo_equipamento}', '${eq.comarca} - ${eq.predio}')">Abrir O.S.</button> `;
             acoes += `<button class="btn-sm btn-warning" onclick="abrirHistoricoEqOS(${eq.id})">Ver O.S.</button> `;
@@ -566,7 +508,7 @@
                 if(eq.ativo === 1) acoes += `<button class="btn-sm btn-danger" onclick="toggleAtivoEq(${eq.id}, 0)">Inativar</button>`;
                 else acoes += `<button class="btn-sm" style="background:#10b981;" onclick="toggleAtivoEq(${eq.id}, 1)">Ativar</button>`;
             }
-            html += `<tr class="${rowClass}"><td>${esc(eq.comarca)}</td><td>${esc(eq.predio)}</td><td>${esc(eq.sala)}</td><td>${esc(eq.tipo_equipamento)}</td><td>${esc(eq.capacidade||'-')}</td><td>${eq.tombo === 'S/T' ? '<span class="badge" style="background:#e2e8f0;color:#64748b;">S/T</span>' : esc(eq.tombo)}</td><td><small>${esc(eq.contrato_nome)||'-'}</small></td><td>${statusLabel}</td><td style="white-space: nowrap;">${acoes}</td></tr>`;
+            html += `<tr class="${rowClass}"><td>${esc(eq.comarca)}</td><td>${esc(eq.predio)}</td><td>${esc(eq.sala)}</td><td>${esc(eq.tipo_equipamento)}</td><td>${esc(eq.capacidade||'-')}</td><td>${eq.tombo === 'S/T' ? '<span class="badge" style="background:#e2e8f0;color:#64748b;">S/T</span>' : esc(eq.tombo)}</td><td><strong>${esc(eq.contrato_nome)||'-'}</strong></td><td>${statusLabel}</td><td style="white-space: nowrap;">${acoes}</td></tr>`;
         });
         document.getElementById('tabelaBoxEq').innerHTML = html; document.getElementById('totalEqs').textContent = `Total listado: ${filtrados.length} equipamento(s).`;
     }
@@ -615,17 +557,9 @@
     
     async function enviarOSAvulsa(e) { e.preventDefault(); const eqId = document.getElementById('selAvulsoEq').value; if (!eqId) return alert("Selecione um equipamento."); await apiFetch('/api/os', { method: 'POST', body: JSON.stringify({ equipamento_id: eqId, descricao_falha: document.getElementById('osDescricaoAvulsa').value.trim().toUpperCase() }) }); fecharModal('modalNovaOSAvulsa'); mudarAba('geralOS'); }
     function abrirOS(id, desc, local) { document.getElementById('formCriarOS').reset(); document.getElementById('osEquipamentoId').value = id; document.getElementById('osEquipDesc').textContent = desc; document.getElementById('osEquipLocal').textContent = local; document.getElementById('modalAbrirOS').classList.remove('hidden'); }
-    async function enviarOS(e) { e.preventDefault(); const payload = { equipamento_id: document.getElementById('osEquipamentoId').value, descricao_falha: document.getElementById('osDescricao').value.trim().toUpperCase() }; await apiFetch('/api/os', { method: 'POST', body: JSON.stringify(payload) }); fecharModal('modalAbrirOS'); mudarAba('geralOS'); }
+    async function enviarOS(e) { e.preventDefault(); await apiFetch('/api/os', { method: 'POST', body: JSON.stringify({ equipamento_id: document.getElementById('osEquipamentoId').value, descricao_falha: document.getElementById('osDescricao').value.trim().toUpperCase() }) }); fecharModal('modalAbrirOS'); mudarAba('geralOS'); }
 
-    async function abrirHistoricoEqOS(eq_id) { 
-        document.getElementById('modalHistoricoEqOS').classList.remove('hidden'); const tbody = document.getElementById('tabelaHistoricoEqOS'); tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Carregando...</td></tr>'; 
-        try { 
-            const res = await fetch(getApiUrl(`/api/equipamentos/${eq_id}/os`), { headers: { 'Authorization': `Bearer ${usuarioLogado.token}` } });
-            if(res.status===404){ tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:red;">Erro 404.</td></tr>'; return; }
-            const chamados = await res.json(); if(chamados.length===0){ tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhuma O.S. para este equipamento.</td></tr>'; return; }
-            let html = ''; chamados.forEach(os => { let cor = '#3b82f6'; if(os.status==='concluida') cor='#10b981'; if(os.status==='cancelada') cor='#ef4444'; if(os.status.includes('execucao')) cor='#f59e0b'; if(os.status.includes('peca')) cor='#8b5cf6'; html += `<tr><td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td><td><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td><td><span class="badge" style="background:${cor};color:white;">${os.status.replace('_', ' ').toUpperCase()}</span></td><td><button class="btn-sm btn-secondary" onclick="fecharModal('modalHistoricoEqOS'); abrirDetalhesOS(${os.id});">Detalhes</button></td></tr>`; }); tbody.innerHTML = html; 
-        } catch(err) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:red;">Falha de comunicação.</td></tr>'; } 
-    }
+    async function abrirHistoricoEqOS(eq_id) { document.getElementById('modalHistoricoEqOS').classList.remove('hidden'); const tbody = document.getElementById('tabelaHistoricoEqOS'); tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Carregando histórico...</td></tr>'; try { const res = await fetch(getApiUrl(`/api/equipamentos/${eq_id}/os`), { headers: { 'Authorization': `Bearer ${usuarioLogado.token}` } }); if(res.status===404){ tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:red;">Erro 404.</td></tr>'; return; } const chamados = await res.json(); if(chamados.length===0){ tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhuma O.S. registrada.</td></tr>'; return; } let html = ''; chamados.forEach(os => { let cor = '#3b82f6'; if(os.status==='concluida') cor='#10b981'; if(os.status==='cancelada') cor='#ef4444'; if(os.status.includes('execucao')) cor='#f59e0b'; if(os.status.includes('peca')) cor='#8b5cf6'; html += `<tr><td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td><td><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td><td><span class="badge" style="background:${cor};color:white;">${os.status.replace('_', ' ').toUpperCase()}</span></td><td><button class="btn-sm btn-secondary" onclick="fecharModal('modalHistoricoEqOS'); abrirDetalhesOS(${os.id});">Detalhes</button></td></tr>`; }); tbody.innerHTML = html; } catch(err) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:red;">Falha de comunicação.</td></tr>'; } }
 
     async function carregarOSServer(box) {
         let btnAcoes = ''; if(usuarioLogado.perfil === 'administrador') btnAcoes = `<button class="btn-secondary" onclick="exportarCSV('os')" style="margin-right:10px;">⬇ Exportar CSV</button>`;
