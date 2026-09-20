@@ -95,14 +95,16 @@
         <div id="conteudoAba" class="card"></div>
     </div>
 
-    <!-- MODAIS ESTRUTURADOS COM <FORM> PARA VALIDAÇÃO OBRIGATÓRIA -->
     <div id="modalFormEquip" class="modal-overlay hidden">
         <div class="modal-box" style="max-width: 700px;">
             <h3 id="tituloModalEquip">Novo Equipamento</h3>
             <form id="formCriarEquip" onsubmit="salvarEquipamento(event)">
                 <input type="hidden" id="formEqId">
                 <div class="row">
-                    <div class="col"><label>Comarca:</label><input type="text" id="formEqComarca" required></div>
+                    <div class="col">
+                        <label>Comarca:</label>
+                        <select id="formEqComarca" required></select>
+                    </div>
                     <div class="col"><label>Prédio:</label><input type="text" id="formEqPredio" required></div>
                     <div class="col"><label>Sala (Local):</label><input type="text" id="formEqSala" required></div>
                 </div>
@@ -215,16 +217,24 @@
     let equipamentosCache = []; 
     let osCache = [];
     
-    // Variáveis para Ordenação e Filtro
     let eqSortCol = 'comarca'; let eqSortAsc = true;
     let eqFiltros = { comarca: '', predio: '', sala: '', tipo: '', cap: '', tombo: '', status: '' };
     let osFiltros = { id: '', comarca: '', status: '' };
 
+    // Lista Oficial dos 184 Municípios do Ceará
+    const MUNICIPIOS_CE = ["Abaiara","Acarape","Acaraú","Acopiara","Aiuaba","Alcântaras","Altaneira","Alto Santo","Amontada","Antonina do Norte","Apuiarés","Aquiraz","Aracati","Aracoiaba","Ararendá","Araripe","Aratuba","Arneiroz","Assaré","Aurora","Baixio","Banabuiú","Barbalha","Barreira","Barro","Barroquinha","Baturité","Beberibe","Bela Cruz","Boa Viagem","Brejo Santo","Camocim","Campos Sales","Canindé","Capistrano","Caridade","Cariré","Caririaçu","Cariús","Carnaubal","Cascavel","Catarina","Catunda","Caucaia","Cedro","Chaval","Choró","Chorozinho","Coreaú","Crateús","Crato","Croatá","Cruz","Deputado Irapuan Pinheiro","Ererê","Eusébio","Farias Brito","Forquilha","Fortaleza","Fortim","Frecheirinha","General Sampaio","Graça","Granja","Granjeiro","Groaíras","Guaiúba","Guaraciaba do Norte","Guaramiranga","Hidrolândia","Horizonte","Ibaretama","Ibiapina","Ibicuitinga","Icapuí","Icó","Iguatu","Independência","Ipaporanga","Ipaumirim","Ipu","Ipueiras","Iracema","Irauçuba","Itaiçaba","Itaitinga","Itapajé","Itapipoca","Itapiúna","Itarema","Itatira","Jaguaretama","Jaguaribara","Jaguaribe","Jaguaruana","Jardim","Jati","Jijoca de Jericoacoara","Juazeiro do Norte","Jucás","Lavras da Mangabeira","Limoeiro do Norte","Madalena","Maracanaú","Maranguape","Marco","Martinópole","Massapê","Mauriti","Meruoca","Milagres","Milhã","Miraíma","Missão Velha","Mombaça","Monsenhor Tabosa","Morada Nova","Moraújo","Morrinhos","Mucambo","Mulungu","Nova Olinda","Nova Russas","Novo Oriente","Ocara","Orós","Pacajus","Pacatuba","Pacoti","Pacujá","Palhano","Palmácia","Paracuru","Paraipaba","Parambu","Paramoti","Pedra Branca","Penaforte","Pentecoste","Pereiro","Pindoretama","Piquet Carneiro","Pires Ferreira","Poranga","Porteiras","Potengi","Potiretama","Quiterianópolis","Quixadá","Quixelô","Quixeramobim","Quixeré","Redenção","Reriutaba","Russas","Saboeiro","Salitre","Santa Quitéria","Santana do Acaraú","Santana do Cariri","São Benedito","São Gonçalo do Amarante","São João do Jaguaribe","São Luís do Curu","Senador Pompeu","Senador Sá","Sobral","Solonópole","Tabuleiro do Norte","Tamboril","Tarrafas","Tauá","Tejuçuoca","Tianguá","Trairi","Tururu","Ubajara","Umari","Umirim","Uruburetama","Uruoca","Varjota","Várzea Alegre","Viçosa do Ceará"];
+
     window.addEventListener('DOMContentLoaded', async () => {
+        carregarSelectMunicipios();
         if (IS_GITHUB_PAGES) await descobrirUrlServidor();
         const sessao = localStorage.getItem('os_usuario_logado');
         if (sessao) { usuarioLogado = JSON.parse(sessao); verificarPrimeiroAcesso(); }
     });
+
+    function carregarSelectMunicipios() {
+        const select = document.getElementById('formEqComarca');
+        select.innerHTML = '<option value="">Selecione a Comarca...</option>' + MUNICIPIOS_CE.map(m => `<option value="${m}">${m}</option>`).join('');
+    }
 
     async function descobrirUrlServidor() {
         try { servidorBaseUrl = (await (await fetch(`servidor.json?t=${Date.now()}`)).json()).url.replace(/\/+$/, ''); } 
@@ -235,11 +245,27 @@
     function fecharModal(id) { document.getElementById(id).classList.add('hidden'); }
     function dataFormatada(timestamp) { return new Date(timestamp).toLocaleString('pt-BR'); }
 
-    // ====== LOGIN ======
+    // Exportar para CSV/Excel
+    function exportarCSV(tipo) {
+        let dados = [], cabecalho = [], nomeArq = '';
+        if (tipo === 'equipamentos') {
+            cabecalho = ['ID', 'Comarca', 'Predio', 'Sala', 'Tipo', 'Capacidade', 'Marca', 'Tombo', 'Status'];
+            dados = equipamentosCache.map(eq => [eq.id, eq.comarca, eq.predio, eq.sala, eq.tipo_equipamento, eq.capacidade||'', eq.marca||'', eq.tombo, eq.ativo===1?'Ativo':'Inativo']);
+            nomeArq = 'relatorio_equipamentos.csv';
+        } else {
+            cabecalho = ['ID', 'Data Abertura', 'Comarca', 'Predio', 'Sala', 'Equipamento', 'Defeito', 'Status', 'Prioridade'];
+            dados = osCache.map(os => [os.id, new Date(os.data_abertura).toLocaleString('pt-BR'), os.comarca, os.predio, os.sala, `${os.tipo_equipamento} ${os.capacidade||''}`, os.descricao_falha, os.status.toUpperCase(), os.prioridade]);
+            nomeArq = 'relatorio_os.csv';
+        }
+        let csvContent = "data:text/csv;charset=utf-8,\uFEFF" + cabecalho.join(";") + "\n" + dados.map(row => row.map(item => `"${String(item).replace(/"/g, '""')}"`).join(";")).join("\n");
+        const link = document.createElement("a"); link.setAttribute("href", encodeURI(csvContent)); link.setAttribute("download", nomeArq);
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    }
+
+    // ====== LOGIN & SEGURANÇA ======
     async function fazerLogin(e) {
         e.preventDefault();
-        const btn = document.getElementById('btnEntrar');
-        btn.disabled = true; btn.textContent = 'Autenticando...';
+        const btn = document.getElementById('btnEntrar'); btn.disabled = true; btn.textContent = 'Autenticando...';
         try {
             const res = await fetch(getApiUrl('/api/login'), { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ login: document.getElementById('loginUser').value.trim(), senha: document.getElementById('loginSenha').value }) });
             const data = await res.json();
@@ -261,7 +287,7 @@
         usuarioLogado.primeiro_acesso = 0; localStorage.setItem('os_usuario_logado', JSON.stringify(usuarioLogado)); verificarPrimeiroAcesso();
     }
 
-    // ====== NAVEGAÇÃO COM MEMÓRIA (F5 RESILIENT) ======
+    // ====== NAVEGAÇÃO ======
     function mostrarPainel() {
         document.getElementById('authSection').classList.add('hidden');
         document.getElementById('appSection').classList.remove('hidden');
@@ -269,30 +295,24 @@
         document.getElementById('usuarioPerfilDisplay').textContent = usuarioLogado.perfil;
         
         let abaSalva = sessionStorage.getItem('os_aba_ativa');
-        
         if (usuarioLogado.perfil === 'administrador') { 
             document.getElementById('navAdmin').classList.remove('hidden'); 
-            const abasAdmin = ['dashboard', 'admUsers', 'geralEqs', 'geralOS'];
-            if(!abasAdmin.includes(abaSalva)) abaSalva = 'dashboard';
+            if(!['dashboard', 'admUsers', 'geralEqs', 'geralOS'].includes(abaSalva)) abaSalva = 'dashboard';
             mudarAba(abaSalva); 
         } else { 
             document.getElementById('navPadrao').classList.remove('hidden'); 
-            const abasPadrao = ['geralEqs', 'geralOS'];
-            if(!abasPadrao.includes(abaSalva)) abaSalva = 'geralEqs';
+            if(!['geralEqs', 'geralOS'].includes(abaSalva)) abaSalva = 'geralEqs';
             mudarAba(abaSalva); 
         }
     }
 
     function mudarAba(abaId) {
-        sessionStorage.setItem('os_aba_ativa', abaId); // Guarda a aba ativa na memória!
+        sessionStorage.setItem('os_aba_ativa', abaId);
         document.querySelectorAll('.nav-tabs button').forEach(b => b.classList.remove('active'));
-        
         if(usuarioLogado.perfil === 'administrador') {
-            let btn = document.getElementById(`tab${abaId.charAt(0).toUpperCase() + abaId.slice(1)}`);
-            if(btn) btn.classList.add('active');
+            let btn = document.getElementById(`tab${abaId.charAt(0).toUpperCase() + abaId.slice(1)}`); if(btn) btn.classList.add('active');
         } else {
-            let btn = document.getElementById(`tab${abaId.charAt(0).toUpperCase() + abaId.slice(1)}Padrao`);
-            if(btn) btn.classList.add('active');
+            let btn = document.getElementById(`tab${abaId.charAt(0).toUpperCase() + abaId.slice(1)}Padrao`); if(btn) btn.classList.add('active');
         }
         
         const box = document.getElementById('conteudoAba');
@@ -321,7 +341,7 @@
             </div>`;
     }
 
-    // ====== USUÁRIOS (ADMIN) ======
+    // ====== USUÁRIOS ======
     async function renderAdmUsers(box) {
         box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h3>Gestão de Usuários</h3><button class="btn-success" onclick="abrirModalUser()">+ Novo Usuário</button></div><div id="tabelaUsers">Carregando...</div>`;
         const users = await (await fetch(getApiUrl('/api/usuarios'))).json();
@@ -330,46 +350,41 @@
         document.getElementById('tabelaUsers').innerHTML = html + `</tbody></table>`;
     }
     
-    function abrirModalUser() { 
-        document.getElementById('formCriarUsuario').reset(); 
-        document.getElementById('modalFormUser').classList.remove('hidden'); 
-    }
+    function abrirModalUser() { document.getElementById('formCriarUsuario').reset(); document.getElementById('modalFormUser').classList.remove('hidden'); }
     
     async function salvarUsuario(e) {
-        e.preventDefault(); // Impede o envio do form que recarrega a página
-        const btn = document.getElementById('btnSalvarUser');
-        btn.disabled = true; btn.textContent = 'Salvando...';
-        
+        e.preventDefault(); 
+        const btn = document.getElementById('btnSalvarUser'); btn.disabled = true; btn.textContent = 'Salvando...';
         try {
             const p = { nome: document.getElementById('formUserNome').value, login: document.getElementById('formUserLogin').value, perfil: document.getElementById('formUserPerfil').value };
             const res = await fetch(getApiUrl('/api/usuarios'), { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(p) });
             const data = await res.json();
-            
-            if(res.ok) { 
-                alert("Usuário criado com sucesso!");
-                fecharModal('modalFormUser'); 
-                mudarAba('admUsers'); 
-            } else {
-                alert(data.erro || "Erro ao criar usuário.");
-            }
-        } catch(err) { alert("Erro de conexão com o servidor."); }
-        
+            if(res.ok) { alert("Usuário criado com sucesso!"); fecharModal('modalFormUser'); mudarAba('admUsers'); } else alert(data.erro || "Erro ao criar usuário.");
+        } catch(err) { alert("Erro de conexão."); }
         btn.disabled = false; btn.textContent = 'Salvar';
     }
 
     // ====== EQUIPAMENTOS ======
     async function carregarEquipamentosServer(box) {
+        let btnAcoes = '';
+        if(usuarioLogado.perfil === 'administrador'){
+            btnAcoes = `<button class="btn-secondary" onclick="exportarCSV('equipamentos')" style="margin-right:10px;">⬇ Exportar CSV</button><button class="btn-success" onclick="abrirModalEquip(null)">+ Novo Equipamento</button>`;
+        }
+        
         box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;">
-            <h3>Base de Equipamentos</h3>${usuarioLogado.perfil === 'administrador' ? '<button class="btn-success" onclick="abrirModalEquip(null)">+ Novo Equipamento</button>' : ''}
-        </div><div style="overflow-x: auto;"><table><thead id="headFiltrosEq"></thead><tbody id="tabelaBoxEq"><tr><td colspan="8">Carregando...</td></tr></tbody></table></div>
+            <h3>Base de Equipamentos</h3><div>${btnAcoes}</div>
+        </div>
+        <div style="overflow-x: auto;"><table><thead id="headFiltrosEq"></thead><tbody id="tabelaBoxEq"><tr><td colspan="8">Carregando dados...</td></tr></tbody></table></div>
         <div id="totalEqs" style="font-size:12px; color:#64748b; margin-top:10px;"></div>`;
+        
         equipamentosCache = await (await fetch(getApiUrl('/api/equipamentos'))).json();
         renderizarCabecalhoEq(); desenharTabelaEquipamentos();
     }
 
     function renderizarCabecalhoEq() {
         const iconSort = eqSortAsc ? ' ▴' : ' ▾'; const col = (nome, cod) => `<th onclick="setEqSort('${cod}')">${nome}${eqSortCol === cod ? iconSort : ''}</th>`;
-        document.getElementById('headFiltrosEq').innerHTML = `<tr>${col('Comarca','comarca')}${col('Prédio','predio')}${col('Local','sala')}${col('Equipamento','tipo_equipamento')}${col('Cap','capacidade')}${col('Tombo','tombo')}${col('Status','status')}<th>Ações</th></tr>
+        document.getElementById('headFiltrosEq').innerHTML = `
+            <tr>${col('Comarca','comarca')}${col('Prédio','predio')}${col('Local','sala')}${col('Equipamento','tipo_equipamento')}${col('Cap','capacidade')}${col('Tombo','tombo')}${col('Status','status')}<th>Ações</th></tr>
             <tr class="filter-row">
                 <td><input type="text" placeholder="Buscar..." oninput="setEqFiltro('comarca', this.value)" value="${eqFiltros.comarca}"></td>
                 <td><input type="text" placeholder="Buscar..." oninput="setEqFiltro('predio', this.value)" value="${eqFiltros.predio}"></td>
@@ -414,7 +429,7 @@
                 if(eq.ativo === 1) acoes += `<button class="btn-sm btn-danger" onclick="toggleAtivoEq(${eq.id}, 0)">Inativar</button>`;
                 else acoes += `<button class="btn-sm" style="background:#10b981;" onclick="toggleAtivoEq(${eq.id}, 1)">Ativar</button>`;
             }
-            html += `<tr ${eq.ativo===0 ? 'class="inativo"' : ''}><td>${eq.comarca}</td><td>${eq.predio}</td><td>${eq.sala}</td><td>${eq.tipo_equipamento}</td><td>${eq.capacidade||'-'}</td><td>${eq.tombo === 'S/T' ? '<span class="badge" style="background:#e2e8f0;color:#64748b;">S/T</span>' : eq.tombo}</td><td>${statusLabel}</td><td style="white-space:nowrap;">${acoes}</td></tr>`;
+            html += `<tr ${eq.ativo===0 ? 'class="inativo"' : ''}><td>${eq.comarca}</td><td>${eq.predio}</td><td>${eq.sala}</td><td>${eq.tipo_equipamento}</td><td>${eq.capacidade||'-'}</td><td>${eq.tombo === 'S/T' ? '<span class="badge" style="background:#e2e8f0;color:#64748b;">S/T</span>' : eq.tombo}</td><td>${statusLabel}</td><td style="white-space: nowrap;">${acoes}</td></tr>`;
         });
         tbody.innerHTML = html; document.getElementById('totalEqs').textContent = `Total listado: ${filtrados.length} equipamento(s).`;
     }
@@ -425,7 +440,15 @@
         if(id) {
             const eq = equipamentosCache.find(e => e.id === id);
             document.getElementById('tituloModalEquip').textContent = 'Editar Equipamento';
-            document.getElementById('formEqId').value = eq.id; document.getElementById('formEqComarca').value = eq.comarca;
+            document.getElementById('formEqId').value = eq.id; 
+            
+            // Tratamento especial para o Select (se a comarca antiga não estiver nos 184 atuais, injeta ela)
+            let selectComarca = document.getElementById('formEqComarca');
+            if(!Array.from(selectComarca.options).some(opt => opt.value === eq.comarca)){
+                selectComarca.innerHTML += `<option value="${eq.comarca}">${eq.comarca}</option>`;
+            }
+            selectComarca.value = eq.comarca;
+            
             document.getElementById('formEqPredio').value = eq.predio; document.getElementById('formEqSala').value = eq.sala;
             document.getElementById('formEqTipo').value = eq.tipo_equipamento; document.getElementById('formEqCap').value = eq.capacidade || '';
             document.getElementById('formEqMarca').value = eq.marca || ''; document.getElementById('formEqTombo').value = eq.tombo === 'S/T' ? '' : eq.tombo;
@@ -464,7 +487,13 @@
     }
 
     async function carregarOSServer(box) {
-        box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h3>Ordens de Serviço</h3><button onclick="carregarOSServer(document.getElementById('conteudoAba'))">Atualizar O.S.</button></div><div style="overflow-x:auto;"><table><thead id="headFiltrosOS"></thead><tbody id="tabelaBoxOS"><tr><td colspan="5">Carregando...</td></tr></tbody></table></div>`;
+        let btnAcoes = '';
+        if(usuarioLogado.perfil === 'administrador') btnAcoes = `<button class="btn-secondary" onclick="exportarCSV('os')" style="margin-right:10px;">⬇ Exportar CSV</button>`;
+        
+        box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+            <h3>Ordens de Serviço</h3><div>${btnAcoes}<button onclick="carregarOSServer(document.getElementById('conteudoAba'))">Atualizar O.S.</button></div>
+            </div><div style="overflow-x:auto;"><table><thead id="headFiltrosOS"></thead><tbody id="tabelaBoxOS"><tr><td colspan="5">Carregando...</td></tr></tbody></table></div>`;
+        
         osCache = await (await fetch(getApiUrl('/api/os'))).json();
         renderizarCabecalhoOS(); desenharTabelaOS();
     }
@@ -487,7 +516,6 @@
             if (osFiltros.id && !os.id.toString().includes(osFiltros.id)) return false;
             if (osFiltros.comarca && !(os.comarca||'').toLowerCase().includes(osFiltros.comarca)) return false;
             if (osFiltros.status && !(os.status||'').toLowerCase().includes(osFiltros.status)) return false;
-            // Se for usuário padrão (solicitante), visualiza apenas as próprias OS. Se técnico/admin, visualiza todas.
             if (usuarioLogado.perfil === 'solicitante' && os.solicitante_id !== usuarioLogado.id) return false;
             return true;
         });
