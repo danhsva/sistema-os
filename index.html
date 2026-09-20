@@ -277,7 +277,13 @@
 
     <div id="modalHistoricoEqOS" class="modal-overlay hidden"><div class="modal-box" style="max-width: 700px;"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;"><h3 style="margin:0;">Histórico de O.S. do Equipamento</h3><button class="btn-danger btn-sm" onclick="fecharModal('modalHistoricoEqOS')">X</button></div><div style="overflow-x:auto;"><table style="margin-top: 0;"><thead><tr><th>O.S. / Data</th><th>Defeito</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tabelaHistoricoEqOS"></tbody></table></div></div></div>
     
-    <div id="modalTratarOS" class="modal-overlay hidden"><div class="modal-box"><div style="display: flex; justify-content: space-between; align-items: center;"><h3 style="margin:0;">Detalhes da O.S. <span id="detalheOsId"></span></h3><span id="detalheOsBadge" class="badge"></span></div><div style="background: #f8fafc; border: 1px solid var(--border); padding: 10px; border-radius: 6px; margin-top: 15px; font-size: 13px;"><strong>Equipamento:</strong> <span id="detalheOsEquip"></span><br><strong>Local:</strong> <span id="detalheOsLocal"></span><br><strong>Defeito Inicial:</strong> <span id="detalheOsDefeito" style="color: var(--danger);"></span></div><div id="boxAcaoOS" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border);"><h4>Atualizar / Tramitar Chamado</h4><form onsubmit="salvarTratamentoOS(event)"><input type="hidden" id="tratarOsId"><label>Novo Status:</label><select id="tratarOsStatus" required><option value="em_analise">Em Análise</option><option value="aguardando_peca">Aguardando Peça</option><option value="em_execucao">Em Execução</option><option value="concluida">Concluída (Resolvido)</option><option value="cancelada">Cancelada (Improcedente / Erro)</option></select><label>Relatório Técnico / Observação:</label><textarea id="tratarOsObs" rows="3" placeholder="O que foi feito?" required></textarea><button type="submit" class="btn-success btn-block" id="btnSalvarTratamento">Gravar Atualização</button></form></div><h4 style="margin-top: 25px;">Histórico da O.S.</h4><div id="boxTimeline" class="timeline"></div><button class="btn-secondary btn-block" style="margin-top: 20px;" onclick="fecharModal('modalTratarOS')">Fechar Detalhes</button></div></div>
+    <div id="modalTratarOS" class="modal-overlay hidden"><div class="modal-box"><div style="display: flex; justify-content: space-between; align-items: center;"><h3 style="margin:0;">Detalhes da O.S. <span id="detalheOsId"></span></h3><span id="detalheOsBadge" class="badge"></span></div><div style="background: #f8fafc; border: 1px solid var(--border); padding: 10px; border-radius: 6px; margin-top: 15px; font-size: 13px;"><strong>Equipamento:</strong> <span id="detalheOsEquip"></span><br><strong>Local:</strong> <span id="detalheOsLocal"></span><br><strong>Defeito Inicial:</strong> <span id="detalheOsDefeito" style="color: var(--danger);"></span></div><div id="boxAcaoOS" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border);"><h4>Atualizar / Tramitar Chamado</h4><form onsubmit="salvarTratamentoOS(event)"><input type="hidden" id="tratarOsId"><label>Novo Status:</label><select id="tratarOsStatus" required>
+                        <option value="aprovada">Aprovada (Pelo Fiscal)</option>
+                        <option value="em_analise">Em Análise (Técnica)</option>
+                        <option value="aguardando_peca">Aguardando Peça</option>
+                        <option value="em_execucao">Em Execução</option>
+                        <option value="concluida">Concluída (Resolvido)</option>
+                        <option value="cancelada">Cancelada (Improcedente / Erro)</option></select><label>Relatório Técnico / Observação:</label><textarea id="tratarOsObs" rows="3" placeholder="O que foi feito?" required></textarea><button type="submit" class="btn-success btn-block" id="btnSalvarTratamento">Gravar Atualização</button></form></div><h4 style="margin-top: 25px;">Histórico da O.S.</h4><div id="boxTimeline" class="timeline"></div><button class="btn-secondary btn-block" style="margin-top: 20px;" onclick="fecharModal('modalTratarOS')">Fechar Detalhes</button></div></div>
 
 </div>
 
@@ -676,8 +682,7 @@
         }); 
         let html = ''; 
         filtrados.forEach(os => { 
-            let cor = '#3b82f6'; if(os.status==='concluida') cor='#10b981'; if(os.status==='cancelada') cor='#ef4444'; if(os.status.includes('execucao')) cor='#f59e0b'; if(os.status.includes('peca')) cor='#8b5cf6'; 
-            let btnCancelar = (usuarioLogado.perfil === 'administrador' && os.status !== 'cancelada' && os.status !== 'concluida') ? `<br><button class="btn-sm btn-danger" style="margin-top:4px;" onclick="cancelarOSDireto(${os.id})">Cancelar</button>` : ''; 
+            let cor = '#3b82f6'; if(os.status==='concluida') cor='#10b981'; if(os.status==='cancelada') cor='#ef4444'; if(os.status.includes('execucao')) cor='#f59e0b'; if(os.status.includes('peca')) cor='#8b5cf6'; if(os.status==='aprovada') cor='#0ea5e9';            let btnCancelar = (usuarioLogado.perfil === 'administrador' && os.status !== 'cancelada' && os.status !== 'concluida') ? `<br><button class="btn-sm btn-danger" style="margin-top:4px;" onclick="cancelarOSDireto(${os.id})">Cancelar</button>` : ''; 
             html += `<tr><td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td><td><strong>${esc(os.comarca)}</strong><br><small>${esc(os.predio)} (${esc(os.sala)})</small></td><td style="max-width:250px;"><strong>${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')}</strong><br><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td><td><span class="badge" style="background:${cor};color:white;">${os.status.replace('_', ' ').toUpperCase()}</span></td><td><button class="btn-sm btn-secondary" onclick="abrirDetalhesOS(${os.id})">Detalhes / Tratar</button>${btnCancelar}</td></tr>`; 
         }); 
         tbody.innerHTML = html; 
@@ -701,7 +706,27 @@
         } catch (err) { document.getElementById('boxTimeline').innerHTML = `<span style="color:red;">Falha de comunicação.</span>`; } 
     }
 
-    async function salvarTratamentoOS(e) { e.preventDefault(); const btn = document.getElementById('btnSalvarTratamento'); btn.disabled = true; btn.textContent = 'Gravando...'; await apiFetch(`/api/os/${document.getElementById('tratarOsId').value}/status`, { method: 'PUT', body: JSON.stringify({ status: document.getElementById('tratarOsStatus').value, observacao: document.getElementById('tratarOsObs').value.trim().toUpperCase() }) }); btn.disabled = false; btn.textContent = 'Gravar Atualização'; fecharModal('modalTratarOS'); mudarAba('geralOS'); }
+    async function salvarTratamentoOS(e) {
+        e.preventDefault(); 
+        const statusNovo = document.getElementById('tratarOsStatus').value;
+        
+        // Bloqueia se a Contratada/Executante tentar aprovar O.S.
+        if (statusNovo === 'aprovada' && (usuarioLogado.perfil === 'contratada' || usuarioLogado.perfil === 'executante')) {
+            alert("Apenas Fiscais ou Administradores podem Aprovar uma O.S.");
+            return;
+        }
+
+        const btn = document.getElementById('btnSalvarTratamento'); 
+        btn.disabled = true; btn.textContent = 'Gravando...';
+        
+        const p = { status: statusNovo, observacao: document.getElementById('tratarOsObs').value.trim().toUpperCase(), usuario_id: usuarioLogado.id };
+        await apiFetch(`/api/os/${document.getElementById('tratarOsId').value}/status`, { method: 'PUT', body: JSON.stringify(p) });
+        
+        btn.disabled = false; btn.textContent = 'Gravar Atualização'; 
+        fecharModal('modalTratarOS'); 
+        mudarAba('geralOS');
+    }
+    
 </script>
 </body>
 </html>
