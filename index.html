@@ -429,11 +429,26 @@
             const inativo = u.ativo === 0 ? 'class="inativo"' : '';
             const status = u.ativo === 1 ? '<span style="color:var(--success);font-weight:bold;">Ativo</span>' : '<span style="color:var(--danger);font-weight:bold;">Inativo</span>';
             let acoes = '';
-            if (u.id === usuarioLogado.id) { if (usuarioLogado.perfil === 'administrador') acoes = `<button class="btn-sm btn-secondary" onclick="abrirModalUser(${u.id})">Editar</button>`; else acoes = `<span style="color:#64748b; font-size: 11px;">(Seu Perfil)</span>`; }
-            else { let btnAtivar = u.ativo === 1 ? `<button class="btn-sm btn-danger" onclick="toggleAtivoUser(${u.id}, 0)">Inativar</button>` : `<button class="btn-sm btn-success" onclick="toggleAtivoUser(${u.id}, 1)">Ativar</button>`; acoes = `<button class="btn-sm btn-secondary" onclick="abrirModalUser(${u.id})">Editar</button> ${btnAtivar}`; }
+            if (u.id === usuarioLogado.id) { 
+                if (usuarioLogado.perfil === 'administrador') acoes = `<button class="btn-sm btn-secondary" onclick="abrirModalUser(${u.id})">Editar</button>`; 
+                else acoes = `<span style="color:#64748b; font-size: 11px;">(Seu Perfil)</span>`; 
+            } else { 
+                let btnAtivar = u.ativo === 1 ? `<button class="btn-sm btn-danger" onclick="toggleAtivoUser(${u.id}, 0)">Inativar</button>` : `<button class="btn-sm btn-success" onclick="toggleAtivoUser(${u.id}, 1)">Ativar</button>`; 
+                let btnReset = usuarioLogado.perfil === 'administrador' ? `<button class="btn-sm" style="background:#0ea5e9; color:white;" onclick="resetarSenhaUser(${u.id}, '${esc(u.nome)}')">Resetar Senha</button>` : '';
+                acoes = `<button class="btn-sm btn-secondary" onclick="abrirModalUser(${u.id})">Editar</button> ${btnAtivar} <br>${btnReset}`; 
+            }
             html += `<tr ${inativo}><td>${esc(u.nome)}</td><td>${esc(u.login)}</td><td><span class="badge">${esc(u.perfil)}</span></td><td><strong>${esc(u.contrato_nome)||'-'}</strong></td><td>${status}</td><td style="white-space:nowrap;">${acoes}</td></tr>`;
         });
         document.getElementById('tabelaUsers').innerHTML = html + `</tbody></table>`;
+    }
+
+    async function resetarSenhaUser(id, nome) {
+        if (!confirm(`Tem certeza que deseja resetar a senha de ${nome}?\n\nA senha voltará a ser igual ao login dele.`)) return;
+        try {
+            const res = await apiFetch(`/api/usuarios/${id}/resetar-senha`, { method: 'POST' });
+            const data = await res.json();
+            if (res.ok) alert(data.mensagem); else alert(data.erro);
+        } catch(err) { alert("Erro de comunicação."); }
     }
     
     async function abrirModalUser(id) { 
