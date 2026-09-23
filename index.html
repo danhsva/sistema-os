@@ -277,7 +277,29 @@
 
     <div id="modalHistoricoEqOS" class="modal-overlay hidden"><div class="modal-box" style="max-width: 700px;"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;"><h3 style="margin:0;">Histórico de O.S. do Equipamento</h3><button class="btn-danger btn-sm" onclick="fecharModal('modalHistoricoEqOS')">X</button></div><div style="overflow-x:auto;"><table style="margin-top: 0;"><thead><tr><th>O.S. / Data</th><th>Defeito</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tabelaHistoricoEqOS"></tbody></table></div></div></div>
     
-    <div id="modalTratarOS" class="modal-overlay hidden"><div class="modal-box"><div style="display: flex; justify-content: space-between; align-items: center;"><h3 style="margin:0;">Detalhes da O.S. <span id="detalheOsId"></span></h3><span id="detalheOsBadge" class="badge"></span></div><div style="background: #f8fafc; border: 1px solid var(--border); padding: 10px; border-radius: 6px; margin-top: 15px; font-size: 13px;"><strong>Equipamento:</strong> <span id="detalheOsEquip"></span><br><strong>Local:</strong> <span id="detalheOsLocal"></span><br><strong>Defeito Inicial:</strong> <span id="detalheOsDefeito" style="color: var(--danger);"></span></div><div id="boxAcaoOS" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border);"><h4>Atualizar / Tramitar Chamado</h4><form onsubmit="salvarTratamentoOS(event)"><input type="hidden" id="tratarOsId"><label>Novo Status:</label><select id="tratarOsStatus" required>
+    <div id="modalTratarOS" class="modal-overlay hidden"><div class="modal-box"><div style="display: flex; justify-content: space-between; align-items: center;"><h3 style="margin:0;">Detalhes da O.S. <span id="detalheOsId"></span></h3><span id="detalheOsBadge" class="badge"></span></div><div style="background: #f8fafc; border: 1px solid var(--border); padding: 10px; border-radius: 6px; margin-top: 15px; font-size: 13px;">
+                <strong>Equipamento:</strong> <span id="detalheOsEquip"></span><br>
+                <strong>Local:</strong> <span id="detalheOsLocal"></span><br>
+                <strong>Técnico Designado:</strong> <span id="detalheOsExecutante" style="color: var(--primary-dark); font-weight: bold;"></span><br>
+                <strong>Defeito Inicial:</strong> <span id="detalheOsDefeito" style="color: var(--danger);"></span>
+            </div><strong>Equipamento:</strong> <span id="detalheOsEquip"></span><br><strong>Local:</strong> <span id="detalheOsLocal"></span><br><strong>Defeito Inicial:</strong> <span id="detalheOsDefeito" style="color: var(--danger);"></span></div><div id="boxAcaoOS" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border);">
+                <h4>Atualizar / Tramitar Chamado</h4>
+                <form onsubmit="salvarTratamentoOS(event)">
+                    <input type="hidden" id="tratarOsId">
+                    
+                    <!-- CAMPO EXCLUSIVO PARA A CONTRATADA DELEGAR -->
+                    <div id="boxDelegarExecutante" class="hidden">
+                        <label>Designar Técnico (Executante):</label>
+                        <select id="tratarOsExecutante"></select>
+                    </div>
+
+                    <label>Novo Status:</label>
+                    <select id="tratarOsStatus" required></select>
+                    <label>Relatório Técnico / Observação:</label>
+                    <textarea id="tratarOsObs" rows="3" placeholder="O que foi feito?"></textarea>
+                    <button type="submit" class="btn-success btn-block" id="btnSalvarTratamento">Gravar Atualização</button>
+                </form>
+            </div><h4>Atualizar / Tramitar Chamado</h4><form onsubmit="salvarTratamentoOS(event)"><input type="hidden" id="tratarOsId"><label>Novo Status:</label><select id="tratarOsStatus" required>
                         <option value="aprovada">Aprovada (Pelo Fiscal)</option>
                         <option value="em_analise">Em Análise (Técnica)</option>
                         <option value="aguardando_peca">Aguardando Peça</option>
@@ -715,6 +737,7 @@
         document.getElementById('modalTratarOS').classList.remove('hidden'); 
         document.getElementById('boxTimeline').innerHTML = "Carregando..."; 
         document.getElementById('boxAcaoOS').classList.add('hidden'); 
+        document.getElementById('boxDelegarExecutante').classList.add('hidden');
         document.getElementById('tratarOsObs').value = ''; 
         
         try { 
@@ -725,6 +748,7 @@
             document.getElementById('detalheOsBadge').textContent = os.status.replace('_', ' ').toUpperCase(); 
             document.getElementById('detalheOsEquip').textContent = `${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')} (Tombo: ${esc(os.tombo)})`; 
             document.getElementById('detalheOsLocal').textContent = `${esc(os.comarca)} - ${esc(os.predio)} / ${esc(os.sala)}`; 
+            document.getElementById('detalheOsExecutante').textContent = os.nome_executante ? esc(os.nome_executante) : 'NÃO DESIGNADO';
             document.getElementById('detalheOsDefeito').textContent = esc(os.descricao_falha); 
 
             let htmlHist = ''; 
@@ -733,7 +757,6 @@
             }); 
             document.getElementById('boxTimeline').innerHTML = htmlHist; 
             
-            // Regra de Negócio: Quem pode tratar a O.S?
             let podeTratar = false; 
             if (usuarioLogado.perfil === 'administrador') podeTratar = true; 
             else if (usuarioLogado.perfil !== 'solicitante' && os.status !== 'concluida' && os.status !== 'cancelada') podeTratar = true; 
@@ -742,33 +765,24 @@
                 document.getElementById('boxAcaoOS').classList.remove('hidden'); 
                 document.getElementById('tratarOsId').value = os.id; 
                 
-                // Filtra as opções da lista de Status baseada no Perfil
                 const selStatus = document.getElementById('tratarOsStatus');
                 if (usuarioLogado.perfil === 'fiscal') {
-                    // Fiscal só pode Aprovar, Concluir ou Cancelar
-                    selStatus.innerHTML = `
-                        <option value="aprovada">Aprovar O.S. (Enviar para Execução)</option>
-                        <option value="concluida">Concluída (Resolvido)</option>
-                        <option value="cancelada">Cancelar O.S. (Improcedente)</option>
-                    `;
-                } else if (usuarioLogado.perfil === 'contratada' || usuarioLogado.perfil === 'executante') {
-                    // Contratada não pode Aprovar nem Cancelar
-                    selStatus.innerHTML = `
-                        <option value="em_analise">Em Análise Técnica</option>
-                        <option value="aguardando_peca">Aguardando Peça</option>
-                        <option value="em_execucao">Em Execução</option>
-                        <option value="concluida">Concluída (Resolvido)</option>
-                    `;
+                    selStatus.innerHTML = `<option value="aprovada">Aprovar O.S. (Enviar para Execução)</option><option value="concluida">Concluída (Resolvido)</option><option value="cancelada">Cancelar O.S. (Improcedente)</option>`;
+                } else if (usuarioLogado.perfil === 'contratada') {
+                    // Contratada pode colocar em execução, em análise ou aguardando peça
+                    selStatus.innerHTML = `<option value="em_execucao">Em Execução</option><option value="em_analise">Em Análise Técnica</option><option value="aguardando_peca">Aguardando Peça</option><option value="concluida">Concluída (Resolvido)</option>`;
+                    
+                    // Carrega a equipe de técnicos da Contratada
+                    const resExecutantes = await (await apiFetch('/api/usuarios')).json();
+                    const selExec = document.getElementById('tratarOsExecutante');
+                    selExec.innerHTML = '<option value="">Selecione o Técnico Responsável...</option>' + 
+                        resExecutantes.map(ex => `<option value="${ex.id}" ${os.executante_id === ex.id ? 'selected' : ''}>${esc(ex.nome)}</option>`).join('');
+                    document.getElementById('boxDelegarExecutante').classList.remove('hidden');
+                } else if (usuarioLogado.perfil === 'executante') {
+                    // Executante não delega, apenas trabalha
+                    selStatus.innerHTML = `<option value="em_execucao">Em Execução</option><option value="aguardando_peca">Aguardando Peça</option><option value="concluida">Concluída (Resolvido)</option>`;
                 } else {
-                    // Administrador pode tudo
-                    selStatus.innerHTML = `
-                        <option value="aprovada">Aprovada (Pelo Fiscal)</option>
-                        <option value="em_analise">Em Análise</option>
-                        <option value="aguardando_peca">Aguardando Peça</option>
-                        <option value="em_execucao">Em Execução</option>
-                        <option value="concluida">Concluída (Resolvido)</option>
-                        <option value="cancelada">Cancelada (Improcedente / Erro)</option>
-                    `;
+                    selStatus.innerHTML = `<option value="aprovada">Aprovada (Pelo Fiscal)</option><option value="em_execucao">Em Execução</option><option value="em_analise">Em Análise</option><option value="aguardando_peca">Aguardando Peça</option><option value="concluida">Concluída</option><option value="cancelada">Cancelada</option>`;
                 }
             } 
         } catch (err) { 
@@ -780,12 +794,15 @@
         e.preventDefault(); 
         const statusNovo = document.getElementById('tratarOsStatus').value;
         let obsTexto = document.getElementById('tratarOsObs').value.trim().toUpperCase();
+        const execId = document.getElementById('tratarOsExecutante').value;
 
         if (obsTexto === '') {
             if (usuarioLogado.perfil === 'fiscal' && statusNovo === 'aprovada') {
                 obsTexto = "O.S. APROVADA PELO FISCAL. AUTORIZADO INÍCIO DO ATENDIMENTO.";
+            } else if (usuarioLogado.perfil === 'contratada' && execId) {
+                obsTexto = "O.S. ASSUMIDA PELA CONTRATADA E DELEGADA AO TÉCNICO.";
             } else {
-                alert("É obrigatório preencher o Relatório Técnico / Observação para esta ação.");
+                alert("É obrigatório preencher o Relatório Técnico / Observação.");
                 return;
             }
         }
@@ -794,27 +811,24 @@
         btn.disabled = true; btn.textContent = 'Gravando...'; 
         
         try {
-            const p = { status: statusNovo, observacao: obsTexto, usuario_id: usuarioLogado.id };
-            // Await garante que o JS espere a Raspberry Pi responder "Status Atualizado" antes de prosseguir
-            const res = await apiFetch(`/api/os/${document.getElementById('tratarOsId').value}/status`, { method: 'PUT', body: JSON.stringify(p) }); 
+            const p = { 
+                status: statusNovo, 
+                observacao: obsTexto, 
+                usuario_id: usuarioLogado.id,
+                executante_id: execId || null
+            };
             
+            const res = await apiFetch(`/api/os/${document.getElementById('tratarOsId').value}/status`, { method: 'PUT', body: JSON.stringify(p) }); 
             if (res.ok) {
                 fecharModal('modalTratarOS'); 
-                
-                // Força a recarga total dos dados da nuvem para a tabela ficar fiel ao banco de dados
                 const abaAtiva = sessionStorage.getItem('os_aba_ativa');
-                if (abaAtiva === 'geralOS') {
-                    await carregarOSServer(document.getElementById('conteudoAba'));
-                } else {
-                    mudarAba('geralOS');
-                }
+                if (abaAtiva === 'geralOS') await carregarOSServer(document.getElementById('conteudoAba'));
+                else mudarAba('geralOS');
             } else {
                 const data = await res.json();
-                alert(data.erro || "Falha ao gravar atualização.");
+                alert(data.erro || "Falha ao gravar.");
             }
-        } catch (err) {
-            alert("Erro de comunicação com o servidor.");
-        }
+        } catch(err) { alert("Erro de comunicação."); }
         
         btn.disabled = false; btn.textContent = 'Gravar Atualização'; 
     }
