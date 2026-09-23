@@ -1,3 +1,4 @@
+html
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -5,12 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SGME - Gestão de Manutenção</title>
     <style>
-        :root { --primary: #2563eb; --primary-dark: #1d4ed8; --bg: #f4f7f6; --card: #ffffff; --text: #1e293b; --border: #e2e8f0; --danger: #ef4444; --success: #10b981; --warning: #f59e0b; --row-alert: #fffbeb; }
+        :root { --primary: #2563eb; --primary-dark: #1d4ed8; --bg: #f4f7f6; --card: #ffffff; --text: #1e293b; --border: #e2e8f0; --danger: #ef4444; --success: #10b981; --warning: #f59e0b; --info: #0284c7; --row-alert: #fffbeb; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
         body { background: var(--bg); color: var(--text); display: flex; min-height: 100vh; overflow-x: hidden; }
         
         .hidden { display: none !important; }
-        .card { background: var(--card); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 20px; border: 1px solid var(--border); }
+        .card { background: var(--card); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.06); margin-bottom: 20px; border: 1px solid var(--border); }
         h2, h3 { color: var(--primary-dark); margin-bottom: 15px; }
         label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: #475569; }
         
@@ -22,11 +23,11 @@
         button { background: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         button:hover { background: var(--primary-dark); }
         button:disabled { opacity: 0.6; cursor: not-allowed; }
-        .btn-danger { background: var(--danger); } .btn-success { background: var(--success); } .btn-secondary { background: #64748b; } .btn-warning { background: var(--warning); color: #fff; } .btn-info { background: #0284c7; }
+        .btn-danger { background: var(--danger); } .btn-success { background: var(--success); } .btn-secondary { background: #64748b; } .btn-warning { background: var(--warning); color: #fff; } .btn-info { background: var(--info); color: #fff; }
         .btn-sm { padding: 6px 12px; font-size: 11px; margin-bottom: 2px; } .btn-block { width: 100%; }
         .badge { background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
 
-        /* SIDEBAR */
+        /* SIDEBAR (MENU RETRÁTIL) */
         .auth-container { width: 100%; display: flex; align-items: center; justify-content: center; }
         .app-layout { display: flex; width: 100%; }
         
@@ -77,7 +78,7 @@
         .dash-value { font-size: 28px; font-weight: bold; color: var(--primary-dark); margin-top: 10px; }
 
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 15px; }
-        .modal-box { background: #ffffff; border-radius: 12px; padding: 25px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
+        .modal-box { background: #ffffff; border-radius: 12px; padding: 25px; width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; }
         .row { display: flex; gap: 10px; } .col { flex: 1; }
         
         .timeline { border-left: 3px solid var(--border); padding-left: 15px; margin-top: 15px; font-size: 13px; }
@@ -125,6 +126,10 @@
                 <button id="tabGeralOSFiscal" class="sidebar-item" onclick="mudarAba('geralOS')"><span class="sidebar-icon">🛠️</span><span class="sidebar-text">Ordens de Serviço</span></button>
             </div>
 
+            <div id="navExecutante" class="sidebar-menu hidden">
+                <button id="tabGeralOSExecutante" class="sidebar-item" onclick="mudarAba('geralOS')"><span class="sidebar-icon">🛠️</span><span class="sidebar-text">O.S. Pendentes</span></button>
+            </div>
+
             <div id="navPadrao" class="sidebar-menu hidden">
                 <button id="tabGeralEqsPadrao" class="sidebar-item" onclick="mudarAba('geralEqs')"><span class="sidebar-icon">💻</span><span class="sidebar-text">Equipamentos</span></button>
                 <button id="tabGeralOSPadrao" class="sidebar-item" onclick="mudarAba('geralOS')"><span class="sidebar-icon">🛠️</span><span class="sidebar-text">Ordens de Serviço</span></button>
@@ -170,7 +175,10 @@
                 <label>Nº do Contrato:</label><input type="text" id="formContratoNum" required placeholder="Ex: 015/2024">
                 <label>Nome da Empresa:</label><input type="text" id="formContratoEmpresa" required>
                 <label>CNPJ:</label><input type="text" id="formContratoCnpj">
-                <div style="display: flex; gap: 10px; margin-top: 15px;"><button type="submit" class="btn-success btn-block" id="btnSalvarContrato">Salvar</button><button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalFormContrato')">Cancelar</button></div>
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button type="submit" class="btn-success btn-block" id="btnSalvarContrato">Salvar</button>
+                    <button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalFormContrato')">Cancelar</button>
+                </div>
             </form>
         </div>
     </div>
@@ -188,10 +196,40 @@
                 </div>
                 <div class="row">
                     <div class="col"><label>Tipo (Equipamento):</label>
-                        <select id="formEqTipo" required><option value="">Selecione...</option><option value="HI WALL">HI WALL</option><option value="PISO TETO">PISO TETO</option><option value="CASSETE">CASSETE</option><option value="JANELEIRO">JANELEIRO</option><option value="MULTI SPLIT">MULTI SPLIT</option><option value="SELF">SELF</option><option value="CORTINA DE AR">CORTINA DE AR</option><option value="SPLITÃO">SPLITÃO</option><option value="OUTRO">OUTRO</option></select>
+                        <select id="formEqTipo" required>
+                            <option value="">Selecione...</option>
+                            <option value="HI WALL">HI WALL</option>
+                            <option value="PISO TETO">PISO TETO</option>
+                            <option value="CASSETE">CASSETE</option>
+                            <option value="JANELEIRO">JANELEIRO</option>
+                            <option value="MULTI SPLIT">MULTI SPLIT</option>
+                            <option value="SELF">SELF</option>
+                            <option value="CORTINA DE AR">CORTINA DE AR</option>
+                            <option value="SPLITÃO">SPLITÃO</option>
+                            <option value="OUTRO">OUTRO</option>
+                        </select>
                     </div>
                     <div class="col"><label>Capacidade:</label>
-                        <select id="formEqCap"><option value="">Selecione...</option><option value="7000 BTUS">7000 BTUS</option><option value="9000 BTUS">9000 BTUS</option><option value="10000 BTUS">10000 BTUS</option><option value="12000 BTUS">12000 BTUS</option><option value="18000 BTUS">18000 BTUS</option><option value="21000 BTUS">21000 BTUS</option><option value="22000 BTUS">22000 BTUS</option><option value="24000 BTUS">24000 BTUS</option><option value="30000 BTUS">30000 BTUS</option><option value="36000 BTUS">36000 BTUS</option><option value="48000 BTUS">48000 BTUS</option><option value="60000 BTUS">60000 BTUS</option><option value="3 TR">3 TR</option><option value="5 TR">5 TR</option><option value="7.5 TR">7.5 TR</option><option value="10 TR">10 TR</option><option value="15 TR">15 TR</option></select>
+                        <select id="formEqCap">
+                            <option value="">Selecione...</option>
+                            <option value="7000 BTUS">7000 BTUS</option>
+                            <option value="9000 BTUS">9000 BTUS</option>
+                            <option value="10000 BTUS">10000 BTUS</option>
+                            <option value="12000 BTUS">12000 BTUS</option>
+                            <option value="18000 BTUS">18000 BTUS</option>
+                            <option value="21000 BTUS">21000 BTUS</option>
+                            <option value="22000 BTUS">22000 BTUS</option>
+                            <option value="24000 BTUS">24000 BTUS</option>
+                            <option value="30000 BTUS">30000 BTUS</option>
+                            <option value="36000 BTUS">36000 BTUS</option>
+                            <option value="48000 BTUS">48000 BTUS</option>
+                            <option value="60000 BTUS">60000 BTUS</option>
+                            <option value="3 TR">3 TR</option>
+                            <option value="5 TR">5 TR</option>
+                            <option value="7.5 TR">7.5 TR</option>
+                            <option value="10 TR">10 TR</option>
+                            <option value="15 TR">15 TR</option>
+                        </select>
                     </div>
                 </div>
                 <div class="row">
@@ -202,7 +240,10 @@
                     <label>Vincular a um Contrato:</label>
                     <select id="formEqContrato"></select>
                 </div>
-                <div style="display: flex; gap: 10px; margin-top: 15px;"><button type="submit" class="btn-success btn-block" id="btnSalvarEq">Salvar</button><button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalFormEquip')">Cancelar</button></div>
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button type="submit" class="btn-success btn-block" id="btnSalvarEq">Salvar</button>
+                    <button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalFormEquip')">Cancelar</button>
+                </div>
             </form>
         </div>
     </div>
@@ -230,7 +271,10 @@
             
             <div id="boxBuscaAvulsa" style="background: #f1f5f9; padding: 15px; border-radius: 6px; margin-bottom: 15px; border: 1px solid var(--border);">
                 <label style="color: var(--primary-dark);">Busca Rápida por Tombo:</label>
-                <div style="display: flex; gap: 10px; margin-bottom: 15px;"><input type="text" id="buscaTombo" placeholder="Digite o tombo..." style="margin-bottom:0;"><button type="button" class="btn-primary" onclick="buscarEquipamentoPorTombo()">Buscar</button></div>
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <input type="text" id="buscaTombo" placeholder="Digite o tombo..." style="margin-bottom:0;">
+                    <button type="button" class="btn-primary" onclick="buscarEquipamentoPorTombo()">Buscar</button>
+                </div>
                 <hr style="border: 0; border-top: 1px dashed #cbd5e1; margin-bottom: 15px;">
                 <label style="color: var(--primary-dark);">Ou localize em lista:</label>
                 <div class="row">
@@ -250,7 +294,7 @@
 
             <form id="formCriarOSAvulsa" onsubmit="enviarOSAvulsa(event)">
                 <label>Relato do Defeito:</label>
-                <textarea id="osDescricaoAvulsa" rows="3" required placeholder="Descreva o problema..."></textarea>
+                <textarea id="osDescricaoAvulsa" rows="3" required placeholder="Descreva o problema detalhadamente..."></textarea>
                 <div style="display: flex; gap: 10px; margin-top: 10px;">
                     <button type="submit" class="btn-success btn-block" id="btnRegistrarOSAvulsa">Registrar O.S.</button>
                     <button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalNovaOSAvulsa')">Cancelar</button>
@@ -275,7 +319,7 @@
         </div>
     </div>
 
-    <!-- MODAL TRATAR O.S. (COM BOTÃO DE IMPRIMIR PDF NO TOPO) -->
+    <!-- MODAL TRATAR O.S. (PERFEITAMENTE ANINHADO) -->
     <div id="modalTratarOS" class="modal-overlay hidden">
         <div class="modal-box">
             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -283,7 +327,7 @@
                     <h3 style="margin:0;">Detalhes da O.S. <span id="detalheOsId"></span></h3>
                     <span id="detalheOsBadge" class="badge"></span>
                 </div>
-                <button class="btn-info btn-sm" id="btnImprimirModal" style="padding: 8px 12px;">🖨️ Imprimir O.S. (PDF)</button>
+                <button class="btn-info btn-sm" id="btnImprimirModal" style="padding: 8px 12px;">🖨️ PDF</button>
             </div>
             
             <div style="background: #f8fafc; border: 1px solid var(--border); padding: 10px; border-radius: 6px; margin-top: 15px; font-size: 13px;">
@@ -330,19 +374,24 @@
     let eqSortCol = 'comarca'; let eqSortAsc = true; let eqDebounceTimeout = null;
     let eqFiltros = { comarca: '', predio: '', sala: '', tipo: '', cap: '', tombo: '', contrato: '', status: '' };
     let osFiltros = { id: '', comarca: '', status: '' };
-    let osCarregadaAtual = null;
 
     const MUNICIPIOS_CE = ["Abaiara","Acarape","Acaraú","Acopiara","Aiuaba","Alcântaras","Altaneira","Alto Santo","Amontada","Antonina do Norte","Apuiarés","Aquiraz","Aracati","Aracoiaba","Ararendá","Araripe","Aratuba","Arneiroz","Assaré","Aurora","Baixio","Banabuiú","Barbalha","Barreira","Barro","Barroquinha","Baturité","Beberibe","Bela Cruz","Boa Viagem","Brejo Santo","Camocim","Campos Sales","Canindé","Capistrano","Caridade","Cariré","Caririaçu","Cariús","Carnaubal","Cascavel","Catarina","Catunda","Caucaia","Cedro","Chaval","Choró","Chorozinho","Coreaú","Crateús","Crato","Croatá","Cruz","Deputado Irapuan Pinheiro","Ererê","Eusébio","Farias Brito","Forquilha","Fortaleza","Fortim","Frecheirinha","General Sampaio","Graça","Granja","Granjeiro","Groaíras","Guaiúba","Guaraciaba do Norte","Guaramiranga","Hidrolândia","Horizonte","Ibaretama","Ibiapina","Ibicuitinga","Icapuí","Icó","Iguatu","Independência","Ipaporanga","Ipaumirim","Ipu","Ipueiras","Iracema","Irauçuba","Itaiçaba","Itaitinga","Itapajé","Itapipoca","Itapiúna","Itarema","Itatira","Jaguaretama","Jaguaribara","Jaguaribe","Jaguaruana","Jardim","Jati","Jijoca de Jericoacoara","Juazeiro do Norte","Jucás","Lavras da Mangabeira","Limoeiro do Norte","Madalena","Maracanaú","Maranguape","Marco","Martinópole","Massapê","Mauriti","Meruoca","Milagres","Milhã","Miraíma","Missão Velha","Mombaça","Monsenhor Tabosa","Morada Nova","Moraújo","Morrinhos","Mucambo","Mulungu","Nova Olinda","Nova Russas","Novo Oriente","Ocara","Orós","Pacajus","Pacatuba","Pacoti","Pacujá","Palhano","Palmácia","Paracuru","Paraipaba","Parambu","Paramoti","Pedra Branca","Penaforte","Pentecoste","Pereiro","Pindoretama","Piquet Carneiro","Pires Ferreira","Poranga","Porteiras","Potengi","Potiretama","Quiterianópolis","Quixadá","Quixelô","Quixeramobim","Quixeré","Redenção","Reriutaba","Russas","Saboeiro","Salitre","Santa Quitéria","Santana do Acaraú","Santana do Cariri","São Benedito","São Gonçalo do Amarante","São João do Jaguaribe","São Luís do Curu","Senador Pompeu","Senador Sá","Sobral","Solonópole","Tabuleiro do Norte","Tamboril","Tarrafas","Tauá","Tejuçuoca","Tianguá","Trairi","Tururu","Ubajara","Umari","Umirim","Uruburetama","Uruoca","Varjota","Várzea Alegre","Viçosa do Ceará"].map(m => m.toUpperCase());
 
+    // ESCAPE HTML (Proteção XSS)
     function esc(str) { return str ? String(str).replace(/[&<>'"]/g, match => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[match])) : ''; }
 
+    // API FETCH CENTRAL
     async function apiFetch(endpoint, options = {}) {
         if (!options.headers) options.headers = {};
         if (usuarioLogado && usuarioLogado.token) options.headers['Authorization'] = `Bearer ${usuarioLogado.token}`;
         options.headers['Content-Type'] = 'application/json';
         try {
             const res = await fetch(getApiUrl(endpoint), options);
-            if (res.status === 401 && endpoint !== '/api/login') { alert("Sessão expirada. Faça login novamente."); fazerLogout(); throw new Error("Sessão Expirada"); }
+            if (res.status === 401 && endpoint !== '/api/login') { 
+                alert("Sessão expirada. Faça login novamente."); 
+                fazerLogout(); 
+                throw new Error("Sessão Expirada"); 
+            }
             return res;
         } catch (error) { throw error; }
     }
@@ -354,7 +403,10 @@
         if (sessao) { usuarioLogado = JSON.parse(sessao); verificarPrimeiroAcesso(); }
     });
 
-    function carregarSelectMunicipios() { const s = document.getElementById('formEqComarca'); if(s) s.innerHTML = '<option value="">SELECIONE A COMARCA...</option>' + MUNICIPIOS_CE.map(m => `<option value="${m}">${m}</option>`).join(''); }
+    function carregarSelectMunicipios() { 
+        const s = document.getElementById('formEqComarca'); 
+        if(s) s.innerHTML = '<option value="">SELECIONE A COMARCA...</option>' + MUNICIPIOS_CE.map(m => `<option value="${m}">${m}</option>`).join(''); 
+    }
     async function descobrirUrlServidor() { try { servidorBaseUrl = (await (await fetch(`servidor.json?t=${Date.now()}`)).json()).url.replace(/\/+$/, ''); } catch (err) { console.error("Servidor offline"); } }
     function getApiUrl(ep) { return `${servidorBaseUrl}${ep}`; }
     function fecharModal(id) { document.getElementById(id).classList.add('hidden'); }
@@ -405,9 +457,22 @@
         if(usuarioLogado.perfil === 'executante' || usuarioLogado.perfil === 'contratada') document.getElementById('btnTopAbrirOS').classList.add('hidden');
         
         let abaSalva = sessionStorage.getItem('os_aba_ativa');
-        if (usuarioLogado.perfil === 'administrador') { document.getElementById('navAdmin').classList.remove('hidden'); if(!['dashboard', 'admContratos', 'admUsers', 'geralEqs', 'geralOS'].includes(abaSalva)) abaSalva = 'dashboard'; mudarAba(abaSalva); } 
-        else if (usuarioLogado.perfil === 'fiscal') { document.getElementById('navFiscal').classList.remove('hidden'); if(!['admUsers', 'geralEqs', 'geralOS'].includes(abaSalva)) abaSalva = 'geralEqs'; mudarAba(abaSalva); }
-        else { document.getElementById('navPadrao').classList.remove('hidden'); if(!['geralEqs', 'geralOS'].includes(abaSalva)) abaSalva = 'geralEqs'; mudarAba(abaSalva); }
+        if (usuarioLogado.perfil === 'administrador') { 
+            document.getElementById('navAdmin').classList.remove('hidden'); 
+            if(!['dashboard', 'admContratos', 'admUsers', 'geralEqs', 'geralOS'].includes(abaSalva)) abaSalva = 'dashboard'; 
+            mudarAba(abaSalva); 
+        } else if (usuarioLogado.perfil === 'fiscal') { 
+            document.getElementById('navFiscal').classList.remove('hidden'); 
+            if(!['admUsers', 'geralEqs', 'geralOS'].includes(abaSalva)) abaSalva = 'geralEqs'; 
+            mudarAba(abaSalva); 
+        } else if (usuarioLogado.perfil === 'executante') {
+            document.getElementById('navExecutante').classList.remove('hidden');
+            mudarAba('geralOS');
+        } else { 
+            document.getElementById('navPadrao').classList.remove('hidden'); 
+            if(!['geralEqs', 'geralOS'].includes(abaSalva)) abaSalva = 'geralEqs'; 
+            mudarAba(abaSalva); 
+        }
     }
 
     function mudarAba(abaId) {
@@ -415,6 +480,7 @@
         let btnStr = `tab${abaId.charAt(0).toUpperCase() + abaId.slice(1)}`;
         if(usuarioLogado.perfil === 'administrador') { let b = document.getElementById(btnStr); if(b) b.classList.add('active'); }
         else if(usuarioLogado.perfil === 'fiscal') { let b = document.getElementById(btnStr+'Fiscal'); if(b) b.classList.add('active'); }
+        else if(usuarioLogado.perfil === 'executante') { let b = document.getElementById(btnStr+'Executante'); if(b) b.classList.add('active'); }
         else { let b = document.getElementById(btnStr+'Padrao'); if(b) b.classList.add('active'); }
         
         const box = document.getElementById('conteudoAba');
@@ -684,7 +750,7 @@
             let html = ''; 
             chamados.forEach(os => { 
                 let cor = '#3b82f6'; if(os.status==='concluida') cor='#10b981'; if(os.status==='cancelada') cor='#ef4444'; if(os.status.includes('execucao')) cor='#f59e0b'; if(os.status.includes('peca')) cor='#8b5cf6'; if(os.status==='aprovada') cor='#0ea5e9'; 
-                html += `<tr><td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td><td><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td><td><span class="badge" style="background:${cor};color:white;">${os.status.replace('_', ' ').toUpperCase()}</span></td><td><button class="btn-sm btn-secondary" onclick="fecharModal('modalHistoricoEqOS'); abrirDetalhesOS(${os.id});">Detalhes</button> <button class="btn-sm btn-info" onclick="imprimirOSPdf(${os.id})">🖨️ Imprimir</button></td></tr>`; 
+                html += `<tr><td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td><td><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td><td><span class="badge" style="background:${cor};color:white;">${os.status.replace('_', ' ').toUpperCase()}</span></td><td><button class="btn-sm btn-secondary" onclick="fecharModal('modalHistoricoEqOS'); abrirDetalhesOS(${os.id});">Detalhes</button> <button class="btn-sm btn-info" onclick="imprimirOSPdf(${os.id})">🖨️ PDF</button></td></tr>`; 
             }); 
             tbody.innerHTML = html; 
         } catch(err) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:red;">Falha de comunicação.</td></tr>'; } 
@@ -725,13 +791,11 @@
         document.getElementById('boxDelegarExecutante').classList.add('hidden');
         document.getElementById('tratarOsObs').value = ''; 
         
-        // Associa o ID ao botão de imprimir do Modal
         document.getElementById('btnImprimirModal').onclick = () => imprimirOSPdf(os_id);
         
         try { 
             const data = await (await apiFetch(`/api/os/${os_id}`)).json(); 
             const os = data.os; const hist = data.historico; 
-            osCarregadaAtual = data;
 
             document.getElementById('detalheOsId').textContent = `#${os.id}`; 
             document.getElementById('detalheOsBadge').textContent = os.status.replace('_', ' ').toUpperCase(); 
@@ -818,7 +882,7 @@
         btn.disabled = false; btn.textContent = 'Gravar Atualização'; 
     }
 
-    // ====== GERADOR DE IMPRESSÃO / PDF (PADRÃO OFICIAL TJCE) ======
+    // ====== IMPRESSÃO / PDF (PADRÃO TJCE) ======
     async function imprimirOSPdf(os_id) {
         let os = null; let hist = [];
         try {
@@ -833,7 +897,6 @@
         const ano = dataObj.getFullYear();
         const numOSFormatado = `${os.id}.${mes}.${ano}`;
 
-        // Localiza data de aprovação no histórico
         let dataAprovacao = '-';
         const hAprov = hist.find(h => h.acao.includes('APROVADA'));
         if (hAprov) {
@@ -885,142 +948,53 @@
             <div class="no-print" style="text-align: center; margin-bottom: 20px;">
                 <button class="btn-imprimir" onclick="window.print()">🖨️ Imprimir / Salvar como PDF</button>
             </div>
-
             <div class="topo-num">${os.id}</div>
-            
             <table class="box-principal">
-                <tr>
-                    <td colspan="3" class="cabecalho-doc">ESTADO DO CEARÁ - PODER JUDICIÁRIO</td>
-                </tr>
-                <tr>
-                    <td colspan="3" class="titulo-sub">TRIBUNAL DE JUSTIÇA - GERÊNCIA DE MANUTENÇÃO E ZELADORIA</td>
-                </tr>
+                <tr><td colspan="3" class="cabecalho-doc">ESTADO DO CEARÁ - PODER JUDICIÁRIO</td></tr>
+                <tr><td colspan="3" class="titulo-sub">TRIBUNAL DE JUSTIÇA - GERÊNCIA DE MANUTENÇÃO E ZELADORIA</td></tr>
                 <tr>
                     <td rowspan="20" class="banner-lateral">ABERTURA</td>
                     <td class="label-col">Nº da OS</td>
                     <td class="val-col"><strong>${numOSFormatado}</strong></td>
                 </tr>
-                <tr>
-                    <td class="label-col">ATENDENTE</td>
-                    <td class="val-col">${esc(os.nome_solicitante)}</td>
-                </tr>
-                <tr>
-                    <td class="label-col">MATRÍCULA DO ATENDENTE</td>
-                    <td class="val-col">-</td>
-                </tr>
-                <tr>
-                    <td colspan="2" class="secao-header" style="border-left: 1px solid #000;">LOCALIZAÇÃO</td>
-                </tr>
-                <tr>
-                    <td class="label-col">REQUISITANTE</td>
-                    <td class="val-col">${esc(os.nome_solicitante)}</td>
-                </tr>
-                <tr>
-                    <td class="label-col">MATRÍCULA DO REQUISITANTE</td>
-                    <td class="val-col">-</td>
-                </tr>
-                <tr>
-                    <td class="label-col">TELEFONE/RAMAL CONTATO</td>
-                    <td class="val-col">0</td>
-                </tr>
-                <tr>
-                    <td class="label-col">LOTAÇÃO</td>
-                    <td class="val-col">${esc(os.sala)}</td>
-                </tr>
-                <tr>
-                    <td class="label-col">MUNICÍPIO</td>
-                    <td class="val-col">${esc(os.comarca)}</td>
-                </tr>
-                <tr>
-                    <td class="label-col">REGIÃO</td>
-                    <td class="val-col">Região I</td>
-                </tr>
-                <tr>
-                    <td class="label-col">PRÉDIO</td>
-                    <td class="val-col">${esc(os.predio)}</td>
-                </tr>
-                <tr>
-                    <td class="label-col">LOCAL DE OCORRÊNCIA</td>
-                    <td class="val-col">${esc(os.sala)}</td>
-                </tr>
-                <tr>
-                    <td class="label-col">TIPO DE SOLICITACAO</td>
-                    <td class="val-col">Manutenção de Equipamento</td>
-                </tr>
-                <tr>
-                    <td class="label-col">SERVIÇO</td>
-                    <td class="val-col">Climatização</td>
-                </tr>
-                <tr>
-                    <td class="label-col">CPA/TOMBO</td>
-                    <td class="val-col"><strong>${esc(os.tombo)}</strong></td>
-                </tr>
-                <tr>
-                    <td class="label-col">PRIORIDADE</td>
-                    <td class="val-col">Não Emergencial</td>
-                </tr>
-                <tr>
-                    <td class="label-col">FORNECEDOR</td>
-                    <td class="val-col">${esc(os.contrato_nome || '-')}</td>
-                </tr>
-                <tr>
-                    <td class="label-col">DESCRIÇÃO</td>
-                    <td class="val-col" style="font-size: 10px;">${esc(descricaoCompleta)}</td>
-                </tr>
-                <tr>
-                    <td class="label-col">DATA DE APROVAÇÃO</td>
-                    <td class="val-col">${dataAprovacao}</td>
-                </tr>
-                <tr>
-                    <td class="label-col">DATA DE INÍCIO</td>
-                    <td class="val-col">${dataInicio}</td>
-                </tr>
-                <tr>
-                    <td colspan="2" class="label-col" style="border-left: 1px solid #000;">DATA DE CONCLUSÃO</td>
-                    <td class="val-col">${dataConclusao}</td>
-                </tr>
+                <tr><td class="label-col">ATENDENTE</td><td class="val-col">${esc(os.nome_solicitante)}</td></tr>
+                <tr><td class="label-col">MATRÍCULA DO ATENDENTE</td><td class="val-col">-</td></tr>
+                <tr><td colspan="2" class="secao-header" style="border-left: 1px solid #000;">LOCALIZAÇÃO</td></tr>
+                <tr><td class="label-col">REQUISITANTE</td><td class="val-col">${esc(os.nome_solicitante)}</td></tr>
+                <tr><td class="label-col">MATRÍCULA DO REQUISITANTE</td><td class="val-col">-</td></tr>
+                <tr><td class="label-col">TELEFONE/RAMAL CONTATO</td><td class="val-col">0</td></tr>
+                <tr><td class="label-col">LOTAÇÃO</td><td class="val-col">${esc(os.sala)}</td></tr>
+                <tr><td class="label-col">MUNICÍPIO</td><td class="val-col">${esc(os.comarca)}</td></tr>
+                <tr><td class="label-col">REGIÃO</td><td class="val-col">Região I</td></tr>
+                <tr><td class="label-col">PRÉDIO</td><td class="val-col">${esc(os.predio)}</td></tr>
+                <tr><td class="label-col">LOCAL DE OCORRÊNCIA</td><td class="val-col">${esc(os.sala)}</td></tr>
+                <tr><td class="label-col">TIPO DE SOLICITACAO</td><td class="val-col">Manutenção de Equipamento</td></tr>
+                <tr><td class="label-col">SERVIÇO</td><td class="val-col">Climatização</td></tr>
+                <tr><td class="label-col">CPA/TOMBO</td><td class="val-col"><strong>${esc(os.tombo)}</strong></td></tr>
+                <tr><td class="label-col">PRIORIDADE</td><td class="val-col">Não Emergencial</td></tr>
+                <tr><td class="label-col">FORNECEDOR</td><td class="val-col">${esc(os.contrato_nome || '-')}</td></tr>
+                <tr><td class="label-col">DESCRIÇÃO</td><td class="val-col" style="font-size: 10px;">${esc(descricaoCompleta)}</td></tr>
+                <tr><td class="label-col">DATA DE APROVAÇÃO</td><td class="val-col">${dataAprovacao}</td></tr>
+                <tr><td class="label-col">DATA DE INÍCIO</td><td class="val-col">${dataInicio}</td></tr>
+                <tr><td colspan="2" class="label-col" style="border-left: 1px solid #000;">DATA DE CONCLUSÃO</td><td class="val-col">${dataConclusao}</td></tr>
             </table>
 
             <table class="box-principal" style="border-top: none; margin-top: -1px;">
-                <tr>
-                    <td class="secao-header">DESCRIÇÃO</td>
-                </tr>
-                <tr>
-                    <td style="height: 45px; vertical-align: top; padding: 6px;">
-                        ${esc(descricaoCompleta)}
-                    </td>
-                </tr>
-                <tr>
-                    <td class="secao-header">HISTÓRICO</td>
-                </tr>
-                <tr>
-                    <td style="min-height: 80px; vertical-align: top; padding: 6px;">
-                        ${histHtml || 'Nenhum histórico registrado.'}
-                    </td>
-                </tr>
+                <tr><td class="secao-header">DESCRIÇÃO</td></tr>
+                <tr><td style="height: 45px; vertical-align: top; padding: 6px;">${esc(descricaoCompleta)}</td></tr>
+                <tr><td class="secao-header">HISTÓRICO</td></tr>
+                <tr><td style="min-height: 80px; vertical-align: top; padding: 6px;">${histHtml || 'Nenhum histórico registrado.'}</td></tr>
             </table>
 
-            <!-- ASSINATURAS -->
             <table class="box-principal" style="border-top: none; margin-top: -1px;">
+                <tr><td class="secao-header" style="width: 50%;">ATENDENTE</td><td class="secao-header" style="width: 50%;">Executor</td></tr>
                 <tr>
-                    <td class="secao-header" style="width: 50%;">ATENDENTE</td>
-                    <td class="secao-header" style="width: 50%;">Executor</td>
-                </tr>
-                <tr>
-                    <td style="height: 50px; vertical-align: bottom;">
-                        <strong>Nome:</strong> ${esc(os.nome_solicitante)}<br>
-                        <strong>Matrícula:</strong>
-                    </td>
-                    <td style="height: 50px; vertical-align: bottom;">
-                        <strong>Nome:</strong> ${esc(os.nome_executante || '')}<br>
-                        <strong>CPF:</strong>
-                    </td>
+                    <td style="height: 50px; vertical-align: bottom;"><strong>Nome:</strong> ${esc(os.nome_solicitante)}<br><strong>Matrícula:</strong></td>
+                    <td style="height: 50px; vertical-align: bottom;"><strong>Nome:</strong> ${esc(os.nome_executante || '')}<br><strong>CPF:</strong></td>
                 </tr>
             </table>
 
-            <div class="rodape-os">
-                Nº da OS: ${numOSFormatado}
-            </div>
+            <div class="rodape-os">Nº da OS: ${numOSFormatado}</div>
         </body>
         </html>
         `);
