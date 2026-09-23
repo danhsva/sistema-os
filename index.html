@@ -22,7 +22,7 @@
         button { background: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         button:hover { background: var(--primary-dark); }
         button:disabled { opacity: 0.6; cursor: not-allowed; }
-        .btn-danger { background: var(--danger); } .btn-success { background: var(--success); } .btn-secondary { background: #64748b; } .btn-warning { background: var(--warning); color: #fff; }
+        .btn-danger { background: var(--danger); } .btn-success { background: var(--success); } .btn-secondary { background: #64748b; } .btn-warning { background: var(--warning); color: #fff; } .btn-info { background: #0284c7; }
         .btn-sm { padding: 6px 12px; font-size: 11px; margin-bottom: 2px; } .btn-block { width: 100%; }
         .badge { background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
 
@@ -275,12 +275,15 @@
         </div>
     </div>
 
-    <!-- MODAL TRATAR O.S. (PERFEITAMENTE ANINHADO) -->
+    <!-- MODAL TRATAR O.S. (COM BOTÃO DE IMPRIMIR PDF NO TOPO) -->
     <div id="modalTratarOS" class="modal-overlay hidden">
         <div class="modal-box">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h3 style="margin:0;">Detalhes da O.S. <span id="detalheOsId"></span></h3>
-                <span id="detalheOsBadge" class="badge"></span>
+                <div>
+                    <h3 style="margin:0;">Detalhes da O.S. <span id="detalheOsId"></span></h3>
+                    <span id="detalheOsBadge" class="badge"></span>
+                </div>
+                <button class="btn-info btn-sm" id="btnImprimirModal" style="padding: 8px 12px;">🖨️ Imprimir O.S. (PDF)</button>
             </div>
             
             <div style="background: #f8fafc; border: 1px solid var(--border); padding: 10px; border-radius: 6px; margin-top: 15px; font-size: 13px;">
@@ -327,6 +330,7 @@
     let eqSortCol = 'comarca'; let eqSortAsc = true; let eqDebounceTimeout = null;
     let eqFiltros = { comarca: '', predio: '', sala: '', tipo: '', cap: '', tombo: '', contrato: '', status: '' };
     let osFiltros = { id: '', comarca: '', status: '' };
+    let osCarregadaAtual = null;
 
     const MUNICIPIOS_CE = ["Abaiara","Acarape","Acaraú","Acopiara","Aiuaba","Alcântaras","Altaneira","Alto Santo","Amontada","Antonina do Norte","Apuiarés","Aquiraz","Aracati","Aracoiaba","Ararendá","Araripe","Aratuba","Arneiroz","Assaré","Aurora","Baixio","Banabuiú","Barbalha","Barreira","Barro","Barroquinha","Baturité","Beberibe","Bela Cruz","Boa Viagem","Brejo Santo","Camocim","Campos Sales","Canindé","Capistrano","Caridade","Cariré","Caririaçu","Cariús","Carnaubal","Cascavel","Catarina","Catunda","Caucaia","Cedro","Chaval","Choró","Chorozinho","Coreaú","Crateús","Crato","Croatá","Cruz","Deputado Irapuan Pinheiro","Ererê","Eusébio","Farias Brito","Forquilha","Fortaleza","Fortim","Frecheirinha","General Sampaio","Graça","Granja","Granjeiro","Groaíras","Guaiúba","Guaraciaba do Norte","Guaramiranga","Hidrolândia","Horizonte","Ibaretama","Ibiapina","Ibicuitinga","Icapuí","Icó","Iguatu","Independência","Ipaporanga","Ipaumirim","Ipu","Ipueiras","Iracema","Irauçuba","Itaiçaba","Itaitinga","Itapajé","Itapipoca","Itapiúna","Itarema","Itatira","Jaguaretama","Jaguaribara","Jaguaribe","Jaguaruana","Jardim","Jati","Jijoca de Jericoacoara","Juazeiro do Norte","Jucás","Lavras da Mangabeira","Limoeiro do Norte","Madalena","Maracanaú","Maranguape","Marco","Martinópole","Massapê","Mauriti","Meruoca","Milagres","Milhã","Miraíma","Missão Velha","Mombaça","Monsenhor Tabosa","Morada Nova","Moraújo","Morrinhos","Mucambo","Mulungu","Nova Olinda","Nova Russas","Novo Oriente","Ocara","Orós","Pacajus","Pacatuba","Pacoti","Pacujá","Palhano","Palmácia","Paracuru","Paraipaba","Parambu","Paramoti","Pedra Branca","Penaforte","Pentecoste","Pereiro","Pindoretama","Piquet Carneiro","Pires Ferreira","Poranga","Porteiras","Potengi","Potiretama","Quiterianópolis","Quixadá","Quixelô","Quixeramobim","Quixeré","Redenção","Reriutaba","Russas","Saboeiro","Salitre","Santa Quitéria","Santana do Acaraú","Santana do Cariri","São Benedito","São Gonçalo do Amarante","São João do Jaguaribe","São Luís do Curu","Senador Pompeu","Senador Sá","Sobral","Solonópole","Tabuleiro do Norte","Tamboril","Tarrafas","Tauá","Tejuçuoca","Tianguá","Trairi","Tururu","Ubajara","Umari","Umirim","Uruburetama","Uruoca","Varjota","Várzea Alegre","Viçosa do Ceará"].map(m => m.toUpperCase());
 
@@ -429,8 +433,9 @@
         const selUsr = document.getElementById('formUserContrato'); if(selUsr) selUsr.innerHTML = html;
     }
 
+    // ====== DASHBOARD ======
     async function renderDashboard(box) {
-        box.innerHTML = `<h3>Visão Geral (Indicadores)</h3><div id="dashContent">Carregando...</div>`;
+        box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h3>Visão Geral (Indicadores)</h3><button disabled>Carregando...</button></div><div style="text-align:center;color:#64748b;padding:20px;">Sincronizando dados com o servidor...</div>`;
         try {
             const [resOS, resEq] = await Promise.all([ apiFetch('/api/os'), apiFetch('/api/equipamentos') ]);
             if (!resOS.ok || !resEq.ok) throw new Error("Falha na API");
@@ -447,6 +452,7 @@
         } catch (err) { box.innerHTML = `<div style="color:red;padding:20px;">Falha ao carregar Dashboard.</div>`; }
     }
 
+    // ====== CONTRATOS ======
     async function renderAdmContratos(box) {
         box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h3>Gestão de Contratos</h3><button class="btn-success" onclick="abrirModalContrato()">+ Novo Contrato</button></div><div id="tabelaContratos">Carregando...</div>`;
         contratosCache = await (await apiFetch('/api/contratos')).json();
@@ -476,6 +482,7 @@
     }
     async function toggleAtivoContrato(id, status) { const c = contratosCache.find(x => x.id == id); c.ativo = status; await apiFetch(`/api/contratos/${id}`, { method: 'PUT', body: JSON.stringify(c) }); mudarAba('admContratos'); }
 
+    // ====== USUÁRIOS ======
     async function renderAdmUsers(box) {
         box.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h3>Equipe</h3><button class="btn-success" onclick="abrirModalUser(null)">+ Novo Usuário</button></div><div id="tabelaUsers">Carregando...</div>`;
         usuariosCache = await (await apiFetch('/api/usuarios')).json();
@@ -638,29 +645,20 @@
 
     // ====== O.S. ======
     async function abrirNovaOSAvulsa() {
-        document.getElementById('formCriarOSAvulsa').reset(); 
-        document.getElementById('buscaTombo').value = '';
-        document.getElementById('boxBuscaAvulsa').classList.remove('hidden');
-        document.getElementById('boxEqSelecionadoFixo').classList.add('hidden');
-        
+        document.getElementById('formCriarOSAvulsa').reset(); document.getElementById('buscaTombo').value = '';
+        document.getElementById('boxBuscaAvulsa').classList.remove('hidden'); document.getElementById('boxEqSelecionadoFixo').classList.add('hidden');
         if (equipamentosCache.length === 0) equipamentosCache = await (await apiFetch('/api/equipamentos')).json();
         const comarcas = [...new Set(equipamentosCache.filter(e => e.ativo === 1).map(e => e.comarca))].sort();
         document.getElementById('selAvulsoComarca').innerHTML = '<option value="">1. Selecione a Comarca...</option>' + comarcas.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
-        document.getElementById('selAvulsoPredio').innerHTML = '<option value="">Aguardando comarca...</option>'; 
-        document.getElementById('selAvulsoSala').innerHTML = '<option value="">Aguardando prédio...</option>'; 
-        document.getElementById('selAvulsoEq').innerHTML = '<option value="">Aguardando sala...</option>';
+        document.getElementById('selAvulsoPredio').innerHTML = '<option value="">Aguardando comarca...</option>'; document.getElementById('selAvulsoSala').innerHTML = '<option value="">Aguardando prédio...</option>'; document.getElementById('selAvulsoEq').innerHTML = '<option value="">Aguardando sala...</option>';
         document.getElementById('modalNovaOSAvulsa').classList.remove('hidden');
     }
 
     function abrirModalNovaOSAvulsaPeloEq(id_eq, nome_eq, local_eq) {
         document.getElementById('formCriarOSAvulsa').reset(); 
-        document.getElementById('boxBuscaAvulsa').classList.add('hidden');
-        document.getElementById('boxEqSelecionadoFixo').classList.remove('hidden');
-        document.getElementById('lblEqFixoNome').textContent = nome_eq;
-        document.getElementById('lblEqFixoLocal').textContent = local_eq;
-        
-        document.getElementById('selAvulsoEq').innerHTML = `<option value="${id_eq}">Selecionado</option>`;
-        document.getElementById('selAvulsoEq').value = id_eq;
+        document.getElementById('boxBuscaAvulsa').classList.add('hidden'); document.getElementById('boxEqSelecionadoFixo').classList.remove('hidden');
+        document.getElementById('lblEqFixoNome').textContent = nome_eq; document.getElementById('lblEqFixoLocal').textContent = local_eq;
+        document.getElementById('selAvulsoEq').innerHTML = `<option value="${id_eq}">Selecionado</option>`; document.getElementById('selAvulsoEq').value = id_eq;
         document.getElementById('modalNovaOSAvulsa').classList.remove('hidden');
     }
 
@@ -676,29 +674,20 @@
         document.getElementById('modalHistoricoEqOS').classList.remove('hidden'); 
         const tbody = document.getElementById('tabelaHistoricoEqOS'); 
         tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Carregando histórico...</td></tr>'; 
-        
         try { 
             const res = await apiFetch(`/api/equipamentos/${eq_id}/os`); 
             if(res.status===404){ tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:red;">Erro 404.</td></tr>'; return; } 
-            
             let chamados = await res.json(); 
-
-            // Contratada e Executante NÃO enxergam OS abertas
-            if (usuarioLogado.perfil === 'contratada' || usuarioLogado.perfil === 'executante') {
-                chamados = chamados.filter(os => os.status !== 'aberta');
-            }
-
+            if (usuarioLogado.perfil === 'contratada' || usuarioLogado.perfil === 'executante') { chamados = chamados.filter(os => os.status !== 'aberta'); }
             if(chamados.length===0){ tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhuma O.S. visível para este equipamento.</td></tr>'; return; } 
             
             let html = ''; 
             chamados.forEach(os => { 
                 let cor = '#3b82f6'; if(os.status==='concluida') cor='#10b981'; if(os.status==='cancelada') cor='#ef4444'; if(os.status.includes('execucao')) cor='#f59e0b'; if(os.status.includes('peca')) cor='#8b5cf6'; if(os.status==='aprovada') cor='#0ea5e9'; 
-                html += `<tr><td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td><td><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td><td><span class="badge" style="background:${cor};color:white;">${os.status.replace('_', ' ').toUpperCase()}</span></td><td><button class="btn-sm btn-secondary" onclick="fecharModal('modalHistoricoEqOS'); abrirDetalhesOS(${os.id});">Detalhes</button></td></tr>`; 
+                html += `<tr><td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td><td><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td><td><span class="badge" style="background:${cor};color:white;">${os.status.replace('_', ' ').toUpperCase()}</span></td><td><button class="btn-sm btn-secondary" onclick="fecharModal('modalHistoricoEqOS'); abrirDetalhesOS(${os.id});">Detalhes</button> <button class="btn-sm btn-info" onclick="imprimirOSPdf(${os.id})">🖨️ Imprimir</button></td></tr>`; 
             }); 
             tbody.innerHTML = html; 
-        } catch(err) { 
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:red;">Falha de comunicação.</td></tr>'; 
-        } 
+        } catch(err) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:red;">Falha de comunicação.</td></tr>'; } 
     }
 
     async function carregarOSServer(box) {
@@ -721,14 +710,14 @@
         filtrados.forEach(os => { 
             let cor = '#3b82f6'; if(os.status==='concluida') cor='#10b981'; if(os.status==='cancelada') cor='#ef4444'; if(os.status.includes('execucao')) cor='#f59e0b'; if(os.status.includes('peca')) cor='#8b5cf6'; if(os.status==='aprovada') cor='#0ea5e9';
             let btnCancelar = (usuarioLogado.perfil === 'administrador' && os.status !== 'cancelada' && os.status !== 'concluida') ? `<br><button class="btn-sm btn-danger" style="margin-top:4px;" onclick="cancelarOSDireto(${os.id})">Cancelar</button>` : ''; 
-            html += `<tr><td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td><td><strong>${esc(os.comarca)}</strong><br><small>${esc(os.predio)} (${esc(os.sala)})</small></td><td style="max-width:250px;"><strong>${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')}</strong><br><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td><td><span class="badge" style="background:${cor};color:white;">${os.status.replace('_', ' ').toUpperCase()}</span></td><td><button class="btn-sm btn-secondary" onclick="abrirDetalhesOS(${os.id})">Detalhes / Tratar</button>${btnCancelar}</td></tr>`; 
+            html += `<tr><td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td><td><strong>${esc(os.comarca)}</strong><br><small>${esc(os.predio)} (${esc(os.sala)})</small></td><td style="max-width:250px;"><strong>${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')}</strong><br><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td><td><span class="badge" style="background:${cor};color:white;">${os.status.replace('_', ' ').toUpperCase()}</span></td><td><button class="btn-sm btn-secondary" onclick="abrirDetalhesOS(${os.id})">Detalhes / Tratar</button> <button class="btn-sm btn-info" onclick="imprimirOSPdf(${os.id})">🖨️ PDF</button>${btnCancelar}</td></tr>`; 
         }); 
         tbody.innerHTML = html; 
     }
 
     async function cancelarOSDireto(os_id) { const motivo = prompt("Motivo do cancelamento:"); if (!motivo) return; await apiFetch(`/api/os/${os_id}/status`, { method: 'PUT', body: JSON.stringify({ status: 'cancelada', observacao: 'CANCELADO PELO ADMIN: ' + motivo.toUpperCase() }) }); mudarAba('geralOS'); }
 
-    // DETALHES DA OS (PERFEITAMENTE ANINHADO)
+    // DETALHES DA OS
     async function abrirDetalhesOS(os_id) { 
         document.getElementById('modalTratarOS').classList.remove('hidden'); 
         document.getElementById('boxTimeline').innerHTML = "Carregando..."; 
@@ -736,9 +725,13 @@
         document.getElementById('boxDelegarExecutante').classList.add('hidden');
         document.getElementById('tratarOsObs').value = ''; 
         
+        // Associa o ID ao botão de imprimir do Modal
+        document.getElementById('btnImprimirModal').onclick = () => imprimirOSPdf(os_id);
+        
         try { 
             const data = await (await apiFetch(`/api/os/${os_id}`)).json(); 
             const os = data.os; const hist = data.historico; 
+            osCarregadaAtual = data;
 
             document.getElementById('detalheOsId').textContent = `#${os.id}`; 
             document.getElementById('detalheOsBadge').textContent = os.status.replace('_', ' ').toUpperCase(); 
@@ -766,7 +759,6 @@
                     selStatus.innerHTML = `<option value="aprovada">Aprovar O.S. (Enviar para Execução)</option><option value="concluida">Concluída (Resolvido)</option><option value="cancelada">Cancelar O.S. (Improcedente)</option>`;
                 } else if (usuarioLogado.perfil === 'contratada') {
                     selStatus.innerHTML = `<option value="em_execucao">Em Execução</option><option value="em_analise">Em Análise Técnica</option><option value="aguardando_peca">Aguardando Peça</option><option value="concluida">Concluída (Resolvido)</option>`;
-                    
                     const resExecutantes = await (await apiFetch('/api/usuarios')).json();
                     const selExec = document.getElementById('tratarOsExecutante');
                     selExec.innerHTML = '<option value="">Selecione o Técnico Responsável...</option>' + 
@@ -824,6 +816,216 @@
         } catch(err) { alert("Erro de comunicação."); }
         
         btn.disabled = false; btn.textContent = 'Gravar Atualização'; 
+    }
+
+    // ====== GERADOR DE IMPRESSÃO / PDF (PADRÃO OFICIAL TJCE) ======
+    async function imprimirOSPdf(os_id) {
+        let os = null; let hist = [];
+        try {
+            const res = await apiFetch(`/api/os/${os_id}`);
+            const data = await res.json();
+            os = data.os; hist = data.historico;
+        } catch(e) { alert("Erro ao carregar dados para impressão."); return; }
+
+        const dataObj = new Date(os.data_abertura);
+        const dia = String(dataObj.getDate()).padStart(2, '0');
+        const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
+        const ano = dataObj.getFullYear();
+        const numOSFormatado = `${os.id}.${mes}.${ano}`;
+
+        // Localiza data de aprovação no histórico
+        let dataAprovacao = '-';
+        const hAprov = hist.find(h => h.acao.includes('APROVADA'));
+        if (hAprov) {
+            const dA = new Date(hAprov.data_registro);
+            dataAprovacao = `${String(dA.getDate()).padStart(2,'0')}/${String(dA.getMonth()+1).padStart(2,'0')}/${dA.getFullYear()}`;
+        }
+
+        let dataInicio = `${dia}/${mes}/${ano}`;
+        let dataConclusao = '-';
+        if (os.data_conclusao) {
+            const dC = new Date(os.data_conclusao);
+            dataConclusao = `${String(dC.getDate()).padStart(2,'0')}/${String(dC.getMonth()+1).padStart(2,'0')}/${dC.getFullYear()}`;
+        }
+
+        const descricaoCompleta = `Ar-condicionado ${os.tipo_equipamento} ${os.capacidade||''} ${os.tombo !== 'S/T' ? 'tombo ' + os.tombo : ''}. Defeito: ${os.descricao_falha}`;
+
+        let histHtml = '';
+        hist.forEach(h => {
+            histHtml += `<div style="font-size: 11px; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px dotted #ccc;">
+                <strong>${dataFormatada(h.data_registro)} - ${esc(h.nome_usuario)} (${h.acao}):</strong> ${esc(h.observacao || '')}
+            </div>`;
+        });
+
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+        <!DOCTYPE html>
+        <html lang="pt-BR">
+        <head>
+            <meta charset="UTF-8">
+            <title>OS_${numOSFormatado}</title>
+            <style>
+                @page { size: A4 portrait; margin: 12mm 15mm; }
+                body { font-family: Arial, sans-serif; color: #000; margin: 0; padding: 0; font-size: 11px; }
+                .topo-num { text-align: right; font-size: 14px; font-weight: bold; margin-bottom: 4px; }
+                .box-principal { border: 1.5px solid #000; width: 100%; border-collapse: collapse; }
+                .box-principal td, .box-principal th { border: 1px solid #000; padding: 4px 6px; }
+                .cabecalho-doc { text-align: center; font-weight: bold; font-size: 12px; background: #fff; }
+                .titulo-sub { font-size: 11px; font-weight: bold; text-align: center; }
+                .label-col { font-weight: bold; text-align: center; background: #fcfcfc; width: 35%; font-size: 10px; }
+                .val-col { text-align: center; font-weight: 500; font-size: 11px; }
+                .banner-lateral { width: 30px; text-align: center; vertical-align: middle; font-weight: bold; font-size: 12px; letter-spacing: 2px; writing-mode: vertical-rl; transform: rotate(180deg); }
+                .secao-header { background: #fff; font-weight: bold; text-align: center; font-size: 11px; padding: 5px !important; }
+                .rodape-os { margin-top: 15px; text-align: right; font-weight: bold; font-size: 14px; }
+                .btn-imprimir { background: #0284c7; color: #fff; padding: 10px 20px; font-weight: bold; border: none; cursor: pointer; border-radius: 4px; margin-bottom: 15px; }
+                @media print { .no-print { display: none !important; } }
+            </style>
+        </head>
+        <body>
+            <div class="no-print" style="text-align: center; margin-bottom: 20px;">
+                <button class="btn-imprimir" onclick="window.print()">🖨️ Imprimir / Salvar como PDF</button>
+            </div>
+
+            <div class="topo-num">${os.id}</div>
+            
+            <table class="box-principal">
+                <tr>
+                    <td colspan="3" class="cabecalho-doc">ESTADO DO CEARÁ - PODER JUDICIÁRIO</td>
+                </tr>
+                <tr>
+                    <td colspan="3" class="titulo-sub">TRIBUNAL DE JUSTIÇA - GERÊNCIA DE MANUTENÇÃO E ZELADORIA</td>
+                </tr>
+                <tr>
+                    <td rowspan="20" class="banner-lateral">ABERTURA</td>
+                    <td class="label-col">Nº da OS</td>
+                    <td class="val-col"><strong>${numOSFormatado}</strong></td>
+                </tr>
+                <tr>
+                    <td class="label-col">ATENDENTE</td>
+                    <td class="val-col">${esc(os.nome_solicitante)}</td>
+                </tr>
+                <tr>
+                    <td class="label-col">MATRÍCULA DO ATENDENTE</td>
+                    <td class="val-col">-</td>
+                </tr>
+                <tr>
+                    <td colspan="2" class="secao-header" style="border-left: 1px solid #000;">LOCALIZAÇÃO</td>
+                </tr>
+                <tr>
+                    <td class="label-col">REQUISITANTE</td>
+                    <td class="val-col">${esc(os.nome_solicitante)}</td>
+                </tr>
+                <tr>
+                    <td class="label-col">MATRÍCULA DO REQUISITANTE</td>
+                    <td class="val-col">-</td>
+                </tr>
+                <tr>
+                    <td class="label-col">TELEFONE/RAMAL CONTATO</td>
+                    <td class="val-col">0</td>
+                </tr>
+                <tr>
+                    <td class="label-col">LOTAÇÃO</td>
+                    <td class="val-col">${esc(os.sala)}</td>
+                </tr>
+                <tr>
+                    <td class="label-col">MUNICÍPIO</td>
+                    <td class="val-col">${esc(os.comarca)}</td>
+                </tr>
+                <tr>
+                    <td class="label-col">REGIÃO</td>
+                    <td class="val-col">Região I</td>
+                </tr>
+                <tr>
+                    <td class="label-col">PRÉDIO</td>
+                    <td class="val-col">${esc(os.predio)}</td>
+                </tr>
+                <tr>
+                    <td class="label-col">LOCAL DE OCORRÊNCIA</td>
+                    <td class="val-col">${esc(os.sala)}</td>
+                </tr>
+                <tr>
+                    <td class="label-col">TIPO DE SOLICITACAO</td>
+                    <td class="val-col">Manutenção de Equipamento</td>
+                </tr>
+                <tr>
+                    <td class="label-col">SERVIÇO</td>
+                    <td class="val-col">Climatização</td>
+                </tr>
+                <tr>
+                    <td class="label-col">CPA/TOMBO</td>
+                    <td class="val-col"><strong>${esc(os.tombo)}</strong></td>
+                </tr>
+                <tr>
+                    <td class="label-col">PRIORIDADE</td>
+                    <td class="val-col">Não Emergencial</td>
+                </tr>
+                <tr>
+                    <td class="label-col">FORNECEDOR</td>
+                    <td class="val-col">${esc(os.contrato_nome || '-')}</td>
+                </tr>
+                <tr>
+                    <td class="label-col">DESCRIÇÃO</td>
+                    <td class="val-col" style="font-size: 10px;">${esc(descricaoCompleta)}</td>
+                </tr>
+                <tr>
+                    <td class="label-col">DATA DE APROVAÇÃO</td>
+                    <td class="val-col">${dataAprovacao}</td>
+                </tr>
+                <tr>
+                    <td class="label-col">DATA DE INÍCIO</td>
+                    <td class="val-col">${dataInicio}</td>
+                </tr>
+                <tr>
+                    <td colspan="2" class="label-col" style="border-left: 1px solid #000;">DATA DE CONCLUSÃO</td>
+                    <td class="val-col">${dataConclusao}</td>
+                </tr>
+            </table>
+
+            <table class="box-principal" style="border-top: none; margin-top: -1px;">
+                <tr>
+                    <td class="secao-header">DESCRIÇÃO</td>
+                </tr>
+                <tr>
+                    <td style="height: 45px; vertical-align: top; padding: 6px;">
+                        ${esc(descricaoCompleta)}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="secao-header">HISTÓRICO</td>
+                </tr>
+                <tr>
+                    <td style="min-height: 80px; vertical-align: top; padding: 6px;">
+                        ${histHtml || 'Nenhum histórico registrado.'}
+                    </td>
+                </tr>
+            </table>
+
+            <!-- ASSINATURAS -->
+            <table class="box-principal" style="border-top: none; margin-top: -1px;">
+                <tr>
+                    <td class="secao-header" style="width: 50%;">ATENDENTE</td>
+                    <td class="secao-header" style="width: 50%;">Executor</td>
+                </tr>
+                <tr>
+                    <td style="height: 50px; vertical-align: bottom;">
+                        <strong>Nome:</strong> ${esc(os.nome_solicitante)}<br>
+                        <strong>Matrícula:</strong>
+                    </td>
+                    <td style="height: 50px; vertical-align: bottom;">
+                        <strong>Nome:</strong> ${esc(os.nome_executante || '')}<br>
+                        <strong>CPF:</strong>
+                    </td>
+                </tr>
+            </table>
+
+            <div class="rodape-os">
+                Nº da OS: ${numOSFormatado}
+            </div>
+        </body>
+        </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
     }
 </script>
 </body>
