@@ -36,7 +36,6 @@
         </form>
     </div>
 
-    <!-- MODAL DE TROCA OBRIGATÓRIA NO PRIMEIRO ACESSO -->
     <div id="modalSenha" class="modal-overlay hidden">
         <div class="modal-box">
             <h3 style="color: var(--primary-dark); margin-bottom: 10px;">Defina sua Nova Senha</h3>
@@ -56,7 +55,6 @@
     window.addEventListener('DOMContentLoaded', async () => {
         if (IS_GITHUB_PAGES) await descobrirUrlServidor();
         
-        // Se já estiver logado, redireciona direto para o painel correspondente
         const sessao = localStorage.getItem('os_usuario_logado');
         if (sessao) {
             usuarioLogado = JSON.parse(sessao);

@@ -87,13 +87,11 @@
                     <option value="concluida">2. Concluir O.S. (Anexar Folha Assinada)</option>
                 </select>
 
-                <!-- CAMPO RELATÓRIO/PEÇA -->
                 <div>
                     <label id="lblObsExec">Peça Necessária (Obrigatório):</label>
                     <textarea id="tratarOsObs" rows="3" placeholder="Descreva os detalhes..." required></textarea>
                 </div>
 
-                <!-- CAMPO ANEXO (OBRIGATÓRIO NA CONCLUSÃO) -->
                 <div id="boxAnexoExec" class="hidden" style="background:#ecfdf5;padding:12px;border-radius:6px;border:1px dashed #10b981;margin-bottom:15px;">
                     <label style="color:#065f46;">Foto ou PDF da O.S. Assinada:</label>
                     <input type="file" id="arquivoOSExec" accept="image/jpeg,image/png,application/pdf">
@@ -145,7 +143,6 @@
     function dataFormatada(timestamp) { return new Date(timestamp).toLocaleString('pt-BR'); }
     function fazerLogout() { localStorage.removeItem('os_usuario_logado'); sessionStorage.clear(); window.location.href = 'index.html'; }
 
-    // DINÂMICA DOS 2 CAMINHOS DO EXECUTANTE
     function ajustarCamposExecutante() {
         const status = document.getElementById('tratarOsStatus').value;
         const boxAnexo = document.getElementById('boxAnexoExec');
@@ -215,9 +212,9 @@
         let nomeArquivoSalvo = null;
 
         if (statusNovo === 'aguardando_peca') {
-            if (!obsTexto) return alert("Informe qual peça está pendente.");
+            if (!obsTexto) return alert("É OBRIGATÓRIO informar qual peça está pendente.");
         } else if (statusNovo === 'concluida') {
-            if (fileInput.files.length === 0) return alert("Anexe a folha de O.S. assinada (Foto ou PDF).");
+            if (fileInput.files.length === 0) return alert("Para concluir o serviço, é OBRIGATÓRIO anexar a foto ou PDF da folha assinada.");
             if (!obsTexto) obsTexto = "SERVIÇO CONCLUÍDO EM CAMPO COM ANEXO DA FOLHA ASSINADA.";
 
             const formData = new FormData();
@@ -237,34 +234,13 @@
             }
         }
 
-        const btn = document.getElementById('btnSalvarTratamento');
-        btn.disabled = true; btn.textContent = 'Gravando...';
+        await apiFetch(`/api/os/${document.getElementById('tratarOsId').value}/status`, { 
+            method: 'PUT', 
+            body: JSON.stringify({ status: statusNovo, observacao: obsTexto, arquivo_conclusao: nomeArquivoSalvo }) 
+        });
 
-        try {
-            const p = { 
-                status: statusNovo, 
-                observacao: obsTexto, 
-                arquivo_conclusao: nomeArquivoSalvo 
-            };
-
-            const res = await apiFetch(`/api/os/${document.getElementById('tratarOsId').value}/status`, { 
-                method: 'PUT', 
-                body: JSON.stringify(p) 
-            });
-            const data = await res.json();
-
-            if (res.ok) {
-                alert("O.S. Concluída com sucesso!");
-                fecharModal('modalTratarOS'); 
-                await carregarOSServer(); // Sai da fila do executante na hora!
-            } else {
-                alert("Erro do Servidor: " + (data.erro || "Falha ao gravar."));
-            }
-        } catch(err) {
-            alert("Erro de comunicação com o servidor.");
-        } finally {
-            btn.disabled = false; btn.textContent = 'Salvar Apontamento';
-        }
+        fecharModal('modalTratarOS'); 
+        carregarOSServer();
     }
 
     async function imprimirOSPdf(os_id) {
