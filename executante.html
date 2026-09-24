@@ -215,12 +215,11 @@
         let nomeArquivoSalvo = null;
 
         if (statusNovo === 'aguardando_peca') {
-            if (!obsTexto) return alert("É OBRIGATÓRIO informar qual peça está pendente.");
+            if (!obsTexto) return alert("Informe qual peça está pendente.");
         } else if (statusNovo === 'concluida') {
-            if (fileInput.files.length === 0) return alert("Para concluir o serviço, é OBRIGATÓRIO anexar a foto ou PDF da folha assinada.");
+            if (fileInput.files.length === 0) return alert("Anexe a folha de O.S. assinada (Foto ou PDF).");
             if (!obsTexto) obsTexto = "SERVIÇO CONCLUÍDO EM CAMPO COM ANEXO DA FOLHA ASSINADA.";
 
-            // Upload
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
             const btn = document.getElementById('btnSalvarTratamento');
@@ -238,13 +237,34 @@
             }
         }
 
-        await apiFetch(`/api/os/${document.getElementById('tratarOsId').value}/status`, { 
-            method: 'PUT', 
-            body: JSON.stringify({ status: statusNovo, observacao: obsTexto, arquivo_conclusao: nomeArquivoSalvo }) 
-        });
+        const btn = document.getElementById('btnSalvarTratamento');
+        btn.disabled = true; btn.textContent = 'Gravando...';
 
-        fecharModal('modalTratarOS'); 
-        carregarOSServer(); // Ao concluir, a OS sai da fila dele automaticamente!
+        try {
+            const p = { 
+                status: statusNovo, 
+                observacao: obsTexto, 
+                arquivo_conclusao: nomeArquivoSalvo 
+            };
+
+            const res = await apiFetch(`/api/os/${document.getElementById('tratarOsId').value}/status`, { 
+                method: 'PUT', 
+                body: JSON.stringify(p) 
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                alert("O.S. Concluída com sucesso!");
+                fecharModal('modalTratarOS'); 
+                await carregarOSServer(); // Sai da fila do executante na hora!
+            } else {
+                alert("Erro do Servidor: " + (data.erro || "Falha ao gravar."));
+            }
+        } catch(err) {
+            alert("Erro de comunicação com o servidor.");
+        } finally {
+            btn.disabled = false; btn.textContent = 'Salvar Apontamento';
+        }
     }
 
     async function imprimirOSPdf(os_id) {

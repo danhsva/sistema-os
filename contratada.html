@@ -269,21 +269,19 @@
         const fileInput = document.getElementById('arquivoOS');
         let nomeArquivoSalvo = null;
 
-        // VALIDAÇÃO DOS 3 CAMINHOS
         if (statusNovo === 'em_execucao') {
-            if (!execId) return alert("Para encaminhar, é OBRIGATÓRIO selecionar um Técnico Executante.");
+            if (!execId) return alert("Selecione um Técnico Executante.");
             if (!obsTexto) obsTexto = "ENCAMINHADO PARA O TÉCNICO EXECUTANTE.";
         } else if (statusNovo === 'aguardando_peca') {
-            if (!obsTexto) return alert("Para informar que está aguardando peça, é OBRIGATÓRIO relatar a peça necessária.");
+            if (!obsTexto) return alert("Relate qual peça está pendente.");
         } else if (statusNovo === 'concluida') {
-            if (fileInput.files.length === 0) return alert("Para concluir a O.S., é OBRIGATÓRIO anexar a foto ou PDF da O.S. assinada.");
+            if (fileInput.files.length === 0) return alert("Anexe a folha de O.S. assinada (Foto ou PDF).");
             if (!obsTexto) obsTexto = "O.S. CONCLUÍDA COM ANEXO DE COMPROVANTE ASSINADO.";
 
-            // Upload do Arquivo primeiro
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
             const btn = document.getElementById('btnSalvarTratamento');
-            btn.disabled = true; btn.textContent = 'Enviando Anexo...';
+            btn.disabled = true; btn.textContent = 'Enviando Foto/PDF...';
 
             try {
                 const resUpload = await apiFetch('/api/upload', { method: 'POST', body: formData, isUpload: true });
@@ -291,26 +289,41 @@
                 if (!resUpload.ok) throw new Error(dataUp.erro || "Falha no upload");
                 nomeArquivoSalvo = dataUp.arquivo;
             } catch (err) {
-                alert("Erro ao enviar o anexo: " + err.message);
+                alert("Erro ao enviar anexo: " + err.message);
                 btn.disabled = false; btn.textContent = 'Confirmar Ação';
                 return;
             }
         }
 
-        const p = { 
-            status: statusNovo, 
-            observacao: obsTexto, 
-            executante_id: (statusNovo === 'em_execucao' ? execId : null),
-            arquivo_conclusao: nomeArquivoSalvo
-        };
+        const btn = document.getElementById('btnSalvarTratamento');
+        btn.disabled = true; btn.textContent = 'Gravando...';
 
-        await apiFetch(`/api/os/${document.getElementById('tratarOsId').value}/status`, { 
-            method: 'PUT', 
-            body: JSON.stringify(p) 
-        });
+        try {
+            const p = { 
+                status: statusNovo, 
+                observacao: obsTexto, 
+                executante_id: (statusNovo === 'em_execucao' ? execId : null),
+                arquivo_conclusao: nomeArquivoSalvo
+            };
 
-        fecharModal('modalTratarOS'); 
-        mudarAba('geralOS');
+            const res = await apiFetch(`/api/os/${document.getElementById('tratarOsId').value}/status`, { 
+                method: 'PUT', 
+                body: JSON.stringify(p) 
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                alert("O.S. Concluída com sucesso!");
+                fecharModal('modalTratarOS'); 
+                await carregarOSServer(document.getElementById('conteudoAba'));
+            } else {
+                alert("Erro do Servidor: " + (data.erro || "Falha ao gravar."));
+            }
+        } catch(err) {
+            alert("Erro de comunicação com o servidor.");
+        } finally {
+            btn.disabled = false; btn.textContent = 'Confirmar Ação';
+        }
     }
 
     // EQUIPAMENTOS
