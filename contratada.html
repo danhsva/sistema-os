@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGME - Empresa Contratada</title>
+    <style>
+        :root { --primary: #2563eb; --primary-dark: #1d4ed8; --bg: #f4f7f6; --card: #ffffff; --text: #1e293b; --border: #e2e8f0; --danger: #ef4444; --success: #10b981; --warning: #f59e0b; --info: #0284c7; --row-alert: #fffbeb; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+        body { background: var(--bg); color: var(--text); display: flex; min-height: 100vh; overflow-x: hidden; }
+        .hidden { display: none !important; }
+        .card { background: var(--card); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.06); margin-bottom: 20px; border: 1px solid var(--border); }
+        h2, h3 { color: var(--primary-dark); margin-bottom: 15px; }
+        label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: #475569; }
+        input[type="text"], select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 15px; font-size: 14px; background: #f8fafc; text-transform: uppercase; }
+        button { background: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:hover { background: var(--primary-dark); }
+        .btn-danger { background: var(--danger); } .btn-success { background: var(--success); } .btn-secondary { background: #64748b; } .btn-warning { background: var(--warning); color: #fff; } .btn-info { background: var(--info); color: #fff; }
+        .btn-sm { padding: 6px 12px; font-size: 11px; margin-bottom: 2px; } .btn-block { width: 100%; }
+        .badge { background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+        .app-layout { display: flex; width: 100%; }
+        .sidebar { width: 65px; background: var(--card); border-right: 1px solid var(--border); position: fixed; top: 0; left: 0; bottom: 0; z-index: 999; display: flex; flex-direction: column; overflow-x: hidden; transition: width 0.3s; box-shadow: 2px 0 5px rgba(0,0,0,0.05); white-space: nowrap; }
+        .sidebar:hover { width: 250px; }
+        .sidebar-logo { padding: 20px; font-size: 18px; font-weight: bold; color: var(--primary-dark); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 15px; }
+        .sidebar-menu { display: flex; flex-direction: column; padding: 10px 0; }
+        .sidebar-item { display: flex; align-items: center; gap: 15px; padding: 14px 20px; cursor: pointer; background: none; border: none; color: #475569; font-size: 14px; font-weight: 600; text-align: left; width: 100%; border-left: 4px solid transparent; }
+        .sidebar-item:hover { background: #f1f5f9; color: var(--primary); }
+        .sidebar-item.active { background: #e0f2fe; color: var(--primary-dark); border-left-color: var(--primary); }
+        .sidebar-icon { font-size: 18px; min-width: 20px; text-align: center; }
+        .sidebar-text { opacity: 0; transition: opacity 0.3s; }
+        .sidebar:hover .sidebar-text { opacity: 1; }
+        .main-content { margin-left: 65px; padding: 20px; width: calc(100% - 65px); }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: #fff; padding: 15px 20px; border-radius: 10px; border: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+        th, td { border: 1px solid var(--border); padding: 8px; text-align: left; }
+        th { background: #f1f5f9; cursor: pointer; }
+        tr:hover { background: #f8fafc; }
+        .filter-row input { padding: 6px; margin: 0; font-size: 11px; border-radius: 4px; border: 1px solid #cbd5e1; width: 100%; }
+        .row-os-ativa { background-color: var(--row-alert) !important; border-left: 3px solid var(--warning); }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 15px; }
+        .modal-box { background: #ffffff; border-radius: 12px; padding: 25px; width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; }
+        .timeline { border-left: 3px solid var(--border); padding-left: 15px; margin-top: 15px; font-size: 13px; }
+        .timeline-item { margin-bottom: 15px; position: relative; }
+        .timeline-item::before { content: ''; position: absolute; left: -24px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--primary); }
+        .timeline-date { font-size: 11px; color: #64748b; font-weight: bold; }
+        .timeline-user { color: var(--primary-dark); font-weight: bold; margin-bottom: 4px; }
+        .timeline-text { background: #f8fafc; padding: 8px; border-radius: 6px; border: 1px solid var(--border); margin-top: 4px; }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <nav class="sidebar">
+            <div class="sidebar-logo"><span class="sidebar-icon">🛠️</span><span class="sidebar-text">SGME Empresa</span></div>
+            <div class="sidebar-menu">
+                <button id="tabGeralOS" class="sidebar-item" onclick="mudarAba('geralOS')"><span class="sidebar-icon">🛠️</span><span class="sidebar-text">Ordens de Serviço</span></button>
+                <button id="tabGeralEqs" class="sidebar-item" onclick="mudarAba('geralEqs')"><span class="sidebar-icon">💻</span><span class="sidebar-text">Equipamentos</span></button>
+            </div>
+        </nav>
+        <main class="main-content">
+            <div class="top-bar">
+                <div>
+                    <h3 style="margin: 0; color: #334155;">Painel da Contratada</h3>
+                    <div style="margin-top: 4px;"><span id="usuarioNomeDisplay" style="font-weight: 600; font-size: 14px;"></span> <span class="badge">CONTRATADA</span></div>
+                </div>
+                <button onclick="fazerLogout()" class="btn-danger">Sair</button>
+            </div>
+            <div id="conteudoAba" class="card"></div>
+        </main>
+    </div>
+
+    <!-- MODAL DELEGAÇÃO E TRATAMENTO DA CONTRATADA -->
+    <div id="modalTratarOS" class="modal-overlay hidden"><div class="modal-box"><div style="display:flex;justify-content:space-between;align-items:center;"><div><h3 style="margin:0;">Atendimento da O.S. <span id="detalheOsId"></span></h3><span id="detalheOsBadge" class="badge"></span></div><button class="btn-info btn-sm" id="btnImprimirModal" style="padding:8px 12px;">🖨️ PDF</button></div><div style="background:#f8fafc;border:1px solid var(--border);padding:10px;border-radius:6px;margin-top:15px;font-size:13px;"><strong>Equipamento:</strong> <span id="detalheOsEquip"></span><br><strong>Local:</strong> <span id="detalheOsLocal"></span><br><strong>Técnico Responsável:</strong> <span id="detalheOsExecutante" style="color:var(--primary-dark);font-weight:bold;"></span><br><strong>Defeito:</strong> <span id="detalheOsDefeito" style="color:var(--danger);"></span></div><div id="boxAcaoOS" style="margin-top:20px;padding-top:15px;border-top:1px solid var(--border);"><h4>Delegar / Atualizar Chamado</h4><form onsubmit="salvarTratamentoOS(event)"><input type="hidden" id="tratarOsId"><label>Designar Técnico da Equipe:</label><select id="tratarOsExecutante"></select><label>Situação:</label><select id="tratarOsStatus" required><option value="em_execucao">Em Execução</option><option value="em_analise">Em Análise Técnica</option><option value="aguardando_peca">Aguardando Peça</option><option value="concluida">Concluída (Resolvido)</option></select><label>Relatório / Despacho:</label><textarea id="tratarOsObs" rows="3" placeholder="Descreva as ações técnicas..." required></textarea><button type="submit" class="btn-success btn-block">Salvar Atualização</button></form></div><h4 style="margin-top:25px;">Histórico da O.S.</h4><div id="boxTimeline" class="timeline"></div><button class="btn-secondary btn-block" style="margin-top:20px;" onclick="fecharModal('modalTratarOS')">Fechar Detalhes</button></div></div>
+
+    <div id="modalHistoricoEqOS" class="modal-overlay hidden"><div class="modal-box" style="max-width: 700px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;"><h3 style="margin:0;">Histórico do Equipamento</h3><button class="btn-danger btn-sm" onclick="fecharModal('modalHistoricoEqOS')">X</button></div><div style="overflow-x:auto;"><table style="margin-top:0;"><thead><tr><th>O.S. / Data</th><th>Defeito</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tabelaHistoricoEqOS"></tbody></table></div></div></div>
+
+<script>
+    const usuarioLogado = JSON.parse(localStorage.getItem('os_usuario_logado') || 'null');
+    if (!usuarioLogado || !usuarioLogado.token || usuarioLogado.perfil !== 'contratada') {
+        window.location.href = 'index.html';
+    }
+
+    const IS_GITHUB_PAGES = window.location.hostname.includes('github.io');
+    let servidorBaseUrl = "http://127.0.0.1:8083"; 
+    let equipamentosCache = []; let osCache = [];
+    let eqSortCol = 'comarca'; let eqSortAsc = true; let eqDebounceTimeout = null;
+    let eqFiltros = { comarca: '', predio: '', sala: '', tipo: '', cap: '', tombo: '', status: '' };
+    let osFiltros = { id: '', comarca: '', status: '' };
+
+    function esc(str) { return str ? String(str).replace(/[&<>'"]/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;' }[m])) : ''; }
+
+    async function apiFetch(endpoint, options = {}) {
+        if (!options.headers) options.headers = {};
+        options.headers['Authorization'] = `Bearer ${usuarioLogado.token}`;
+        options.headers['Content-Type'] = 'application/json';
+        const res = await fetch(getApiUrl(endpoint), options);
+        if (res.status === 401) { alert("Sessão expirada."); fazerLogout(); throw new Error("401"); }
+        return res;
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+        document.getElementById('usuarioNomeDisplay').textContent = esc(usuarioLogado.nome);
+        if (IS_GITHUB_PAGES) {
+            try {
+                const res = await fetch(`servidor.json?t=${Date.now()}`);
+                servidorBaseUrl = (await res.json()).url.replace(/\/+$/, '');
+            } catch (err) { console.error("Offline"); }
+        }
+        let abaSalva = sessionStorage.getItem('os_aba_contratada') || 'geralOS';
+        mudarAba(abaSalva);
+    });
+
+    function getApiUrl(ep) { return `${servidorBaseUrl}${ep}`; }
+    function fecharModal(id) { document.getElementById(id).classList.add('hidden'); }
+    function dataFormatada(timestamp) { return new Date(timestamp).toLocaleString('pt-BR'); }
+    function fazerLogout() { localStorage.removeItem('os_usuario_logado'); sessionStorage.clear(); window.location.href = 'index.html'; }
+
+    function mudarAba(abaId) {
+        sessionStorage.setItem('os_aba_contratada', abaId);
+        document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+        let btn = document.getElementById(`tab${abaId.charAt(0).toUpperCase() + abaId.slice(1)}`);
+        if (btn) btn.classList.add('active');
+        const box = document.getElementById('conteudoAba');
+        if (abaId === 'geralEqs') carregarEquipamentosServer(box); 
+        if (abaId === 'geralOS') carregarOSServer(box);
+    }
+
+    // LISTAGEM DE O.S. APROVADAS
+    async function carregarOSServer(box) {
+        box.innerHTML = `<div style="display:flex;justify-content:space-between;margin-bottom:15px;"><h3>Ordens de Serviço Aprovadas para Atendimento</h3><button onclick="carregarOSServer(document.getElementById('conteudoAba'))">Atualizar</button></div><div style="overflow-x:auto;"><table><thead id="headFiltrosOS"><tr><th>ID / Data</th><th>Local</th><th>Equipamento / Defeito</th><th>Status</th><th>Ações</th></tr><tr class="filter-row"><td><input type="text" placeholder="Buscar ID..." oninput="setOsFiltro('id', this.value)"></td><td><input type="text" placeholder="Buscar Comarca..." oninput="setOsFiltro('comarca', this.value)"></td><td></td><td><input type="text" placeholder="Buscar Status..." oninput="setOsFiltro('status', this.value)"></td><td><button class="btn-sm btn-secondary" onclick="limparFiltrosOS()" style="padding:6px;width:100%;">Limpar</button></td></tr></thead><tbody id="tabelaBoxOS"><tr><td colspan="5">Carregando...</td></tr></tbody></table></div>`;
+        osCache = await (await apiFetch('/api/os')).json(); desenharTabelaOS();
+    }
+    function limparFiltrosOS() { osFiltros = { id:'', comarca:'', status:'' }; document.querySelectorAll('#headFiltrosOS input').forEach(i=>i.value=''); desenharTabelaOS(); }
+    function setOsFiltro(c, v) { osFiltros[c] = v.toLowerCase(); desenharTabelaOS(); }
+    function desenharTabelaOS() {
+        const tbody = document.getElementById('tabelaBoxOS');
+        let filtrados = osCache.filter(os => {
+            if (osFiltros.id && !os.id.toString().includes(osFiltros.id)) return false;
+            if (osFiltros.comarca && !(os.comarca||'').toLowerCase().includes(osFiltros.comarca)) return false;
+            if (osFiltros.status && !(os.status||'').toLowerCase().includes(osFiltros.status)) return false;
+            return true;
+        });
+        let html = '';
+        filtrados.forEach(os => {
+            let cor = '#0ea5e9'; if (os.status==='concluida') cor='#10b981'; if (os.status.includes('execucao')) cor='#f59e0b'; if (os.status.includes('peca')) cor='#8b5cf6';
+            html += `<tr><td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td><td><strong>${esc(os.comarca)}</strong><br><small>${esc(os.predio)} (${esc(os.sala)})</small></td><td style="max-width:250px;"><strong>${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')}</strong><br><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td><td><span class="badge" style="background:${cor};color:white;">${os.status.replace('_', ' ').toUpperCase()}</span></td><td><button class="btn-sm btn-secondary" onclick="abrirDetalhesOS(${os.id})">Delegar / Tratar</button> <button class="btn-sm btn-info" onclick="imprimirOSPdf(${os.id})">🖨️ PDF</button></td></tr>`;
+        });
+        tbody.innerHTML = html;
+    }
+
+    async function abrirDetalhesOS(os_id) {
+        document.getElementById('modalTratarOS').classList.remove('hidden');
+        document.getElementById('boxTimeline').innerHTML = "Carregando...";
+        document.getElementById('tratarOsObs').value = '';
+        document.getElementById('btnImprimirModal').onclick = () => imprimirOSPdf(os_id);
+        
+        try {
+            const data = await (await apiFetch(`/api/os/${os_id}`)).json();
+            const os = data.os; const hist = data.historico;
+
+            document.getElementById('detalheOsId').textContent = `#${os.id}`;
+            document.getElementById('detalheOsBadge').textContent = os.status.replace('_', ' ').toUpperCase();
+            document.getElementById('detalheOsEquip').textContent = `${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')} (Tombo: ${esc(os.tombo)})`;
+            document.getElementById('detalheOsLocal').textContent = `${esc(os.comarca)} - ${esc(os.predio)} / ${esc(os.sala)}`;
+            document.getElementById('detalheOsExecutante').textContent = os.nome_executante ? esc(os.nome_executante) : 'NÃO DESIGNADO';
+            document.getElementById('detalheOsDefeito').textContent = esc(os.descricao_falha);
+
+            let htmlHist = '';
+            hist.forEach(h => { htmlHist += `<div class="timeline-item"><div class="timeline-date">${dataFormatada(h.data_registro)}</div><div class="timeline-user">${esc(h.nome_usuario)} <span class="badge" style="background:#e2e8f0;color:#475569;">${h.acao}</span></div>${h.observacao ? `<div class="timeline-text">${esc(h.observacao)}</div>` : ''}</div>`; });
+            document.getElementById('boxTimeline').innerHTML = htmlHist;
+            document.getElementById('tratarOsId').value = os.id;
+
+            // Carrega os executantes do contrato para delegação
+            const resExec = await (await apiFetch('/api/usuarios')).json();
+            const selExec = document.getElementById('tratarOsExecutante');
+            selExec.innerHTML = '<option value="">Selecione o Técnico Responsável...</option>' + 
+                resExec.map(ex => `<option value="${ex.id}" ${os.executante_id === ex.id ? 'selected' : ''}>${esc(ex.nome)}</option>`).join('');
+
+            if (os.status === 'concluida') document.getElementById('boxAcaoOS').classList.add('hidden');
+            else document.getElementById('boxAcaoOS').classList.remove('hidden');
+
+        } catch (err) { document.getElementById('boxTimeline').innerHTML = `<span style="color:red;">Erro ao carregar detalhes.</span>`; }
+    }
+
+    async function salvarTratamentoOS(e) {
+        e.preventDefault();
+        const statusNovo = document.getElementById('tratarOsStatus').value;
+        const obsTexto = document.getElementById('tratarOsObs').value.trim().toUpperCase();
+        const execId = document.getElementById('tratarOsExecutante').value;
+
+        await apiFetch(`/api/os/${document.getElementById('tratarOsId').value}/status`, { 
+            method: 'PUT', 
+            body: JSON.stringify({ status: statusNovo, observacao: obsTexto, executante_id: execId || null }) 
+        });
+        fecharModal('modalTratarOS'); mudarAba('geralOS');
+    }
+
+    // EQUIPAMENTOS DO CONTRATO
+    async function carregarEquipamentosServer(box) {
+        box.innerHTML = `<div style="display:flex;justify-content:space-between;margin-bottom:15px;"><h3>Equipamentos Atendidos</h3></div><div style="overflow-x:auto;"><table><thead id="headFiltrosEq"></thead><tbody id="tabelaBoxEq"><tr><td colspan="8">Carregando...</td></tr></tbody></table></div><div id="totalEqs" style="font-size:12px;color:#64748b;margin-top:10px;"></div>`;
+        equipamentosCache = await (await apiFetch('/api/equipamentos')).json();
+        renderizarCabecalhoEq(); desenharTabelaEquipamentos();
+    }
+    function renderizarCabecalhoEq() {
+        const iconSort = eqSortAsc ? ' ▴' : ' ▾'; const col = (n, c) => `<th onclick="setEqSort('${c}')">${n}${eqSortCol === c ? iconSort : ''}</th>`;
+        document.getElementById('headFiltrosEq').innerHTML = `<tr>${col('Comarca','comarca')}${col('Prédio','predio')}${col('Local','sala')}${col('Equipamento','tipo_equipamento')}${col('Cap','capacidade')}${col('Tombo','tombo')}${col('Status','status')}<th>Ações</th></tr>
+            <tr class="filter-row">
+                <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('comarca', this.value)" value="${eqFiltros.comarca}"></td>
+                <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('predio', this.value)" value="${eqFiltros.predio}"></td>
+                <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('sala', this.value)" value="${eqFiltros.sala}"></td>
+                <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('tipo', this.value)" value="${eqFiltros.tipo}"></td>
+                <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('cap', this.value)" value="${eqFiltros.cap}"></td>
+                <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('tombo', this.value)" value="${eqFiltros.tombo}"></td>
+                <td><input type="text" placeholder="ativo/inativo" oninput="debounceFiltroEq('status', this.value)" value="${eqFiltros.status}"></td>
+                <td><button class="btn-sm btn-secondary" onclick="limparFiltrosEq()" style="padding:6px;width:100%;">Limpar</button></td>
+            </tr>`;
+    }
+    function debounceFiltroEq(c, v) { clearTimeout(eqDebounceTimeout); eqDebounceTimeout = setTimeout(() => { eqFiltros[c] = v.toLowerCase(); desenharTabelaEquipamentos(); }, 250); }
+    function limparFiltrosEq() { eqFiltros = { comarca:'', predio:'', sala:'', tipo:'', cap:'', tombo:'', status:'' }; renderizarCabecalhoEq(); desenharTabelaEquipamentos(); }
+    function setEqSort(c) { if (eqSortCol === c) eqSortAsc = !eqSortAsc; else { eqSortCol = c; eqSortAsc = true; } renderizarCabecalhoEq(); desenharTabelaEquipamentos(); }
+
+    function desenharTabelaEquipamentos() {
+        const tbody = document.getElementById('tabelaBoxEq');
+        let filtrados = equipamentosCache.filter(eq => {
+            if (eqFiltros.comarca && !(eq.comarca||'').toLowerCase().includes(eqFiltros.comarca)) return false;
+            if (eqFiltros.predio && !(eq.predio||'').toLowerCase().includes(eqFiltros.predio)) return false;
+            if (eqFiltros.sala && !(eq.sala||'').toLowerCase().includes(eqFiltros.sala)) return false;
+            if (eqFiltros.tipo && !(eq.tipo_equipamento||'').toLowerCase().includes(eqFiltros.tipo)) return false;
+            if (eqFiltros.cap && !(eq.capacidade||'').toLowerCase().includes(eqFiltros.cap)) return false;
+            if (eqFiltros.tombo && !(eq.tombo||'').toLowerCase().includes(eqFiltros.tombo)) return false;
+            if (eqFiltros.status && !(eq.ativo === 1 ? 'ativo' : 'inativo').includes(eqFiltros.status)) return false;
+            return true;
+        });
+        filtrados.sort((a, b) => {
+            let valA = (a[eqSortCol] || '').toString().toLowerCase(); let valB = (b[eqSortCol] || '').toString().toLowerCase();
+            if (valA < valB) return eqSortAsc ? -1 : 1; if (valA > valB) return eqSortAsc ? 1 : -1; return 0;
+        });
+
+        let html = '';
+        filtrados.forEach(eq => {
+            const rowClass = eq.ativo === 0 ? 'inativo' : (eq.tem_os_ativa > 0 ? 'row-os-ativa' : '');
+            const statusLabel = eq.ativo === 1 ? '<span style="color:var(--success);font-weight:bold;">Ativo</span>' : '<span style="color:var(--danger);font-weight:bold;">Inativo</span>';
+            html += `<tr class="${rowClass}"><td>${esc(eq.comarca)}</td><td>${esc(eq.predio)}</td><td>${esc(eq.sala)}</td><td>${esc(eq.tipo_equipamento)}</td><td>${esc(eq.capacidade||'-')}</td><td>${eq.tombo === 'S/T' ? '<span class="badge" style="background:#e2e8f0;color:#64748b;">S/T</span>' : esc(eq.tombo)}</td><td>${statusLabel}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="abrirHistoricoEqOS(${eq.id})">Ver O.S.</button></td></tr>`;
+        });
+        tbody.innerHTML = html; document.getElementById('totalEqs').textContent = `Total: ${filtrados.length} equipamento(s).`;
+    }
+
+    async function abrirHistoricoEqOS(eq_id) {
+        document.getElementById('modalHistoricoEqOS').classList.remove('hidden');
+        const tbody = document.getElementById('tabelaHistoricoEqOS');
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Carregando histórico...</td></tr>';
+        try {
+            let chamados = await (await apiFetch(`/api/equipamentos/${eq_id}/os`)).json();
+            chamados = chamados.filter(os => os.status !== 'aberta');
+            if (chamados.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhuma O.S. aprovada para este equipamento.</td></tr>'; return; }
+            let html = '';
+            chamados.forEach(os => {
+                let cor = '#0ea5e9'; if (os.status==='concluida') cor='#10b981'; if (os.status.includes('execucao')) cor='#f59e0b'; if (os.status.includes('peca')) cor='#8b5cf6';
+                html += `<tr><td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td><td><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td><td><span class="badge" style="background:${cor};color:white;">${os.status.replace('_', ' ').toUpperCase()}</span></td><td><button class="btn-sm btn-secondary" onclick="fecharModal('modalHistoricoEqOS'); abrirDetalhesOS(${os.id});">Detalhes</button> <button class="btn-sm btn-info" onclick="imprimirOSPdf(${os.id})">🖨️ PDF</button></td></tr>`;
+            });
+            tbody.innerHTML = html;
+        } catch (err) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:red;">Erro ao buscar dados.</td></tr>'; }
+    }
+
+    async function imprimirOSPdf(os_id) {
+        let os = null; let hist = [];
+        try {
+            const data = await (await apiFetch(`/api/os/${os_id}`)).json();
+            os = data.os; hist = data.historico;
+        } catch(e) { alert("Erro ao carregar dados."); return; }
+
+        const dataObj = new Date(os.data_abertura);
+        const numOSFormatado = `${os.id}.${String(dataObj.getMonth()+1).padStart(2,'0')}.${dataObj.getFullYear()}`;
+        let dataAprovacao = '-';
+        const hAprov = hist.find(h => h.acao.includes('APROVADA'));
+        if (hAprov) { const dA = new Date(hAprov.data_registro); dataAprovacao = `${String(dA.getDate()).padStart(2,'0')}/${String(dA.getMonth()+1).padStart(2,'0')}/${dA.getFullYear()}`; }
+        let dataConclusao = os.data_conclusao ? new Date(os.data_conclusao).toLocaleDateString('pt-BR') : '-';
+        const descCompleta = `Ar-condicionado ${os.tipo_equipamento} ${os.capacidade||''} ${os.tombo !== 'S/T' ? 'tombo ' + os.tombo : ''}. Defeito: ${os.descricao_falha}`;
+        let histHtml = '';
+        hist.forEach(h => { histHtml += `<div style="font-size:11px;margin-bottom:6px;border-bottom:1px dotted #ccc;"><strong>${dataFormatada(h.data_registro)} - ${esc(h.nome_usuario)} (${h.acao}):</strong> ${esc(h.observacao||'')}</div>`; });
+
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>OS_${numOSFormatado}</title><style>@page { size: A4 portrait; margin: 12mm 15mm; } body { font-family: Arial, sans-serif; color: #000; margin: 0; padding: 0; font-size: 11px; } .box-principal { border: 1.5px solid #000; width: 100%; border-collapse: collapse; } .box-principal td, .box-principal th { border: 1px solid #000; padding: 4px 6px; } .cabecalho-doc { text-align: center; font-weight: bold; font-size: 12px; } .titulo-sub { font-size: 11px; font-weight: bold; text-align: center; } .label-col { font-weight: bold; text-align: center; background: #fcfcfc; width: 35%; font-size: 10px; } .val-col { text-align: center; font-weight: 500; font-size: 11px; } .banner-lateral { width: 30px; text-align: center; vertical-align: middle; font-weight: bold; font-size: 12px; letter-spacing: 2px; writing-mode: vertical-rl; transform: rotate(180deg); } .secao-header { background: #fff; font-weight: bold; text-align: center; font-size: 11px; padding: 5px !important; } .rodape-os { margin-top: 15px; text-align: right; font-weight: bold; font-size: 14px; } @media print { .no-print { display: none !important; } }</style></head><body><div class="no-print" style="text-align:center;margin-bottom:20px;"><button style="background:#0284c7;color:#fff;padding:10px 20px;font-weight:bold;border:none;cursor:pointer;border-radius:4px;" onclick="window.print()">🖨️ Imprimir / Salvar como PDF</button></div><div style="text-align:right;font-size:14px;font-weight:bold;margin-bottom:4px;">${os.id}</div><table class="box-principal"><tr><td colspan="3" class="cabecalho-doc">ESTADO DO CEARÁ - PODER JUDICIÁRIO</td></tr><tr><td colspan="3" class="titulo-sub">TRIBUNAL DE JUSTIÇA - GERÊNCIA DE MANUTENÇÃO E ZELADORIA</td></tr><tr><td rowspan="20" class="banner-lateral">ABERTURA</td><td class="label-col">Nº da OS</td><td class="val-col"><strong>${numOSFormatado}</strong></td></tr><tr><td class="label-col">ATENDENTE</td><td class="val-col">${esc(os.nome_solicitante)}</td></tr><tr><td class="label-col">MATRÍCULA DO ATENDENTE</td><td class="val-col">-</td></tr><tr><td colspan="2" class="secao-header">LOCALIZAÇÃO</td></tr><tr><td class="label-col">REQUISITANTE</td><td class="val-col">${esc(os.nome_solicitante)}</td></tr><tr><td class="label-col">MATRÍCULA DO REQUISITANTE</td><td class="val-col">-</td></tr><tr><td class="label-col">TELEFONE/RAMAL CONTATO</td><td class="val-col">0</td></tr><tr><td class="label-col">LOTAÇÃO</td><td class="val-col">${esc(os.sala)}</td></tr><tr><td class="label-col">MUNICÍPIO</td><td class="val-col">${esc(os.comarca)}</td></tr><tr><td class="label-col">REGIÃO</td><td class="val-col">Região I</td></tr><tr><td class="label-col">PRÉDIO</td><td class="val-col">${esc(os.predio)}</td></tr><tr><td class="label-col">LOCAL DE OCORRÊNCIA</td><td class="val-col">${esc(os.sala)}</td></tr><tr><td class="label-col">TIPO DE SOLICITACAO</td><td class="val-col">Manutenção de Equipamento</td></tr><tr><td class="label-col">SERVIÇO</td><td class="val-col">Climatização</td></tr><tr><td class="label-col">CPA/TOMBO</td><td class="val-col"><strong>${esc(os.tombo)}</strong></td></tr><tr><td class="label-col">PRIORIDADE</td><td class="val-col">Não Emergencial</td></tr><tr><td class="label-col">FORNECEDOR</td><td class="val-col">${esc(os.contrato_nome || '-')}</td></tr><tr><td class="label-col">DESCRIÇÃO</td><td class="val-col" style="font-size:10px;">${esc(descCompleta)}</td></tr><tr><td class="label-col">DATA DE APROVAÇÃO</td><td class="val-col">${dataAprovacao}</td></tr><tr><td class="label-col">DATA DE INÍCIO</td><td class="val-col">${dataObj.toLocaleDateString('pt-BR')}</td></tr><tr><td colspan="2" class="label-col">DATA DE CONCLUSÃO</td><td class="val-col">${dataConclusao}</td></tr></table><table class="box-principal" style="border-top:none;margin-top:-1px;"><tr><td class="secao-header">DESCRIÇÃO</td></tr><tr><td style="height:45px;vertical-align:top;padding:6px;">${esc(descCompleta)}</td></tr><tr><td class="secao-header">HISTÓRICO</td></tr><tr><td style="min-height:80px;vertical-align:top;padding:6px;">${histHtml || 'Nenhum histórico.'}</td></tr></table><table class="box-principal" style="border-top:none;margin-top:-1px;"><tr><td class="secao-header" style="width:50%;">ATENDENTE</td><td class="secao-header" style="width:50%;">Executor</td></tr><tr><td style="height:50px;vertical-align:bottom;"><strong>Nome:</strong> ${esc(os.nome_solicitante)}<br><strong>Matrícula:</strong></td><td style="height:50px;vertical-align:bottom;"><strong>Nome:</strong> ${esc(os.nome_executante || '')}<br><strong>CPF:</strong></td></tr></table><div class="rodape-os">Nº da OS: ${numOSFormatado}</div></body></html>`);
+        printWindow.document.close();
+        printWindow.focus();
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGME - Fiscal de Contrato</title>
+    <style>
+        :root { --primary: #2563eb; --primary-dark: #1d4ed8; --bg: #f4f7f6; --card: #ffffff; --text: #1e293b; --border: #e2e8f0; --danger: #ef4444; --success: #10b981; --warning: #f59e0b; --info: #0284c7; --row-alert: #fffbeb; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+        body { background: var(--bg); color: var(--text); display: flex; min-height: 100vh; overflow-x: hidden; }
+        .hidden { display: none !important; }
+        .card { background: var(--card); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.06); margin-bottom: 20px; border: 1px solid var(--border); }
+        h2, h3 { color: var(--primary-dark); margin-bottom: 15px; }
+        label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: #475569; }
+        input[type="text"], select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 15px; font-size: 14px; background: #f8fafc; text-transform: uppercase; }
+        input#formUserLogin { text-transform: lowercase; }
+        button { background: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:hover { background: var(--primary-dark); }
+        .btn-danger { background: var(--danger); } .btn-success { background: var(--success); } .btn-secondary { background: #64748b; } .btn-warning { background: var(--warning); color: #fff; } .btn-info { background: var(--info); color: #fff; }
+        .btn-sm { padding: 6px 12px; font-size: 11px; margin-bottom: 2px; } .btn-block { width: 100%; }
+        .badge { background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+        .app-layout { display: flex; width: 100%; }
+        .sidebar { width: 65px; background: var(--card); border-right: 1px solid var(--border); position: fixed; top: 0; left: 0; bottom: 0; z-index: 999; display: flex; flex-direction: column; overflow-x: hidden; transition: width 0.3s; box-shadow: 2px 0 5px rgba(0,0,0,0.05); white-space: nowrap; }
+        .sidebar:hover { width: 250px; }
+        .sidebar-logo { padding: 20px; font-size: 18px; font-weight: bold; color: var(--primary-dark); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 15px; }
+        .sidebar-menu { display: flex; flex-direction: column; padding: 10px 0; }
+        .sidebar-item { display: flex; align-items: center; gap: 15px; padding: 14px 20px; cursor: pointer; background: none; border: none; color: #475569; font-size: 14px; font-weight: 600; text-align: left; width: 100%; border-left: 4px solid transparent; }
+        .sidebar-item:hover { background: #f1f5f9; color: var(--primary); }
+        .sidebar-item.active { background: #e0f2fe; color: var(--primary-dark); border-left-color: var(--primary); }
+        .sidebar-icon { font-size: 18px; min-width: 20px; text-align: center; }
+        .sidebar-text { opacity: 0; transition: opacity 0.3s; }
+        .sidebar:hover .sidebar-text { opacity: 1; }
+        .main-content { margin-left: 65px; padding: 20px; width: calc(100% - 65px); transition: margin-left 0.3s, width 0.3s; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: #fff; padding: 15px 20px; border-radius: 10px; border: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+        th, td { border: 1px solid var(--border); padding: 8px; text-align: left; }
+        th { background: #f1f5f9; cursor: pointer; }
+        tr:hover { background: #f8fafc; }
+        .filter-row input { padding: 6px; margin: 0; font-size: 11px; border-radius: 4px; border: 1px solid #cbd5e1; width: 100%; }
+        .inativo td { opacity: 0.5; background: #f1f5f9; }
+        .row-os-ativa { background-color: var(--row-alert) !important; border-left: 3px solid var(--warning); }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 15px; }
+        .modal-box { background: #ffffff; border-radius: 12px; padding: 25px; width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; }
+        .row { display: flex; gap: 10px; } .col { flex: 1; }
+        .timeline { border-left: 3px solid var(--border); padding-left: 15px; margin-top: 15px; font-size: 13px; }
+        .timeline-item { margin-bottom: 15px; position: relative; }
+        .timeline-item::before { content: ''; position: absolute; left: -24px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--primary); }
+        .timeline-date { font-size: 11px; color: #64748b; font-weight: bold; }
+        .timeline-user { color: var(--primary-dark); font-weight: bold; margin-bottom: 4px; }
+        .timeline-text { background: #f8fafc; padding: 8px; border-radius: 6px; border: 1px solid var(--border); margin-top: 4px; }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <nav class="sidebar">
+            <div class="sidebar-logo"><span class="sidebar-icon">⚙️</span><span class="sidebar-text">SGME Fiscal</span></div>
+            <div class="sidebar-menu">
+                <button id="tabGeralOS" class="sidebar-item" onclick="mudarAba('geralOS')"><span class="sidebar-icon">🛠️</span><span class="sidebar-text">Ordens de Serviço</span></button>
+                <button id="tabGeralEqs" class="sidebar-item" onclick="mudarAba('geralEqs')"><span class="sidebar-icon">💻</span><span class="sidebar-text">Equipamentos</span></button>
+                <button id="tabAdmUsers" class="sidebar-item" onclick="mudarAba('admUsers')"><span class="sidebar-icon">👥</span><span class="sidebar-text">Equipe</span></button>
+            </div>
+        </nav>
+        <main class="main-content">
+            <div class="top-bar">
+                <div>
+                    <h3 style="margin: 0; color: #334155;">Painel do Fiscal</h3>
+                    <div style="margin-top: 4px;"><span id="usuarioNomeDisplay" style="font-weight: 600; font-size: 14px;"></span> <span class="badge">FISCAL</span></div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-warning" onclick="abrirNovaOSAvulsa()">+ NOVA O.S.</button>
+                    <button onclick="fazerLogout()" class="btn-danger">Sair</button>
+                </div>
+            </div>
+            <div id="conteudoAba" class="card"></div>
+        </main>
+    </div>
+
+    <!-- MODAIS DO FISCAL -->
+    <div id="modalFormEquip" class="modal-overlay hidden">
+        <div class="modal-box" style="max-width: 700px;">
+            <h3>Inclusão de Equipamento no Contrato</h3>
+            <form onsubmit="salvarEquipamento(event)">
+                <input type="hidden" id="formEqId">
+                <div class="row">
+                    <div class="col"><label>Comarca:</label><select id="formEqComarca" required></select></div>
+                    <div class="col"><label>Prédio:</label><input type="text" id="formEqPredio" required></div>
+                    <div class="col"><label>Sala (Local):</label><input type="text" id="formEqSala" required></div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Tipo:</label>
+                        <select id="formEqTipo" required><option value="">Selecione...</option><option value="HI WALL">HI WALL</option><option value="PISO TETO">PISO TETO</option><option value="CASSETE">CASSETE</option><option value="JANELEIRO">JANELEIRO</option><option value="MULTI SPLIT">MULTI SPLIT</option><option value="SELF">SELF</option><option value="CORTINA DE AR">CORTINA DE AR</option><option value="SPLITÃO">SPLITÃO</option><option value="OUTRO">OUTRO</option></select>
+                    </div>
+                    <div class="col"><label>Capacidade:</label>
+                        <select id="formEqCap"><option value="">Selecione...</option><option value="7000 BTUS">7000 BTUS</option><option value="9000 BTUS">9000 BTUS</option><option value="10000 BTUS">10000 BTUS</option><option value="12000 BTUS">12000 BTUS</option><option value="18000 BTUS">18000 BTUS</option><option value="21000 BTUS">21000 BTUS</option><option value="22000 BTUS">22000 BTUS</option><option value="24000 BTUS">24000 BTUS</option><option value="30000 BTUS">30000 BTUS</option><option value="36000 BTUS">36000 BTUS</option><option value="48000 BTUS">48000 BTUS</option><option value="60000 BTUS">60000 BTUS</option><option value="3 TR">3 TR</option><option value="5 TR">5 TR</option><option value="7.5 TR">7.5 TR</option><option value="10 TR">10 TR</option><option value="15 TR">15 TR</option></select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Marca:</label><input type="text" id="formEqMarca"></div>
+                    <div class="col"><label>Tombo:</label><input type="text" id="formEqTombo"></div>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 15px;"><button type="submit" class="btn-success btn-block">Salvar</button><button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalFormEquip')">Cancelar</button></div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modalFormUser" class="modal-overlay hidden">
+        <div class="modal-box" style="max-width: 400px;">
+            <h3>Novo Integrante da Equipe</h3>
+            <form onsubmit="salvarUsuario(event)">
+                <input type="hidden" id="formUserId">
+                <label>Nome Completo:</label><input type="text" id="formUserNome" required>
+                <label>Login de Acesso:</label><input type="text" id="formUserLogin" required>
+                <label>Perfil:</label>
+                <select id="formUserPerfil" required><option value="executante">Executante (Técnico)</option><option value="contratada">Contratada (Empresa)</option></select>
+                <div style="display: flex; gap: 10px; margin-top: 15px;"><button type="submit" class="btn-success btn-block">Salvar</button><button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalFormUser')">Cancelar</button></div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modalNovaOSAvulsa" class="modal-overlay hidden"><div class="modal-box" style="max-width: 600px;"><h3>Abrir Nova Ordem de Serviço</h3><div id="boxBuscaAvulsa" style="background:#f1f5f9;padding:15px;border-radius:6px;margin-bottom:15px;border:1px solid var(--border);"><label style="color:var(--primary-dark);">Busca por Tombo:</label><div style="display:flex;gap:10px;margin-bottom:15px;"><input type="text" id="buscaTombo" placeholder="Digite o tombo..." style="margin-bottom:0;"><button type="button" class="btn-primary" onclick="buscarEquipamentoPorTombo()">Buscar</button></div><hr style="border:0;border-top:1px dashed #cbd5e1;margin-bottom:15px;"><div class="row"><div class="col"><label>Comarca:</label><select id="selAvulsoComarca" onchange="popularAvulsoPredios()"></select></div><div class="col"><label>Prédio:</label><select id="selAvulsoPredio" onchange="popularAvulsoSalas()"></select></div></div><div class="row"><div class="col"><label>Sala:</label><select id="selAvulsoSala" onchange="popularAvulsoEqs()"></select></div><div class="col"><label>Equipamento:</label><select id="selAvulsoEq" required></select></div></div></div><div id="boxEqSelecionadoFixo" class="hidden" style="background:#e0f2fe;padding:15px;border-radius:6px;margin-bottom:15px;border:1px solid #7dd3fc;"><strong id="lblEqFixoNome" style="color:var(--primary-dark);font-size:15px;"></strong><br><span id="lblEqFixoLocal" style="color:#475569;font-size:13px;"></span></div><form onsubmit="enviarOSAvulsa(event)"><label>Relato do Defeito:</label><textarea id="osDescricaoAvulsa" rows="3" required placeholder="Descreva o problema..."></textarea><div style="display:flex;gap:10px;margin-top:10px;"><button type="submit" class="btn-success btn-block">Registrar O.S.</button><button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalNovaOSAvulsa')">Cancelar</button></div></form></div></div>
+
+    <div id="modalHistoricoEqOS" class="modal-overlay hidden"><div class="modal-box" style="max-width: 700px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;"><h3 style="margin:0;">Histórico do Equipamento</h3><button class="btn-danger btn-sm" onclick="fecharModal('modalHistoricoEqOS')">X</button></div><div style="overflow-x:auto;"><table style="margin-top:0;"><thead><tr><th>O.S. / Data</th><th>Defeito</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tabelaHistoricoEqOS"></tbody></table></div></div></div>
+
+    <div id="modalTratarOS" class="modal-overlay hidden"><div class="modal-box"><div style="display:flex;justify-content:space-between;align-items:center;"><div><h3 style="margin:0;">Detalhes da O.S. <span id="detalheOsId"></span></h3><span id="detalheOsBadge" class="badge"></span></div><button class="btn-info btn-sm" id="btnImprimirModal" style="padding:8px 12px;">🖨️ PDF</button></div><div style="background:#f8fafc;border:1px solid var(--border);padding:10px;border-radius:6px;margin-top:15px;font-size:13px;"><strong>Equipamento:</strong> <span id="detalheOsEquip"></span><br><strong>Local:</strong> <span id="detalheOsLocal"></span><br><strong>Técnico Designado:</strong> <span id="detalheOsExecutante" style="color:var(--primary-dark);font-weight:bold;"></span><br><strong>Defeito Inicial:</strong> <span id="detalheOsDefeito" style="color:var(--danger);"></span></div><div id="boxAcaoOS" style="margin-top:20px;padding-top:15px;border-top:1px solid var(--border);"><h4>Fiscalizar / Tramitar Chamado</h4><form onsubmit="salvarTratamentoOS(event)"><input type="hidden" id="tratarOsId"><label>Decisão do Fiscal:</label><select id="tratarOsStatus" required><option value="aprovada">Aprovar O.S. (Autorizar Início)</option><option value="concluida">Concluída (Resolvido)</option><option value="cancelada">Cancelar O.S. (Improcedente)</option></select><label>Observação (Opcional ao Aprovar, Obrigatória ao Cancelar):</label><textarea id="tratarOsObs" rows="3" placeholder="Insira detalhes adicionais se necessário..."></textarea><button type="submit" class="btn-success btn-block">Confirmar Decisão</button></form></div><h4 style="margin-top:25px;">Histórico da O.S.</h4><div id="boxTimeline" class="timeline"></div><button class="btn-secondary btn-block" style="margin-top:20px;" onclick="fecharModal('modalTratarOS')">Fechar Detalhes</button></div></div>
+
+<script>
+    const usuarioLogado = JSON.parse(localStorage.getItem('os_usuario_logado') || 'null');
+    if (!usuarioLogado || !usuarioLogado.token || usuarioLogado.perfil !== 'fiscal') {
+        window.location.href = 'index.html';
+    }
+
+    const IS_GITHUB_PAGES = window.location.hostname.includes('github.io');
+    let servidorBaseUrl = "http://127.0.0.1:8083"; 
+    let equipamentosCache = []; let osCache = []; let usuariosCache = [];
+    let eqSortCol = 'comarca'; let eqSortAsc = true; let eqDebounceTimeout = null;
+    let eqFiltros = { comarca: '', predio: '', sala: '', tipo: '', cap: '', tombo: '', status: '' };
+    let osFiltros = { id: '', comarca: '', status: '' };
+
+    const MUNICIPIOS_CE = ["Abaiara","Acarape","Acaraú","Acopiara","Aiuaba","Alcântaras","Altaneira","Alto Santo","Amontada","Antonina do Norte","Apuiarés","Aquiraz","Aracati","Aracoiaba","Ararendá","Araripe","Aratuba","Arneiroz","Assaré","Aurora","Baixio","Banabuiú","Barbalha","Barreira","Barro","Barroquinha","Baturité","Beberibe","Bela Cruz","Boa Viagem","Brejo Santo","Camocim","Campos Sales","Canindé","Capistrano","Caridade","Cariré","Caririaçu","Cariús","Carnaubal","Cascavel","Catarina","Catunda","Caucaia","Cedro","Chaval","Choró","Chorozinho","Coreaú","Crateús","Crato","Croatá","Cruz","Deputado Irapuan Pinheiro","Ererê","Eusébio","Farias Brito","Forquilha","Fortaleza","Fortim","Frecheirinha","General Sampaio","Graça","Granja","Granjeiro","Groaíras","Guaiúba","Guaraciaba do Norte","Guaramiranga","Hidrolândia","Horizonte","Ibaretama","Ibiapina","Ibicuitinga","Icapuí","Icó","Iguatu","Independência","Ipaporanga","Ipaumirim","Ipu","Ipueiras","Iracema","Irauçuba","Itaiçaba","Itaitinga","Itapajé","Itapipoca","Itapiúna","Itarema","Itatira","Jaguaretama","Jaguaribara","Jaguaribe","Jaguaruana","Jardim","Jati","Jijoca de Jericoacoara","Juazeiro do Norte","Jucás","Lavras da Mangabeira","Limoeiro do Norte","Madalena","Maracanaú","Maranguape","Marco","Martinópole","Massapê","Mauriti","Meruoca","Milagres","Milhã","Miraíma","Missão Velha","Mombaça","Monsenhor Tabosa","Morada Nova","Moraújo","Morrinhos","Mucambo","Mulungu","Nova Olinda","Nova Russas","Novo Oriente","Ocara","Orós","Pacajus","Pacatuba","Pacoti","Pacujá","Palhano","Palmácia","Paracuru","Paraipaba","Parambu","Paramoti","Pedra Branca","Penaforte","Pentecoste","Pereiro","Pindoretama","Piquet Carneiro","Pires Ferreira","Poranga","Porteiras","Potengi","Potiretama","Quiterianópolis","Quixadá","Quixelô","Quixeramobim","Quixeré","Redenção","Reriutaba","Russas","Saboeiro","Salitre","Santa Quitéria","Santana do Acaraú","Santana do Cariri","São Benedito","São Gonçalo do Amarante","São João do Jaguaribe","São Luís do Curu","Senador Pompeu","Senador Sá","Sobral","Solonópole","Tabuleiro do Norte","Tamboril","Tarrafas","Tauá","Tejuçuoca","Tianguá","Trairi","Tururu","Ubajara","Umari","Umirim","Uruburetama","Uruoca","Varjota","Várzea Alegre","Viçosa do Ceará"].map(m => m.toUpperCase());
+
+    function esc(str) { return str ? String(str).replace(/[&<>'"]/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;' }[m])) : ''; }
+
+    async function apiFetch(endpoint, options = {}) {
+        if (!options.headers) options.headers = {};
+        options.headers['Authorization'] = `Bearer ${usuarioLogado.token}`;
+        options.headers['Content-Type'] = 'application/json';
+        const res = await fetch(getApiUrl(endpoint), options);
+        if (res.status === 401) { alert("Sessão expirada."); fazerLogout(); throw new Error("401"); }
+        return res;
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+        document.getElementById('usuarioNomeDisplay').textContent = esc(usuarioLogado.nome);
+        const s = document.getElementById('formEqComarca');
+        if (s) s.innerHTML = '<option value="">SELECIONE A COMARCA...</option>' + MUNICIPIOS_CE.map(m => `<option value="${m}">${m}</option>`).join('');
+        if (IS_GITHUB_PAGES) {
+            try {
+                const res = await fetch(`servidor.json?t=${Date.now()}`);
+                servidorBaseUrl = (await res.json()).url.replace(/\/+$/, '');
+            } catch (err) { console.error("Offline"); }
+        }
+        let abaSalva = sessionStorage.getItem('os_aba_fiscal') || 'geralOS';
+        mudarAba(abaSalva);
+    });
+
+    function getApiUrl(ep) { return `${servidorBaseUrl}${ep}`; }
+    function fecharModal(id) { document.getElementById(id).classList.add('hidden'); }
+    function dataFormatada(timestamp) { return new Date(timestamp).toLocaleString('pt-BR'); }
+    function fazerLogout() { localStorage.removeItem('os_usuario_logado'); sessionStorage.clear(); window.location.href = 'index.html'; }
+
+    function mudarAba(abaId) {
+        sessionStorage.setItem('os_aba_fiscal', abaId);
+        document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+        let btn = document.getElementById(`tab${abaId.charAt(0).toUpperCase() + abaId.slice(1)}`);
+        if (btn) btn.classList.add('active');
+        
+        const box = document.getElementById('conteudoAba');
+        if (abaId === 'admUsers') renderAdmUsers(box);
+        if (abaId === 'geralEqs') carregarEquipamentosServer(box); 
+        if (abaId === 'geralOS') carregarOSServer(box);
+    }
+
+    // EQUIPE DO FISCAL
+    async function renderAdmUsers(box) {
+        box.innerHTML = `<div style="display:flex;justify-content:space-between;margin-bottom:15px;"><h3>Minha Equipe no Contrato</h3><button class="btn-success" onclick="abrirModalUser(null)">+ Novo Integrante</button></div><div id="tabelaUsers">Carregando...</div>`;
+        usuariosCache = await (await apiFetch('/api/usuarios')).json();
+        let html = `<table><thead><tr><th>Nome</th><th>Login</th><th>Perfil</th><th>Status</th><th>Ações</th></tr></thead><tbody>`;
+        usuariosCache.forEach(u => {
+            const inativo = u.ativo === 0 ? 'class="inativo"' : '';
+            const status = u.ativo === 1 ? '<span style="color:var(--success);font-weight:bold;">Ativo</span>' : '<span style="color:var(--danger);font-weight:bold;">Inativo</span>';
+            let acoes = '';
+            if (u.id === usuarioLogado.id) {
+                acoes = `<span style="color:#64748b;font-size:11px;">(Seu Perfil)</span>`;
+            } else {
+                let btnAtivar = u.ativo === 1 ? `<button class="btn-sm btn-danger" onclick="toggleAtivoUser(${u.id}, 0)">Inativar</button>` : `<button class="btn-sm btn-success" onclick="toggleAtivoUser(${u.id}, 1)">Ativar</button>`;
+                acoes = `<button class="btn-sm btn-secondary" onclick="abrirModalUser(${u.id})">Editar</button> ${btnAtivar}`;
+            }
+            html += `<tr ${inativo}><td>${esc(u.nome)}</td><td>${esc(u.login)}</td><td><span class="badge">${esc(u.perfil)}</span></td><td>${status}</td><td style="white-space:nowrap;">${acoes}</td></tr>`;
+        });
+        document.getElementById('tabelaUsers').innerHTML = html + `</tbody></table>`;
+    }
+    function abrirModalUser(id) {
+        if (id === usuarioLogado.id) { alert("Você não pode editar o seu próprio perfil."); return; }
+        document.getElementById('formUserId').value = '';
+        document.getElementById('formUserNome').value = '';
+        document.getElementById('formUserLogin').value = '';
+        document.getElementById('modalFormUser').classList.remove('hidden');
+        if (id) {
+            const u = usuariosCache.find(x => x.id === id);
+            document.getElementById('formUserId').value = u.id;
+            document.getElementById('formUserNome').value = u.nome;
+            document.getElementById('formUserLogin').value = u.login;
+            document.getElementById('formUserPerfil').value = u.perfil;
+        }
+    }
+    async function salvarUsuario(e) {
+        e.preventDefault(); const id = document.getElementById('formUserId').value;
+        const p = { nome: document.getElementById('formUserNome').value.trim().toUpperCase(), login: document.getElementById('formUserLogin').value.trim().toLowerCase(), perfil: document.getElementById('formUserPerfil').value, ativo: id ? usuariosCache.find(x => x.id == id).ativo : 1 };
+        const res = await apiFetch(id ? `/api/usuarios/${id}` : '/api/usuarios', { method: id ? 'PUT' : 'POST', body: JSON.stringify(p) });
+        if (res.ok) { alert(id ? "Atualizado!" : "Usuário criado com sucesso!"); fecharModal('modalFormUser'); mudarAba('admUsers'); } else alert((await res.json()).erro);
+    }
+    async function toggleAtivoUser(id, s) { if (s === 0 && !confirm("Inativar usuário da equipe?")) return; const u = usuariosCache.find(x => x.id == id); u.ativo = s; await apiFetch(`/api/usuarios/${id}`, { method: 'PUT', body: JSON.stringify(u) }); mudarAba('admUsers'); }
+
+    // EQUIPAMENTOS DO CONTRATO
+    async function carregarEquipamentosServer(box) {
+        box.innerHTML = `<div style="display:flex;justify-content:space-between;margin-bottom:15px;"><h3>Equipamentos do meu Contrato</h3><button class="btn-success" onclick="abrirModalEquip(null)">+ Inclusão de Equipamento</button></div><div style="overflow-x:auto;"><table><thead id="headFiltrosEq"></thead><tbody id="tabelaBoxEq"><tr><td colspan="8">Carregando...</td></tr></tbody></table></div><div id="totalEqs" style="font-size:12px;color:#64748b;margin-top:10px;"></div>`;
+        equipamentosCache = await (await apiFetch('/api/equipamentos')).json();
+        renderizarCabecalhoEq(); desenharTabelaEquipamentos();
+    }
+    function renderizarCabecalhoEq() {
+        const iconSort = eqSortAsc ? ' ▴' : ' ▾'; const col = (n, c) => `<th onclick="setEqSort('${c}')">${n}${eqSortCol === c ? iconSort : ''}</th>`;
+        document.getElementById('headFiltrosEq').innerHTML = `<tr>${col('Comarca','comarca')}${col('Prédio','predio')}${col('Local','sala')}${col('Equipamento','tipo_equipamento')}${col('Cap','capacidade')}${col('Tombo','tombo')}${col('Status','status')}<th>Ações</th></tr>
+            <tr class="filter-row">
+                <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('comarca', this.value)" value="${eqFiltros.comarca}"></td>
+                <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('predio', this.value)" value="${eqFiltros.predio}"></td>
+                <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('sala', this.value)" value="${eqFiltros.sala}"></td>
+                <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('tipo', this.value)" value="${eqFiltros.tipo}"></td>
+                <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('cap', this.value)" value="${eqFiltros.cap}"></td>
+                <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('tombo', this.value)" value="${eqFiltros.tombo}"></td>
+                <td><input type="text" placeholder="ativo/inativo" oninput="debounceFiltroEq('status', this.value)" value="${eqFiltros.status}"></td>
+                <td><button class="btn-sm btn-secondary" onclick="limparFiltrosEq()" style="padding:6px;width:100%;">Limpar</button></td>
+            </tr>`;
+    }
+    function debounceFiltroEq(c, v) { clearTimeout(eqDebounceTimeout); eqDebounceTimeout = setTimeout(() => { eqFiltros[c] = v.toLowerCase(); desenharTabelaEquipamentos(); }, 250); }
+    function limparFiltrosEq() { eqFiltros = { comarca:'', predio:'', sala:'', tipo:'', cap:'', tombo:'', status:'' }; renderizarCabecalhoEq(); desenharTabelaEquipamentos(); }
+    function setEqSort(c) { if (eqSortCol === c) eqSortAsc = !eqSortAsc; else { eqSortCol = c; eqSortAsc = true; } renderizarCabecalhoEq(); desenharTabelaEquipamentos(); }
+
+    function desenharTabelaEquipamentos() {
+        const tbody = document.getElementById('tabelaBoxEq');
+        let filtrados = equipamentosCache.filter(eq => {
+            if (eqFiltros.comarca && !(eq.comarca||'').toLowerCase().includes(eqFiltros.comarca)) return false;
+            if (eqFiltros.predio && !(eq.predio||'').toLowerCase().includes(eqFiltros.predio)) return false;
+            if (eqFiltros.sala && !(eq.sala||'').toLowerCase().includes(eqFiltros.sala)) return false;
+            if (eqFiltros.tipo && !(eq.tipo_equipamento||'').toLowerCase().includes(eqFiltros.tipo)) return false;
+            if (eqFiltros.cap && !(eq.capacidade||'').toLowerCase().includes(eqFiltros.cap)) return false;
+            if (eqFiltros.tombo && !(eq.tombo||'').toLowerCase().includes(eqFiltros.tombo)) return false;
+            if (eqFiltros.status && !(eq.ativo === 1 ? 'ativo' : 'inativo').includes(eqFiltros.status)) return false;
+            return true;
+        });
+        filtrados.sort((a, b) => {
+            let valA = (a[eqSortCol] || '').toString().toLowerCase(); let valB = (b[eqSortCol] || '').toString().toLowerCase();
+            if (valA < valB) return eqSortAsc ? -1 : 1; if (valA > valB) return eqSortAsc ? 1 : -1; return 0;
+        });
+
+        let html = '';
+        filtrados.forEach(eq => {
+            const rowClass = eq.ativo === 0 ? 'inativo' : (eq.tem_os_ativa > 0 ? 'row-os-ativa' : '');
+            const statusLabel = eq.ativo === 1 ? '<span style="color:var(--success);font-weight:bold;">Ativo</span>' : '<span style="color:var(--danger);font-weight:bold;">Inativo</span>';
+            let acoes = '';
+            if (eq.ativo === 1) acoes += `<button class="btn-sm btn-success" onclick="abrirModalNovaOSAvulsaPeloEq(${eq.id}, '${esc(eq.tipo_equipamento)} ${esc(eq.capacidade||'')}', '${esc(eq.comarca)} - ${esc(eq.predio)} / ${esc(eq.sala)}')">Abrir O.S.</button> `;
+            acoes += `<button class="btn-sm btn-warning" onclick="abrirHistoricoEqOS(${eq.id})">Ver O.S.</button> <br>`;
+            acoes += `<button class="btn-sm btn-secondary" onclick="abrirModalEquip(${eq.id})">Editar</button> `;
+            if (eq.ativo === 1) acoes += `<button class="btn-sm btn-danger" onclick="toggleAtivoEq(${eq.id}, 0)">Inativar</button>`;
+            else acoes += `<button class="btn-sm" style="background:#10b981;" onclick="toggleAtivoEq(${eq.id}, 1)">Ativar</button>`;
+            
+            html += `<tr class="${rowClass}"><td>${esc(eq.comarca)}</td><td>${esc(eq.predio)}</td><td>${esc(eq.sala)}</td><td>${esc(eq.tipo_equipamento)}</td><td>${esc(eq.capacidade||'-')}</td><td>${eq.tombo === 'S/T' ? '<span class="badge" style="background:#e2e8f0;color:#64748b;">S/T</span>' : esc(eq.tombo)}</td><td>${statusLabel}</td><td style="white-space:nowrap;">${acoes}</td></tr>`;
+        });
+        tbody.innerHTML = html; document.getElementById('totalEqs').textContent = `Total listado: ${filtrados.length} equipamento(s).`;
+    }
+
+    async function abrirModalEquip(id) {
+        document.getElementById('formEqId').value = '';
+        document.getElementById('formEqPredio').value = '';
+        document.getElementById('formEqSala').value = '';
+        document.getElementById('formEqMarca').value = '';
+        document.getElementById('formEqTombo').value = '';
+        document.getElementById('modalFormEquip').classList.remove('hidden');
+        if (id) {
+            const eq = equipamentosCache.find(e => e.id === id);
+            document.getElementById('formEqId').value = eq.id;
+            document.getElementById('formEqComarca').value = eq.comarca;
+            document.getElementById('formEqPredio').value = eq.predio;
+            document.getElementById('formEqSala').value = eq.sala;
+            document.getElementById('formEqTipo').value = eq.tipo_equipamento;
+            document.getElementById('formEqCap').value = eq.capacidade || '';
+            document.getElementById('formEqMarca').value = eq.marca || '';
+            document.getElementById('formEqTombo').value = eq.tombo === 'S/T' ? '' : eq.tombo;
+        }
+    }
+    async function salvarEquipamento(e) {
+        e.preventDefault(); const id = document.getElementById('formEqId').value;
+        const payload = { comarca: document.getElementById('formEqComarca').value.trim().toUpperCase(), predio: document.getElementById('formEqPredio').value.trim().toUpperCase(), sala: document.getElementById('formEqSala').value.trim().toUpperCase(), tipo_equipamento: document.getElementById('formEqTipo').value.trim().toUpperCase(), capacidade: document.getElementById('formEqCap').value.trim().toUpperCase(), marca: document.getElementById('formEqMarca').value.trim().toUpperCase(), tombo: document.getElementById('formEqTombo').value.trim().toUpperCase() || 'S/T', ativo: id ? equipamentosCache.find(e => e.id == id).ativo : 1 };
+        await apiFetch(id ? `/api/equipamentos/${id}` : '/api/equipamentos', { method: id ? 'PUT' : 'POST', body: JSON.stringify(payload) });
+        fecharModal('modalFormEquip'); mudarAba('geralEqs');
+    }
+    async function toggleAtivoEq(id, s) { const eq = equipamentosCache.find(e => e.id == id); eq.ativo = s; await apiFetch(`/api/equipamentos/${id}`, { method: 'PUT', body: JSON.stringify(eq) }); mudarAba('geralEqs'); }
+
+    // ORDENS DE SERVIÇO (FISCALIZAR)
+    async function carregarOSServer(box) {
+        box.innerHTML = `<div style="display:flex;justify-content:space-between;margin-bottom:15px;"><h3>Fiscalizar Ordens de Serviço</h3><button onclick="carregarOSServer(document.getElementById('conteudoAba'))">Atualizar O.S.</button></div><div style="overflow-x:auto;"><table><thead id="headFiltrosOS"><tr><th>ID / Data</th><th>Local</th><th>Equipamento / Defeito</th><th>Status</th><th>Ações</th></tr><tr class="filter-row"><td><input type="text" placeholder="Buscar ID..." oninput="setOsFiltro('id', this.value)"></td><td><input type="text" placeholder="Buscar Comarca..." oninput="setOsFiltro('comarca', this.value)"></td><td></td><td><input type="text" placeholder="Buscar Status..." oninput="setOsFiltro('status', this.value)"></td><td><button class="btn-sm btn-secondary" onclick="limparFiltrosOS()" style="padding:6px;width:100%;">Limpar</button></td></tr></thead><tbody id="tabelaBoxOS"><tr><td colspan="5">Carregando...</td></tr></tbody></table></div>`;
+        osCache = await (await apiFetch('/api/os')).json(); desenharTabelaOS();
+    }
+    function limparFiltrosOS() { osFiltros = { id:'', comarca:'', status:'' }; document.querySelectorAll('#headFiltrosOS input').forEach(i=>i.value=''); desenharTabelaOS(); }
+    function setOsFiltro(c, v) { osFiltros[c] = v.toLowerCase(); desenharTabelaOS(); }
+    function desenharTabelaOS() {
+        const tbody = document.getElementById('tabelaBoxOS');
+        let filtrados = osCache.filter(os => {
+            if (osFiltros.id && !os.id.toString().includes(osFiltros.id)) return false;
+            if (osFiltros.comarca && !(os.comarca||'').toLowerCase().includes(osFiltros.comarca)) return false;
+            if (osFiltros.status && !(os.status||'').toLowerCase().includes(osFiltros.status)) return false;
+            return true;
+        });
+        let html = '';
+        filtrados.forEach(os => {
+            let cor = '#3b82f6'; if (os.status==='concluida') cor='#10b981'; if (os.status==='cancelada') cor='#ef4444'; if (os.status.includes('execucao')) cor='#f59e0b'; if (os.status.includes('peca')) cor='#8b5cf6'; if (os.status==='aprovada') cor='#0ea5e9';
+            html += `<tr><td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td><td><strong>${esc(os.comarca)}</strong><br><small>${esc(os.predio)} (${esc(os.sala)})</small></td><td style="max-width:250px;"><strong>${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')}</strong><br><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td><td><span class="badge" style="background:${cor};color:white;">${os.status.replace('_', ' ').toUpperCase()}</span></td><td><button class="btn-sm btn-secondary" onclick="abrirDetalhesOS(${os.id})">Fiscalizar / Detalhes</button> <button class="btn-sm btn-info" onclick="imprimirOSPdf(${os.id})">🖨️ PDF</button></td></tr>`;
+        });
+        tbody.innerHTML = html;
+    }
+
+    async function abrirNovaOSAvulsa() {
+        document.getElementById('buscaTombo').value = ''; document.getElementById('osDescricaoAvulsa').value = '';
+        document.getElementById('boxBuscaAvulsa').classList.remove('hidden'); document.getElementById('boxEqSelecionadoFixo').classList.add('hidden');
+        if (equipamentosCache.length === 0) equipamentosCache = await (await apiFetch('/api/equipamentos')).json();
+        const comarcas = [...new Set(equipamentosCache.filter(e => e.ativo === 1).map(e => e.comarca))].sort();
+        document.getElementById('selAvulsoComarca').innerHTML = '<option value="">1. Selecione a Comarca...</option>' + comarcas.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+        document.getElementById('selAvulsoPredio').innerHTML = '<option value="">Aguardando comarca...</option>'; document.getElementById('selAvulsoSala').innerHTML = '<option value="">Aguardando prédio...</option>'; document.getElementById('selAvulsoEq').innerHTML = '<option value="">Aguardando sala...</option>';
+        document.getElementById('modalNovaOSAvulsa').classList.remove('hidden');
+    }
+    function abrirModalNovaOSAvulsaPeloEq(id, nome, local) {
+        document.getElementById('osDescricaoAvulsa').value = '';
+        document.getElementById('boxBuscaAvulsa').classList.add('hidden'); document.getElementById('boxEqSelecionadoFixo').classList.remove('hidden');
+        document.getElementById('lblEqFixoNome').textContent = nome; document.getElementById('lblEqFixoLocal').textContent = local;
+        document.getElementById('selAvulsoEq').innerHTML = `<option value="${id}">Selecionado</option>`; document.getElementById('selAvulsoEq').value = id;
+        document.getElementById('modalNovaOSAvulsa').classList.remove('hidden');
+    }
+    function popularAvulsoPredios() { const com = document.getElementById('selAvulsoComarca').value; const predios = [...new Set(equipamentosCache.filter(e => e.ativo === 1 && e.comarca === com).map(e => e.predio))].sort(); document.getElementById('selAvulsoPredio').innerHTML = '<option value="">2. Selecione o Prédio...</option>' + predios.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join(''); }
+    function popularAvulsoSalas() { const com = document.getElementById('selAvulsoComarca').value; const pre = document.getElementById('selAvulsoPredio').value; const salas = [...new Set(equipamentosCache.filter(e => e.ativo === 1 && e.comarca === com && e.predio === pre).map(e => e.sala))].sort(); document.getElementById('selAvulsoSala').innerHTML = '<option value="">3. Selecione a Sala...</option>' + salas.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join(''); }
+    function popularAvulsoEqs() { const com = document.getElementById('selAvulsoComarca').value; const pre = document.getElementById('selAvulsoPredio').value; const sal = document.getElementById('selAvulsoSala').value; const eqs = equipamentosCache.filter(e => e.ativo === 1 && e.comarca === com && e.predio === pre && e.sala === sal); document.getElementById('selAvulsoEq').innerHTML = '<option value="">4. Selecione o Equipamento...</option>' + eqs.map(e => `<option value="${e.id}">${esc(e.tipo_equipamento)} ${esc(e.capacidade||'')} (Tombo: ${esc(e.tombo)})</option>`).join(''); }
+    function buscarEquipamentoPorTombo() { const tombo = document.getElementById('buscaTombo').value.trim().toUpperCase(); const eq = equipamentosCache.find(e => e.ativo === 1 && e.tombo === tombo && e.tombo !== 'S/T'); if (eq) { document.getElementById('selAvulsoComarca').innerHTML = `<option value="${esc(eq.comarca)}">${esc(eq.comarca)}</option>`; document.getElementById('selAvulsoPredio').innerHTML = `<option value="${esc(eq.predio)}">${esc(eq.predio)}</option>`; document.getElementById('selAvulsoSala').innerHTML = `<option value="${esc(eq.sala)}">${esc(eq.sala)}</option>`; document.getElementById('selAvulsoEq').innerHTML = `<option value="${eq.id}">${esc(eq.tipo_equipamento)} ${esc(eq.capacidade||'')} (Tombo: ${esc(eq.tombo)})</option>`; } else { alert("Tombo não encontrado ou inativo."); } }
+    async function enviarOSAvulsa(e) { e.preventDefault(); const eqId = document.getElementById('selAvulsoEq').value; if (!eqId) return alert("Selecione um equipamento."); await apiFetch('/api/os', { method: 'POST', body: JSON.stringify({ equipamento_id: eqId, descricao_falha: document.getElementById('osDescricaoAvulsa').value.trim().toUpperCase() }) }); fecharModal('modalNovaOSAvulsa'); mudarAba('geralOS'); }
+
+    async function abrirHistoricoEqOS(eq_id) {
+        document.getElementById('modalHistoricoEqOS').classList.remove('hidden');
+        const tbody = document.getElementById('tabelaHistoricoEqOS');
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Carregando histórico...</td></tr>';
+        try {
+            const chamados = await (await apiFetch(`/api/equipamentos/${eq_id}/os`)).json();
+            if (chamados.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhuma O.S. para este equipamento.</td></tr>'; return; }
+            let html = '';
+            chamados.forEach(os => {
+                let cor = '#3b82f6'; if (os.status==='concluida') cor='#10b981'; if (os.status==='cancelada') cor='#ef4444'; if (os.status.includes('execucao')) cor='#f59e0b'; if (os.status.includes('peca')) cor='#8b5cf6'; if (os.status==='aprovada') cor='#0ea5e9';
+                html += `<tr><td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td><td><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td><td><span class="badge" style="background:${cor};color:white;">${os.status.replace('_', ' ').toUpperCase()}</span></td><td><button class="btn-sm btn-secondary" onclick="fecharModal('modalHistoricoEqOS'); abrirDetalhesOS(${os.id});">Detalhes</button> <button class="btn-sm btn-info" onclick="imprimirOSPdf(${os.id})">🖨️ PDF</button></td></tr>`;
+            });
+            tbody.innerHTML = html;
+        } catch (err) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:red;">Erro ao buscar dados.</td></tr>'; }
+    }
+
+    async function abrirDetalhesOS(os_id) {
+        document.getElementById('modalTratarOS').classList.remove('hidden');
+        document.getElementById('boxTimeline').innerHTML = "Carregando...";
+        document.getElementById('tratarOsObs').value = '';
+        document.getElementById('btnImprimirModal').onclick = () => imprimirOSPdf(os_id);
+        
+        try {
+            const data = await (await apiFetch(`/api/os/${os_id}`)).json();
+            const os = data.os; const hist = data.historico;
+
+            document.getElementById('detalheOsId').textContent = `#${os.id}`;
+            document.getElementById('detalheOsBadge').textContent = os.status.replace('_', ' ').toUpperCase();
+            document.getElementById('detalheOsEquip').textContent = `${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')} (Tombo: ${esc(os.tombo)})`;
+            document.getElementById('detalheOsLocal').textContent = `${esc(os.comarca)} - ${esc(os.predio)} / ${esc(os.sala)}`;
+            document.getElementById('detalheOsExecutante').textContent = os.nome_executante ? esc(os.nome_executante) : 'NÃO DESIGNADO';
+            document.getElementById('detalheOsDefeito').textContent = esc(os.descricao_falha);
+
+            let htmlHist = '';
+            hist.forEach(h => { htmlHist += `<div class="timeline-item"><div class="timeline-date">${dataFormatada(h.data_registro)}</div><div class="timeline-user">${esc(h.nome_usuario)} <span class="badge" style="background:#e2e8f0;color:#475569;">${h.acao}</span></div>${h.observacao ? `<div class="timeline-text">${esc(h.observacao)}</div>` : ''}</div>`; });
+            document.getElementById('boxTimeline').innerHTML = htmlHist;
+            document.getElementById('tratarOsId').value = os.id;
+            
+            // Trava para o Fiscal: Se já estiver concluída ou cancelada, não mexe mais
+            if (os.status === 'concluida' || os.status === 'cancelada') {
+                document.getElementById('boxAcaoOS').classList.add('hidden');
+            } else {
+                document.getElementById('boxAcaoOS').classList.remove('hidden');
+            }
+        } catch (err) { document.getElementById('boxTimeline').innerHTML = `<span style="color:red;">Erro ao carregar detalhes.</span>`; }
+    }
+
+    async function salvarTratamentoOS(e) {
+        e.preventDefault();
+        const statusNovo = document.getElementById('tratarOsStatus').value;
+        let obsTexto = document.getElementById('tratarOsObs').value.trim().toUpperCase();
+        
+        // Fiscal pode aprovar sem digitar texto; se cancelar/concluir exige justificativa
+        if (!obsTexto) {
+            if (statusNovo === 'aprovada') obsTexto = "O.S. APROVADA PELO FISCAL. AUTORIZADO INÍCIO DO ATENDIMENTO.";
+            else return alert("Preencha a observação para esta ação.");
+        }
+
+        await apiFetch(`/api/os/${document.getElementById('tratarOsId').value}/status`, { method: 'PUT', body: JSON.stringify({ status: statusNovo, observacao: obsTexto }) });
+        fecharModal('modalTratarOS'); mudarAba('geralOS');
+    }
+
+    async function imprimirOSPdf(os_id) {
+        let os = null; let hist = [];
+        try {
+            const data = await (await apiFetch(`/api/os/${os_id}`)).json();
+            os = data.os; hist = data.historico;
+        } catch(e) { alert("Erro ao carregar dados."); return; }
+
+        const dataObj = new Date(os.data_abertura);
+        const numOSFormatado = `${os.id}.${String(dataObj.getMonth()+1).padStart(2,'0')}.${dataObj.getFullYear()}`;
+        let dataAprovacao = '-';
+        const hAprov = hist.find(h => h.acao.includes('APROVADA'));
+        if (hAprov) { const dA = new Date(hAprov.data_registro); dataAprovacao = `${String(dA.getDate()).padStart(2,'0')}/${String(dA.getMonth()+1).padStart(2,'0')}/${dA.getFullYear()}`; }
+        let dataConclusao = os.data_conclusao ? new Date(os.data_conclusao).toLocaleDateString('pt-BR') : '-';
+        const descCompleta = `Ar-condicionado ${os.tipo_equipamento} ${os.capacidade||''} ${os.tombo !== 'S/T' ? 'tombo ' + os.tombo : ''}. Defeito: ${os.descricao_falha}`;
+        let histHtml = '';
+        hist.forEach(h => { histHtml += `<div style="font-size:11px;margin-bottom:6px;border-bottom:1px dotted #ccc;"><strong>${dataFormatada(h.data_registro)} - ${esc(h.nome_usuario)} (${h.acao}):</strong> ${esc(h.observacao||'')}</div>`; });
+
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>OS_${numOSFormatado}</title><style>@page { size: A4 portrait; margin: 12mm 15mm; } body { font-family: Arial, sans-serif; color: #000; margin: 0; padding: 0; font-size: 11px; } .box-principal { border: 1.5px solid #000; width: 100%; border-collapse: collapse; } .box-principal td, .box-principal th { border: 1px solid #000; padding: 4px 6px; } .cabecalho-doc { text-align: center; font-weight: bold; font-size: 12px; } .titulo-sub { font-size: 11px; font-weight: bold; text-align: center; } .label-col { font-weight: bold; text-align: center; background: #fcfcfc; width: 35%; font-size: 10px; } .val-col { text-align: center; font-weight: 500; font-size: 11px; } .banner-lateral { width: 30px; text-align: center; vertical-align: middle; font-weight: bold; font-size: 12px; letter-spacing: 2px; writing-mode: vertical-rl; transform: rotate(180deg); } .secao-header { background: #fff; font-weight: bold; text-align: center; font-size: 11px; padding: 5px !important; } .rodape-os { margin-top: 15px; text-align: right; font-weight: bold; font-size: 14px; } @media print { .no-print { display: none !important; } }</style></head><body><div class="no-print" style="text-align:center;margin-bottom:20px;"><button style="background:#0284c7;color:#fff;padding:10px 20px;font-weight:bold;border:none;cursor:pointer;border-radius:4px;" onclick="window.print()">🖨️ Imprimir / Salvar como PDF</button></div><div style="text-align:right;font-size:14px;font-weight:bold;margin-bottom:4px;">${os.id}</div><table class="box-principal"><tr><td colspan="3" class="cabecalho-doc">ESTADO DO CEARÁ - PODER JUDICIÁRIO</td></tr><tr><td colspan="3" class="titulo-sub">TRIBUNAL DE JUSTIÇA - GERÊNCIA DE MANUTENÇÃO E ZELADORIA</td></tr><tr><td rowspan="20" class="banner-lateral">ABERTURA</td><td class="label-col">Nº da OS</td><td class="val-col"><strong>${numOSFormatado}</strong></td></tr><tr><td class="label-col">ATENDENTE</td><td class="val-col">${esc(os.nome_solicitante)}</td></tr><tr><td class="label-col">MATRÍCULA DO ATENDENTE</td><td class="val-col">-</td></tr><tr><td colspan="2" class="secao-header">LOCALIZAÇÃO</td></tr><tr><td class="label-col">REQUISITANTE</td><td class="val-col">${esc(os.nome_solicitante)}</td></tr><tr><td class="label-col">MATRÍCULA DO REQUISITANTE</td><td class="val-col">-</td></tr><tr><td class="label-col">TELEFONE/RAMAL CONTATO</td><td class="val-col">0</td></tr><tr><td class="label-col">LOTAÇÃO</td><td class="val-col">${esc(os.sala)}</td></tr><tr><td class="label-col">MUNICÍPIO</td><td class="val-col">${esc(os.comarca)}</td></tr><tr><td class="label-col">REGIÃO</td><td class="val-col">Região I</td></tr><tr><td class="label-col">PRÉDIO</td><td class="val-col">${esc(os.predio)}</td></tr><tr><td class="label-col">LOCAL DE OCORRÊNCIA</td><td class="val-col">${esc(os.sala)}</td></tr><tr><td class="label-col">TIPO DE SOLICITACAO</td><td class="val-col">Manutenção de Equipamento</td></tr><tr><td class="label-col">SERVIÇO</td><td class="val-col">Climatização</td></tr><tr><td class="label-col">CPA/TOMBO</td><td class="val-col"><strong>${esc(os.tombo)}</strong></td></tr><tr><td class="label-col">PRIORIDADE</td><td class="val-col">Não Emergencial</td></tr><tr><td class="label-col">FORNECEDOR</td><td class="val-col">${esc(os.contrato_nome || '-')}</td></tr><tr><td class="label-col">DESCRIÇÃO</td><td class="val-col" style="font-size:10px;">${esc(descCompleta)}</td></tr><tr><td class="label-col">DATA DE APROVAÇÃO</td><td class="val-col">${dataAprovacao}</td></tr><tr><td class="label-col">DATA DE INÍCIO</td><td class="val-col">${dataObj.toLocaleDateString('pt-BR')}</td></tr><tr><td colspan="2" class="label-col">DATA DE CONCLUSÃO</td><td class="val-col">${dataConclusao}</td></tr></table><table class="box-principal" style="border-top:none;margin-top:-1px;"><tr><td class="secao-header">DESCRIÇÃO</td></tr><tr><td style="height:45px;vertical-align:top;padding:6px;">${esc(descCompleta)}</td></tr><tr><td class="secao-header">HISTÓRICO</td></tr><tr><td style="min-height:80px;vertical-align:top;padding:6px;">${histHtml || 'Nenhum histórico.'}</td></tr></table><table class="box-principal" style="border-top:none;margin-top:-1px;"><tr><td class="secao-header" style="width:50%;">ATENDENTE</td><td class="secao-header" style="width:50%;">Executor</td></tr><tr><td style="height:50px;vertical-align:bottom;"><strong>Nome:</strong> ${esc(os.nome_solicitante)}<br><strong>Matrícula:</strong></td><td style="height:50px;vertical-align:bottom;"><strong>Nome:</strong> ${esc(os.nome_executante || '')}<br><strong>CPF:</strong></td></tr></table><div class="rodape-os">Nº da OS: ${numOSFormatado}</div></body></html>`);
+        printWindow.document.close();
+        printWindow.focus();
+    }
+</script>
+</body>
+</html>
