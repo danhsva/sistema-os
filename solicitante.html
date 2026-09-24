@@ -8,12 +8,10 @@
         :root { --primary: #2563eb; --primary-dark: #1d4ed8; --bg: #f4f7f6; --card: #ffffff; --text: #1e293b; --border: #e2e8f0; --danger: #ef4444; --success: #10b981; --warning: #f59e0b; --info: #0284c7; --row-alert: #fffbeb; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
         body { background: var(--bg); color: var(--text); display: flex; min-height: 100vh; overflow-x: hidden; }
-        
         .hidden { display: none !important; }
         .card { background: var(--card); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.06); margin-bottom: 20px; border: 1px solid var(--border); }
         h2, h3 { color: var(--primary-dark); margin-bottom: 15px; }
         label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: #475569; }
-        
         input[type="text"], select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 15px; font-size: 14px; background: #f8fafc; text-transform: uppercase; }
         button { background: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         button:hover { background: var(--primary-dark); }
@@ -21,45 +19,28 @@
         .btn-danger { background: var(--danger); } .btn-success { background: var(--success); } .btn-secondary { background: #64748b; } .btn-warning { background: var(--warning); color: #fff; } .btn-info { background: var(--info); color: #fff; }
         .btn-sm { padding: 6px 12px; font-size: 11px; margin-bottom: 2px; } .btn-block { width: 100%; }
         .badge { background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
-
-        /* SIDEBAR */
         .app-layout { display: flex; width: 100%; }
-        .sidebar {
-            width: 65px; background: var(--card); border-right: 1px solid var(--border);
-            position: fixed; top: 0; left: 0; bottom: 0; z-index: 999;
-            display: flex; flex-direction: column; overflow-x: hidden;
-            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 2px 0 5px rgba(0,0,0,0.05); white-space: nowrap;
-        }
+        .sidebar { width: 65px; background: var(--card); border-right: 1px solid var(--border); position: fixed; top: 0; left: 0; bottom: 0; z-index: 999; display: flex; flex-direction: column; overflow-x: hidden; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 2px 0 5px rgba(0,0,0,0.05); white-space: nowrap; }
         .sidebar:hover { width: 250px; }
         .sidebar-logo { padding: 20px; font-size: 18px; font-weight: bold; color: var(--primary-dark); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 15px; }
         .sidebar-menu { display: flex; flex-direction: column; padding: 10px 0; }
-        .sidebar-item {
-            display: flex; align-items: center; gap: 15px; padding: 14px 20px;
-            cursor: pointer; background: none; border: none; color: #475569;
-            font-size: 14px; font-weight: 600; text-align: left; width: 100%;
-            border-left: 4px solid transparent; border-radius: 0;
-        }
+        .sidebar-item { display: flex; align-items: center; gap: 15px; padding: 14px 20px; cursor: pointer; background: none; border: none; color: #475569; font-size: 14px; font-weight: 600; text-align: left; width: 100%; border-left: 4px solid transparent; border-radius: 0; }
         .sidebar-item:hover { background: #f1f5f9; color: var(--primary); }
         .sidebar-item.active { background: #e0f2fe; color: var(--primary-dark); border-left-color: var(--primary); }
         .sidebar-icon { font-size: 18px; min-width: 20px; text-align: center; }
         .sidebar-text { opacity: 0; transition: opacity 0.3s; }
         .sidebar:hover .sidebar-text { opacity: 1; }
-
-        .main-content { margin-left: 65px; padding: 20px; width: calc(100% - 65px); transition: margin-left 0.3s, width 0.3s; }
-        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: #fff; padding: 15px 20px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid var(--border); }
-        
+        .main-content { margin-left: 65px; padding: 20px; width: calc(100% - 65px); }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: #fff; padding: 15px 20px; border-radius: 10px; border: 1px solid var(--border); }
         table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
         th, td { border: 1px solid var(--border); padding: 8px; text-align: left; }
-        th { background: #f1f5f9; cursor: pointer; user-select: none; } th:hover { background: #e2e8f0; }
+        th { background: #f1f5f9; cursor: pointer; }
         tr:hover { background: #f8fafc; }
         .filter-row input { padding: 6px; margin: 0; font-size: 11px; border-radius: 4px; border: 1px solid #cbd5e1; width: 100%; }
         .row-os-ativa { background-color: var(--row-alert) !important; border-left: 3px solid var(--warning); }
-        
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 15px; }
         .modal-box { background: #ffffff; border-radius: 12px; padding: 25px; width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; }
         .row { display: flex; gap: 10px; } .col { flex: 1; }
-        
         .timeline { border-left: 3px solid var(--border); padding-left: 15px; margin-top: 15px; font-size: 13px; }
         .timeline-item { margin-bottom: 15px; position: relative; }
         .timeline-item::before { content: ''; position: absolute; left: -24px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--primary); }
@@ -69,32 +50,20 @@
     </style>
 </head>
 <body>
-
     <div class="app-layout">
-        <!-- SIDEBAR SOLICITANTE -->
         <nav class="sidebar">
-            <div class="sidebar-logo">
-                <span class="sidebar-icon">🏢</span><span class="sidebar-text">SGME Portal</span>
-            </div>
+            <div class="sidebar-logo"><span class="sidebar-icon">🏢</span><span class="sidebar-text">SGME Portal</span></div>
             <div class="sidebar-menu">
-                <button id="tabGeralOS" class="sidebar-item" onclick="mudarAba('geralOS')">
-                    <span class="sidebar-icon">🛠️</span><span class="sidebar-text">Minhas O.S.</span>
-                </button>
-                <button id="tabGeralEqs" class="sidebar-item" onclick="mudarAba('geralEqs')">
-                    <span class="sidebar-icon">💻</span><span class="sidebar-text">Equipamentos</span>
-                </button>
+                <button id="tabGeralOS" class="sidebar-item" onclick="mudarAba('geralOS')"><span class="sidebar-icon">🛠️</span><span class="sidebar-text">Minhas O.S.</span></button>
+                <button id="tabGeralEqs" class="sidebar-item" onclick="mudarAba('geralEqs')"><span class="sidebar-icon">💻</span><span class="sidebar-text">Equipamentos</span></button>
             </div>
         </nav>
 
-        <!-- CONTEÚDO PRINCIPAL -->
         <main class="main-content">
             <div class="top-bar">
                 <div>
                     <h3 style="margin: 0; color: #334155;">Portal do Solicitante</h3>
-                    <div style="margin-top: 4px;">
-                        <span id="usuarioNomeDisplay" style="font-weight: 600; font-size: 14px;"></span> 
-                        <span class="badge">SOLICITANTE</span>
-                    </div>
+                    <div style="margin-top: 4px;"><span id="usuarioNomeDisplay" style="font-weight: 600; font-size: 14px;"></span> <span class="badge">SOLICITANTE</span></div>
                 </div>
                 <div style="display: flex; gap: 10px;">
                     <button class="btn-warning" onclick="abrirNovaOSAvulsa()">+ NOVA O.S.</button>
@@ -105,11 +74,10 @@
         </main>
     </div>
 
-    <!-- MODAL NOVA O.S. AVULSA (BUSCA POR TOMBO OU CASCATA) -->
+    <!-- MODAL NOVA O.S. AVULSA -->
     <div id="modalNovaOSAvulsa" class="modal-overlay hidden">
         <div class="modal-box" style="max-width: 600px;">
             <h3>Abrir Nova Ordem de Serviço</h3>
-            
             <div id="boxBuscaAvulsa" style="background: #f1f5f9; padding: 15px; border-radius: 6px; margin-bottom: 15px; border: 1px solid var(--border);">
                 <label style="color: var(--primary-dark);">Busca Rápida por Tombo:</label>
                 <div style="display: flex; gap: 10px; margin-bottom: 15px;">
@@ -128,7 +96,6 @@
                 </div>
             </div>
 
-            <!-- EXIBIÇÃO FIXA QUANDO CLICADO DIRETO DA TABELA -->
             <div id="boxEqSelecionadoFixo" class="hidden" style="background: #e0f2fe; padding: 15px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #7dd3fc;">
                 <strong id="lblEqFixoNome" style="color: var(--primary-dark); font-size: 15px;"></strong><br>
                 <span id="lblEqFixoLocal" style="color: #475569; font-size: 13px;"></span>
@@ -161,14 +128,11 @@
         </div>
     </div>
 
-    <!-- MODAL DETALHES DA O.S. COM LINK DO ANEXO -->
+    <!-- MODAL DETALHES DA O.S. -->
     <div id="modalTratarOS" class="modal-overlay hidden">
         <div class="modal-box">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <h3 style="margin:0;">O.S. <span id="detalheOsId"></span></h3>
-                    <span id="detalheOsBadge" class="badge"></span>
-                </div>
+                <div><h3 style="margin:0;">O.S. <span id="detalheOsId"></span></h3><span id="detalheOsBadge" class="badge"></span></div>
                 <button class="btn-info btn-sm" id="btnImprimirModal" style="padding: 8px 12px;">🖨️ PDF</button>
             </div>
             <div style="background: #f8fafc; border: 1px solid var(--border); padding: 10px; border-radius: 6px; margin-top: 15px; font-size: 13px;">
@@ -185,14 +149,8 @@
         </div>
     </div>
 
+<script src="shared.js"></script>
 <script>
-    const usuarioLogado = JSON.parse(localStorage.getItem('os_usuario_logado') || 'null');
-    if (!usuarioLogado || !usuarioLogado.token || usuarioLogado.perfil !== 'solicitante') {
-        window.location.href = 'index.html';
-    }
-
-    const IS_GITHUB_PAGES = window.location.hostname.includes('github.io');
-    let servidorBaseUrl = "http://127.0.0.1:8083"; 
     let equipamentosCache = []; 
     let osCache = [];
     let eqSortCol = 'comarca'; 
@@ -201,39 +159,11 @@
     let eqFiltros = { comarca: '', predio: '', sala: '', tipo: '', cap: '', tombo: '' };
     let osFiltros = { id: '', comarca: '', status: '' };
 
-    function esc(str) { 
-        return str ? String(str).replace(/[&<>'"]/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;' }[m])) : ''; 
-    }
-
-    async function apiFetch(endpoint, options = {}) {
-        if (!options.headers) options.headers = {};
-        options.headers['Authorization'] = `Bearer ${usuarioLogado.token}`;
-        options.headers['Content-Type'] = 'application/json';
-        const res = await fetch(getApiUrl(endpoint), options);
-        if (res.status === 401) { 
-            alert("Sessão expirada. Faça login novamente."); 
-            fazerLogout(); 
-            throw new Error("401"); 
-        }
-        return res;
-    }
-
     window.addEventListener('DOMContentLoaded', async () => {
-        document.getElementById('usuarioNomeDisplay').textContent = esc(usuarioLogado.nome);
-        if (IS_GITHUB_PAGES) {
-            try { 
-                const res = await fetch(`servidor.json?t=${Date.now()}`); 
-                servidorBaseUrl = (await res.json()).url.replace(/\/+$/, ''); 
-            } catch (err) { console.error("Offline"); }
-        }
-        let abaSalva = sessionStorage.getItem('os_aba_solicitante') || 'geralOS';
-        mudarAba(abaSalva);
+        const user = await inicializarCore('solicitante');
+        if (!user) return;
+        mudarAba(sessionStorage.getItem('os_aba_solicitante') || 'geralOS');
     });
-
-    function getApiUrl(ep) { return `${servidorBaseUrl}${ep}`; }
-    function fecharModal(id) { document.getElementById(id).classList.add('hidden'); }
-    function dataFormatada(timestamp) { return new Date(timestamp).toLocaleString('pt-BR'); }
-    function fazerLogout() { localStorage.removeItem('os_usuario_logado'); sessionStorage.clear(); window.location.href = 'index.html'; }
 
     function mudarAba(abaId) {
         sessionStorage.setItem('os_aba_solicitante', abaId);
@@ -251,6 +181,7 @@
         osCache = await (await apiFetch('/api/os')).json(); 
         desenharTabelaOS();
     }
+
     function limparFiltrosOS() { osFiltros = { id:'', comarca:'', status:'' }; document.querySelectorAll('#headFiltrosOS input').forEach(i=>i.value=''); desenharTabelaOS(); }
     function setOsFiltro(c, v) { osFiltros[c] = v.toLowerCase(); desenharTabelaOS(); }
 
@@ -309,6 +240,7 @@
         equipamentosCache = await (await apiFetch('/api/equipamentos')).json();
         renderizarCabecalhoEq(); desenharTabelaEquipamentos();
     }
+
     function renderizarCabecalhoEq() {
         const iconSort = eqSortAsc ? ' ▴' : ' ▾'; const col = (n, c) => `<th onclick="setEqSort('${c}')">${n}${eqSortCol === c ? iconSort : ''}</th>`;
         document.getElementById('headFiltrosEq').innerHTML = `<tr>${col('Comarca','comarca')}${col('Prédio','predio')}${col('Local','sala')}${col('Equipamento','tipo_equipamento')}${col('Cap','capacidade')}${col('Tombo','tombo')}<th>Ação</th></tr>
@@ -322,6 +254,7 @@
                 <td><button class="btn-sm btn-secondary" onclick="limparFiltrosEq()" style="padding:6px;width:100%;">Limpar</button></td>
             </tr>`;
     }
+
     function debounceFiltroEq(c, v) { clearTimeout(eqDebounceTimeout); eqDebounceTimeout = setTimeout(() => { eqFiltros[c] = v.toLowerCase(); desenharTabelaEquipamentos(); }, 250); }
     function limparFiltrosEq() { eqFiltros = { comarca:'', predio:'', sala:'', tipo:'', cap:'', tombo:'' }; renderizarCabecalhoEq(); desenharTabelaEquipamentos(); }
     function setEqSort(c) { if (eqSortCol === c) eqSortAsc = !eqSortAsc; else { eqSortCol = c; eqSortAsc = true; } renderizarCabecalhoEq(); desenharTabelaEquipamentos(); }
@@ -406,29 +339,6 @@
             });
             tbody.innerHTML = html;
         } catch (err) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:red;">Erro ao buscar dados.</td></tr>'; }
-    }
-
-    async function imprimirOSPdf(os_id) {
-        let os = null; let hist = [];
-        try {
-            const data = await (await apiFetch(`/api/os/${os_id}`)).json();
-            os = data.os; hist = data.historico;
-        } catch(e) { alert("Erro ao carregar dados."); return; }
-
-        const dataObj = new Date(os.data_abertura);
-        const numOSFormatado = `${os.id}.${String(dataObj.getMonth()+1).padStart(2,'0')}.${dataObj.getFullYear()}`;
-        let dataAprovacao = '-';
-        const hAprov = hist.find(h => h.acao.includes('APROVADA'));
-        if (hAprov) { const dA = new Date(hAprov.data_registro); dataAprovacao = `${String(dA.getDate()).padStart(2,'0')}/${String(dA.getMonth()+1).padStart(2,'0')}/${dA.getFullYear()}`; }
-        let dataConclusao = os.data_conclusao ? new Date(os.data_conclusao).toLocaleDateString('pt-BR') : '-';
-        const descCompleta = `Ar-condicionado ${os.tipo_equipamento} ${os.capacidade||''} ${os.tombo !== 'S/T' ? 'tombo ' + os.tombo : ''}. Defeito: ${os.descricao_falha}`;
-        let histHtml = '';
-        hist.forEach(h => { histHtml += `<div style="font-size:11px;margin-bottom:6px;border-bottom:1px dotted #ccc;"><strong>${dataFormatada(h.data_registro)} - ${esc(h.nome_usuario)} (${h.acao}):</strong> ${esc(h.observacao||'')}</div>`; });
-
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>OS_${numOSFormatado}</title><style>@page { size: A4 portrait; margin: 12mm 15mm; } body { font-family: Arial, sans-serif; color: #000; margin: 0; padding: 0; font-size: 11px; } .box-principal { border: 1.5px solid #000; width: 100%; border-collapse: collapse; } .box-principal td, .box-principal th { border: 1px solid #000; padding: 4px 6px; } .cabecalho-doc { text-align: center; font-weight: bold; font-size: 12px; } .titulo-sub { font-size: 11px; font-weight: bold; text-align: center; } .label-col { font-weight: bold; text-align: center; background: #fcfcfc; width: 35%; font-size: 10px; } .val-col { text-align: center; font-weight: 500; font-size: 11px; } .banner-lateral { width: 30px; text-align: center; vertical-align: middle; font-weight: bold; font-size: 12px; letter-spacing: 2px; writing-mode: vertical-rl; transform: rotate(180deg); } .secao-header { background: #fff; font-weight: bold; text-align: center; font-size: 11px; padding: 5px !important; } .rodape-os { margin-top: 15px; text-align: right; font-weight: bold; font-size: 14px; } @media print { .no-print { display: none !important; } }</style></head><body><div class="no-print" style="text-align:center;margin-bottom:20px;"><button style="background:#0284c7;color:#fff;padding:10px 20px;font-weight:bold;border:none;cursor:pointer;border-radius:4px;" onclick="window.print()">🖨️ Imprimir / Salvar como PDF</button></div><div style="text-align:right;font-size:14px;font-weight:bold;margin-bottom:4px;">${os.id}</div><table class="box-principal"><tr><td colspan="3" class="cabecalho-doc">ESTADO DO CEARÁ - PODER JUDICIÁRIO</td></tr><tr><td colspan="3" class="titulo-sub">TRIBUNAL DE JUSTIÇA - GERÊNCIA DE MANUTENÇÃO E ZELADORIA</td></tr><tr><td rowspan="20" class="banner-lateral">ABERTURA</td><td class="label-col">Nº da OS</td><td class="val-col"><strong>${numOSFormatado}</strong></td></tr><tr><td class="label-col">ATENDENTE</td><td class="val-col">${esc(os.nome_solicitante)}</td></tr><tr><td class="label-col">MATRÍCULA DO ATENDENTE</td><td class="val-col">-</td></tr><tr><td colspan="2" class="secao-header">LOCALIZAÇÃO</td></tr><tr><td class="label-col">REQUISITANTE</td><td class="val-col">${esc(os.nome_solicitante)}</td></tr><tr><td class="label-col">MATRÍCULA DO REQUISITANTE</td><td class="val-col">-</td></tr><tr><td class="label-col">TELEFONE/RAMAL CONTATO</td><td class="val-col">0</td></tr><tr><td class="label-col">LOTAÇÃO</td><td class="val-col">${esc(os.sala)}</td></tr><tr><td class="label-col">MUNICÍPIO</td><td class="val-col">${esc(os.comarca)}</td></tr><tr><td class="label-col">REGIÃO</td><td class="val-col">Região I</td></tr><tr><td class="label-col">PRÉDIO</td><td class="val-col">${esc(os.predio)}</td></tr><tr><td class="label-col">LOCAL DE OCORRÊNCIA</td><td class="val-col">${esc(os.sala)}</td></tr><tr><td class="label-col">TIPO DE SOLICITACAO</td><td class="val-col">Manutenção de Equipamento</td></tr><tr><td class="label-col">SERVIÇO</td><td class="val-col">Climatização</td></tr><tr><td class="label-col">CPA/TOMBO</td><td class="val-col"><strong>${esc(os.tombo)}</strong></td></tr><tr><td class="label-col">PRIORIDADE</td><td class="val-col">Não Emergencial</td></tr><tr><td class="label-col">FORNECEDOR</td><td class="val-col">${esc(os.contrato_nome || '-')}</td></tr><tr><td class="label-col">DESCRIÇÃO</td><td class="val-col" style="font-size:10px;">${esc(descCompleta)}</td></tr><tr><td class="label-col">DATA DE APROVAÇÃO</td><td class="val-col">${dataAprovacao}</td></tr><tr><td class="label-col">DATA DE INÍCIO</td><td class="val-col">${dataObj.toLocaleDateString('pt-BR')}</td></tr><tr><td colspan="2" class="label-col">DATA DE CONCLUSÃO</td><td class="val-col">${dataConclusao}</td></tr></table><table class="box-principal" style="border-top:none;margin-top:-1px;"><tr><td class="secao-header">DESCRIÇÃO</td></tr><tr><td style="height:45px;vertical-align:top;padding:6px;">${esc(descCompleta)}</td></tr><tr><td class="secao-header">HISTÓRICO</td></tr><tr><td style="min-height:80px;vertical-align:top;padding:6px;">${histHtml || 'Nenhum histórico.'}</td></tr></table><table class="box-principal" style="border-top:none;margin-top:-1px;"><tr><td class="secao-header" style="width:50%;">ATENDENTE</td><td class="secao-header" style="width:50%;">Executor</td></tr><tr><td style="height:50px;vertical-align:bottom;"><strong>Nome:</strong> ${esc(os.nome_solicitante)}<br><strong>Matrícula:</strong></td><td style="height:50px;vertical-align:bottom;"><strong>Nome:</strong> ${esc(os.nome_executante || '')}<br><strong>CPF:</strong></td></tr></table><div class="rodape-os">Nº da OS: ${numOSFormatado}</div></body></html>`);
-        printWindow.document.close();
-        printWindow.focus();
     }
 </script>
 </body>
