@@ -35,6 +35,7 @@
         th, td { border: 1px solid var(--border); padding: 8px; text-align: left; }
         th { background: #f1f5f9; cursor: pointer; }
         tr:hover { background: #f8fafc; }
+        .row-em-analise { background-color: #eef2ff !important; border-left: 4px solid #4f46e5 !important; }
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 15px; }
         .modal-box { background: #ffffff; border-radius: 12px; padding: 25px; width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; }
         .timeline { border-left: 3px solid var(--border); padding-left: 15px; margin-top: 15px; font-size: 13px; }
@@ -77,14 +78,18 @@
             <strong>Defeito Relatado:</strong> <span id="detalheOsDefeito" style="color:var(--danger);"></span>
         </div>
 
+        <div id="boxAvisoAnalise" class="hidden" style="margin-top:15px;padding:12px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:6px;color:#3730a3;font-size:13px;">
+            <strong>ℹ️ Chamado em Validação Fiscal:</strong> Você já finalizou o serviço e enviou a folha assinada. Aguarde a validação do Fiscal de Contrato.
+        </div>
+
         <div id="boxAcaoOS" style="margin-top:20px;padding-top:15px;border-top:1px solid var(--border);">
-            <h4>Apontamento de Serviço</h4>
+            <h4>Apontamento de Serviço em Campo</h4>
             <form onsubmit="salvarTratamentoOS(event)">
                 <input type="hidden" id="tratarOsId">
                 <label>Situação do Atendimento:</label>
                 <select id="tratarOsStatus" required onchange="ajustarCamposExecutante()">
                     <option value="aguardando_peca">1. Informar que está Pendente de Peça</option>
-                    <option value="concluida">2. Concluir O.S. (Anexar Folha Assinada)</option>
+                    <option value="em_analise">2. Finalizar Serviço em Campo (Enviar para Validação Fiscal)</option>
                 </select>
 
                 <div>
@@ -93,7 +98,7 @@
                 </div>
 
                 <div id="boxAnexoExec" class="hidden" style="background:#ecfdf5;padding:12px;border-radius:6px;border:1px dashed #10b981;margin-bottom:15px;">
-                    <label style="color:#065f46;">Foto ou PDF da O.S. Assinada:</label>
+                    <label style="color:#065f46;">Foto ou PDF da O.S. Assinada (Obrigatório para Validação):</label>
                     <input type="file" id="arquivoOSExec" accept="image/jpeg,image/png,application/pdf">
                 </div>
 
@@ -125,29 +130,49 @@
         if (status === 'aguardando_peca') {
             boxAnexo.classList.add('hidden');
             lblObs.textContent = "Peça Necessária (Obrigatório):";
+            txtObs.placeholder = "Informe qual peça é necessária para o reparo...";
             txtObs.required = true;
-        } else if (status === 'concluida') {
+        } else if (status === 'em_analise') {
             boxAnexo.classList.remove('hidden');
-            lblObs.textContent = "Relatório de Conclusão do Serviço (Opcional):";
+            lblObs.textContent = "Relatório do Serviço Realizado (Opcional):";
+            txtObs.placeholder = "Descreva o que foi feito no equipamento...";
             txtObs.required = false;
         }
     }
 
     async function carregarOSServer() {
         const box = document.getElementById('conteudoAba');
-        box.innerHTML = `<div style="display:flex;justify-content:space-between;margin-bottom:15px;"><h3>Minhas Tarefas Pendentes</h3><button onclick="carregarOSServer()">Atualizar Fila</button></div><div style="overflow-x:auto;"><table><thead><tr><th>ID / Data</th><th>Local</th><th>Equipamento / Defeito</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tabelaBoxOS"><tr><td colspan="5">Carregando...</td></tr></tbody></table></div>`;
+        box.innerHTML = `<div style="display:flex;justify-content:space-between;margin-bottom:15px;"><h3>Minhas Tarefas em Andamento</h3><button onclick="carregarOSServer()">Atualizar Fila</button></div><div style="overflow-x:auto;"><table><thead><tr><th>ID / Data</th><th>Local</th><th>Equipamento / Defeito</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tabelaBoxOS"><tr><td colspan="5">Carregando...</td></tr></tbody></table></div>`;
         osCache = await (await apiFetch('/api/os')).json();
         
         const tbody = document.getElementById('tabelaBoxOS');
         if (osCache.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:#10b981;font-weight:bold;">🎉 Parabéns! Nenhuma O.S. pendente no momento.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:#10b981;font-weight:bold;">🎉 Nenhuma tarefa pendente atribuída ao seu usuário no momento.</td></tr>';
             return;
         }
 
         let html = '';
         osCache.forEach(os => {
-            let cor = '#f59e0b'; if (os.status.includes('peca')) cor = '#8b5cf6'; if (os.status === 'aprovada') cor = '#0ea5e9';
-            html += `<tr><td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td><td><strong>${esc(os.comarca)}</strong><br><small>${esc(os.predio)} (${esc(os.sala)})</small></td><td style="max-width:250px;"><strong>${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')}</strong><br><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td><td><span class="badge" style="background:${cor};color:white;">${os.status.replace('_', ' ').toUpperCase()}</span></td><td><button class="btn-sm btn-success" onclick="abrirDetalhesOS(${os.id})">Atender / Relatar</button> <button class="btn-sm btn-info" onclick="imprimirOSPdf(${os.id})">🖨️ PDF</button></td></tr>`;
+            let cor = '#f59e0b'; 
+            let rowClasse = '';
+            let labelStatus = os.status.replace('_', ' ').toUpperCase();
+
+            if (os.status === 'aguardando_peca') cor = '#8b5cf6';
+            else if (os.status === 'em_analise') { 
+                cor = '#4f46e5'; 
+                rowClasse = 'row-em-analise'; 
+                labelStatus = 'EM VALIDAÇÃO FISCAL';
+            }
+
+            let btnTexto = os.status === 'em_analise' ? 'Ver Detalhes' : 'Atender / Apontar';
+
+            html += `<tr class="${rowClasse}">
+                <td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td>
+                <td><strong>${esc(os.comarca)}</strong><br><small>${esc(os.predio)} (${esc(os.sala)})</small></td>
+                <td style="max-width:250px;"><strong>${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')}</strong><br><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td>
+                <td><span class="badge" style="background:${cor};color:white;">${labelStatus}</span></td>
+                <td><button class="btn-sm ${os.status === 'em_analise' ? 'btn-secondary' : 'btn-success'}" onclick="abrirDetalhesOS(${os.id})">${btnTexto}</button> <button class="btn-sm btn-info" onclick="imprimirOSPdf(${os.id})">🖨️ PDF</button></td>
+            </tr>`;
         });
         tbody.innerHTML = html;
     }
@@ -164,7 +189,7 @@
             const os = data.os; const hist = data.historico;
 
             document.getElementById('detalheOsId').textContent = `#${os.id}`;
-            document.getElementById('detalheOsBadge').textContent = os.status.replace('_', ' ').toUpperCase();
+            document.getElementById('detalheOsBadge').textContent = (os.status === 'em_analise' ? 'EM VALIDAÇÃO FISCAL' : os.status.replace('_', ' ')).toUpperCase();
             document.getElementById('detalheOsEquip').textContent = `${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')} (Tombo: ${esc(os.tombo)})`;
             document.getElementById('detalheOsLocal').textContent = `${esc(os.comarca)} - ${esc(os.predio)} / ${esc(os.sala)}`;
             document.getElementById('detalheOsDefeito').textContent = esc(os.descricao_falha);
@@ -173,7 +198,19 @@
             hist.forEach(h => { htmlHist += `<div class="timeline-item"><div class="timeline-date">${dataFormatada(h.data_registro)}</div><div class="timeline-user">${esc(h.nome_usuario)} <span class="badge" style="background:#e2e8f0;color:#475569;">${h.acao}</span></div>${h.observacao ? `<div class="timeline-text">${esc(h.observacao)}</div>` : ''}</div>`; });
             document.getElementById('boxTimeline').innerHTML = htmlHist;
             document.getElementById('tratarOsId').value = os.id;
-            ajustarCamposExecutante();
+
+            const boxAcao = document.getElementById('boxAcaoOS');
+            const boxAviso = document.getElementById('boxAvisoAnalise');
+
+            if (os.status === 'em_analise') {
+                boxAcao.classList.add('hidden');
+                boxAviso.classList.remove('hidden');
+            } else {
+                boxAcao.classList.remove('hidden');
+                boxAviso.classList.add('hidden');
+                ajustarCamposExecutante();
+            }
+
         } catch (err) { document.getElementById('boxTimeline').innerHTML = `<span style="color:red;">Erro ao carregar detalhes.</span>`; }
     }
 
@@ -186,9 +223,9 @@
 
         if (statusNovo === 'aguardando_peca') {
             if (!obsTexto) return alert("É OBRIGATÓRIO informar qual peça está pendente.");
-        } else if (statusNovo === 'concluida') {
-            if (fileInput.files.length === 0) return alert("Para concluir o serviço, é OBRIGATÓRIO anexar a foto ou PDF da folha assinada.");
-            if (!obsTexto) obsTexto = "SERVIÇO CONCLUÍDO EM CAMPO COM ANEXO DA FOLHA ASSINADA.";
+        } else if (statusNovo === 'em_analise') {
+            if (fileInput.files.length === 0) return alert("Para enviar à validação do Fiscal, é OBRIGATÓRIO anexar a foto ou PDF da folha assinada.");
+            if (!obsTexto) obsTexto = "SERVIÇO REALIZADO EM CAMPO. ENVIADO PARA VALIDAÇÃO DO FISCAL.";
 
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
@@ -207,13 +244,27 @@
             }
         }
 
-        await apiFetch(`/api/os/${document.getElementById('tratarOsId').value}/status`, { 
-            method: 'PUT', 
-            body: JSON.stringify({ status: statusNovo, observacao: obsTexto, arquivo_conclusao: nomeArquivoSalvo }) 
-        });
+        const btn = document.getElementById('btnSalvarTratamento');
+        btn.disabled = true; btn.textContent = 'Gravando...';
 
-        fecharModal('modalTratarOS'); 
-        carregarOSServer();
+        try {
+            const res = await apiFetch(`/api/os/${document.getElementById('tratarOsId').value}/status`, { 
+                method: 'PUT', 
+                body: JSON.stringify({ status: statusNovo, observacao: obsTexto, arquivo_conclusao: nomeArquivoSalvo }) 
+            });
+            const data = await res.json();
+            if (res.ok) {
+                alert(statusNovo === 'em_analise' ? "Serviço registrado! Enviado para validação do Fiscal." : "Apontamento salvo!");
+                fecharModal('modalTratarOS'); 
+                carregarOSServer();
+            } else {
+                alert(data.erro || "Erro ao gravar apontamento.");
+            }
+        } catch(err) {
+            alert("Erro de comunicação com o servidor.");
+        } finally {
+            btn.disabled = false; btn.textContent = 'Salvar Apontamento';
+        }
     }
 </script>
 </body>

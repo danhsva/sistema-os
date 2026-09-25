@@ -38,6 +38,10 @@
         tr:hover { background: #f8fafc; }
         .filter-row input { padding: 6px; margin: 0; font-size: 11px; border-radius: 4px; border: 1px solid #cbd5e1; width: 100%; }
         .row-os-ativa { background-color: var(--row-alert) !important; border-left: 3px solid var(--warning); }
+        .row-em-analise { background-color: #eef2ff !important; border-left: 4px solid #4f46e5 !important; }
+        .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .dash-card { background: #fff; padding: 15px; border-radius: 8px; border: 1px solid var(--border); text-align: center; }
+        .dash-value { font-size: 22px; font-weight: bold; margin-top: 6px; }
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 15px; }
         .modal-box { background: #ffffff; border-radius: 12px; padding: 25px; width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; }
         .timeline { border-left: 3px solid var(--border); padding-left: 15px; margin-top: 15px; font-size: 13px; }
@@ -83,6 +87,10 @@
             <div id="boxLinkAnexo" class="hidden" style="margin-top:10px;"></div>
         </div>
 
+        <div id="boxAvisoAnalise" class="hidden" style="margin-top:15px;padding:12px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:6px;color:#3730a3;font-size:13px;">
+            <strong>ℹ️ Chamado em Análise pelo Fiscal:</strong> O serviço foi finalizado e a folha assinada já está anexada. O chamado aguarda homologação ou parecer do Fiscal de Contrato.
+        </div>
+
         <div id="boxAcaoOS" style="margin-top:20px;padding-top:15px;border-top:1px solid var(--border);">
             <h4>Encaminhamento do Chamado</h4>
             <form onsubmit="salvarTratamentoOS(event)">
@@ -91,7 +99,7 @@
                 <select id="tratarOsStatus" required onchange="ajustarCamposContratada()">
                     <option value="em_execucao">1. Encaminhar para o Técnico Executante</option>
                     <option value="aguardando_peca">2. Informar que está Aguardando Peça</option>
-                    <option value="concluida">3. Concluir a O.S. (Anexar Folha Assinada)</option>
+                    <option value="em_analise">3. Finalizar Atendimento (Enviar para Validação do Fiscal)</option>
                 </select>
 
                 <div id="boxDelegarExecutante">
@@ -105,7 +113,7 @@
                 </div>
 
                 <div id="boxAnexoConclusao" class="hidden" style="background:#ecfdf5;padding:12px;border-radius:6px;border:1px dashed #10b981;margin-bottom:15px;">
-                    <label style="color:#065f46;">Foto ou PDF da O.S. Assinada (Obrigatório):</label>
+                    <label style="color:#065f46;">Foto ou PDF da O.S. Assinada (Obrigatório para Validação):</label>
                     <input type="file" id="arquivoOS" accept="image/jpeg,image/png,application/pdf">
                 </div>
 
@@ -125,7 +133,7 @@
     let equipamentosCache = []; let osCache = [];
     let eqSortCol = 'comarca'; let eqSortAsc = true; let eqDebounceTimeout = null;
     let eqFiltros = { comarca:'', predio:'', sala:'', tipo:'', cap:'', tombo:'', status:'' };
-    let osFiltros = { id:'', comarca:'', status:'' };
+    let osFiltros = { id:'', comarca:'', status:'', periodo:'' };
 
     window.addEventListener('DOMContentLoaded', async () => {
         const user = await inicializarCore('contratada');
@@ -155,33 +163,130 @@
         } else if (status === 'aguardando_peca') {
             boxExec.classList.add('hidden'); boxAnexo.classList.add('hidden');
             lblObs.textContent = "Peça Necessária / Justificativa (Obrigatório):";
-        } else if (status === 'concluida') {
+        } else if (status === 'em_analise') {
             boxExec.classList.add('hidden'); boxAnexo.classList.remove('hidden');
-            lblObs.textContent = "Relatório Final de Conclusão (Opcional):";
+            lblObs.textContent = "Relatório do Serviço Realizado (Opcional):";
         }
     }
 
+    // ====== ORDENS DE SERVIÇO COM MÉTRICAS E PERÍODO ======
     async function carregarOSServer(box) {
-        box.innerHTML = `<div style="display:flex;justify-content:space-between;margin-bottom:15px;"><h3>Ordens de Serviço Aprovadas</h3><button onclick="carregarOSServer(document.getElementById('conteudoAba'))">Atualizar</button></div><div style="overflow-x:auto;"><table><thead id="headFiltrosOS"><tr><th>ID / Data</th><th>Local</th><th>Equipamento / Defeito</th><th>Status</th><th>Ações</th></tr><tr class="filter-row"><td><input type="text" placeholder="Buscar ID..." oninput="setOsFiltro('id', this.value)"></td><td><input type="text" placeholder="Buscar Comarca..." oninput="setOsFiltro('comarca', this.value)"></td><td></td><td><input type="text" placeholder="Buscar Status..." oninput="setOsFiltro('status', this.value)"></td><td><button class="btn-sm btn-secondary" onclick="limparFiltrosOS()" style="padding:6px;width:100%;">Limpar</button></td></tr></thead><tbody id="tabelaBoxOS"><tr><td colspan="5">Carregando...</td></tr></tbody></table></div>`;
-        osCache = await (await apiFetch('/api/os')).json(); desenharTabelaOS();
+        box.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;flex-wrap:wrap;gap:10px;">
+                <h3 style="margin:0;">Ordens de Serviço do Contrato</h3>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <label style="margin:0;font-size:12px;color:#64748b;">Período:</label>
+                    <select id="selOsPeriodoContratada" onchange="setOsPeriodoContratada(this.value)" style="margin:0;padding:6px;width:auto;font-size:12px;background:#fff;"></select>
+                    <button onclick="carregarOSServer(document.getElementById('conteudoAba'))">Atualizar</button>
+                </div>
+            </div>
+
+            <!-- CARDS DE MÉTRICAS -->
+            <div class="dash-grid" id="boxMetricasContratada">
+                <div class="dash-card"><div style="color:#64748b;font-size:11px;">Total O.S.</div><div class="dash-value" id="cardContratadaTotal" style="color:var(--primary-dark);">0</div></div>
+                <div class="dash-card"><div style="color:#64748b;font-size:11px;">Aguardando Início</div><div class="dash-value" id="cardContratadaAprovadas" style="color:var(--info);">0</div></div>
+                <div class="dash-card"><div style="color:#64748b;font-size:11px;">Em Execução</div><div class="dash-value" id="cardContratadaExecucao" style="color:var(--warning);">0</div></div>
+                <div class="dash-card"><div style="color:#64748b;font-size:11px;">Aguardando Peça</div><div class="dash-value" id="cardContratadaPeca" style="color:#8b5cf6;">0</div></div>
+                <div class="dash-card" style="border:2px solid #4f46e5;background:#eef2ff;"><div style="color:#4338ca;font-size:11px;font-weight:bold;">Em Validação Fiscal</div><div class="dash-value" id="cardContratadaAnalise" style="color:#4f46e5;">0</div></div>
+                <div class="dash-card"><div style="color:#64748b;font-size:11px;">Concluídas</div><div class="dash-value" id="cardContratadaConcluidas" style="color:var(--success);">0</div></div>
+            </div>
+
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead id="headFiltrosOS">
+                        <tr><th>ID / Data</th><th>Local</th><th>Equipamento / Defeito</th><th>Status</th><th>Ações</th></tr>
+                        <tr class="filter-row">
+                            <td><input type="text" placeholder="Buscar ID..." oninput="setOsFiltro('id', this.value)"></td>
+                            <td><input type="text" placeholder="Buscar Comarca..." oninput="setOsFiltro('comarca', this.value)"></td>
+                            <td></td>
+                            <td><input type="text" placeholder="Buscar Status..." oninput="setOsFiltro('status', this.value)"></td>
+                            <td><button class="btn-sm btn-secondary" onclick="limparFiltrosOS()" style="padding:6px;width:100%;">Limpar</button></td>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaBoxOS"><tr><td colspan="5">Carregando...</td></tr></tbody>
+                </table>
+            </div>`;
+
+        osCache = await (await apiFetch('/api/os')).json();
+        popularDropdownPeriodoContratada();
+        desenharTabelaOS();
     }
-    function limparFiltrosOS() { osFiltros = { id:'', comarca:'', status:'' }; document.querySelectorAll('#headFiltrosOS input').forEach(i=>i.value=''); desenharTabelaOS(); }
+
+    function popularDropdownPeriodoContratada() {
+        const sel = document.getElementById('selOsPeriodoContratada');
+        if (!sel) return;
+        const mesesSet = new Set();
+        osCache.forEach(os => {
+            const d = new Date(os.data_abertura);
+            const chave = `${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+            mesesSet.add(chave);
+        });
+        const meses = Array.from(mesesSet).sort().reverse();
+        sel.innerHTML = '<option value="">Todos os Períodos</option>' + meses.map(m => `<option value="${m}" ${osFiltros.periodo === m ? 'selected' : ''}>${m}</option>`).join('');
+    }
+
+    function setOsPeriodoContratada(val) { osFiltros.periodo = val; desenharTabelaOS(); }
+    function limparFiltrosOS() { osFiltros = { id:'', comarca:'', status:'', periodo:'' }; document.querySelectorAll('#headFiltrosOS input').forEach(i=>i.value=''); const sP = document.getElementById('selOsPeriodoContratada'); if(sP) sP.value=''; desenharTabelaOS(); }
     function setOsFiltro(c, v) { osFiltros[c] = v.toLowerCase(); desenharTabelaOS(); }
+
     function desenharTabelaOS() {
         const tbody = document.getElementById('tabelaBoxOS');
         let filtrados = osCache.filter(os => {
             if (osFiltros.id && !os.id.toString().includes(osFiltros.id)) return false;
             if (osFiltros.comarca && !(os.comarca||'').toLowerCase().includes(osFiltros.comarca)) return false;
             if (osFiltros.status && !(os.status||'').toLowerCase().includes(osFiltros.status)) return false;
+            if (osFiltros.periodo) {
+                const d = new Date(os.data_abertura);
+                const chave = `${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+                if (chave !== osFiltros.periodo) return false;
+            }
             return true;
         });
+
+        // Métricas calculadas
+        let total = filtrados.length, aprov = 0, exec = 0, peca = 0, analise = 0, conc = 0;
+        filtrados.forEach(os => {
+            if (os.status === 'aprovada') aprov++;
+            else if (os.status === 'em_execucao') exec++;
+            else if (os.status === 'aguardando_peca') peca++;
+            else if (os.status === 'em_analise') analise++;
+            else if (os.status === 'concluida') conc++;
+        });
+
+        document.getElementById('cardContratadaTotal').textContent = total;
+        document.getElementById('cardContratadaAprovadas').textContent = aprov;
+        document.getElementById('cardContratadaExecucao').textContent = exec;
+        document.getElementById('cardContratadaPeca').textContent = peca;
+        document.getElementById('cardContratadaAnalise').textContent = analise;
+        document.getElementById('cardContratadaConcluidas').textContent = conc;
+
         let html = '';
         filtrados.forEach(os => {
-            let cor = '#0ea5e9'; if (os.status==='concluida') cor='#10b981'; if (os.status.includes('execucao')) cor='#f59e0b'; if (os.status.includes('peca')) cor='#8b5cf6';
+            let cor = '#0ea5e9'; 
+            let rowClasse = '';
+            let labelStatus = os.status.replace('_', ' ').toUpperCase();
+
+            if (os.status === 'concluida') cor = '#10b981';
+            else if (os.status === 'em_execucao') cor = '#f59e0b';
+            else if (os.status === 'aguardando_peca') cor = '#8b5cf6';
+            else if (os.status === 'em_analise') { 
+                cor = '#4f46e5'; 
+                rowClasse = 'row-em-analise'; 
+                labelStatus = 'EM VALIDAÇÃO FISCAL';
+            }
+
             let btnAnexo = os.arquivo_conclusao ? `<a href="${getApiUrl('/api/uploads/' + os.arquivo_conclusao)}" target="_blank" class="btn-sm btn-success" style="text-decoration:none;display:inline-block;margin-left:4px;">📎 Anexo</a>` : '';
-            html += `<tr><td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td><td><strong>${esc(os.comarca)}</strong><br><small>${esc(os.predio)} (${esc(os.sala)})</small></td><td style="max-width:250px;"><strong>${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')}</strong><br><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td><td><span class="badge" style="background:${cor};color:white;">${os.status.replace('_', ' ').toUpperCase()}</span></td><td><button class="btn-sm btn-secondary" onclick="abrirDetalhesOS(${os.id})">Tratar / Delegar</button> <button class="btn-sm btn-info" onclick="imprimirOSPdf(${os.id})">🖨️ PDF</button> ${btnAnexo}</td></tr>`;
+            let btnAcaoLabel = (os.status === 'em_analise' || os.status === 'concluida') ? 'Detalhes' : 'Tratar / Delegar';
+
+            html += `<tr class="${rowClasse}">
+                <td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td>
+                <td><strong>${esc(os.comarca)}</strong><br><small>${esc(os.predio)} (${esc(os.sala)})</small></td>
+                <td style="max-width:250px;"><strong>${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')}</strong><br><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td>
+                <td><span class="badge" style="background:${cor};color:white;">${labelStatus}</span></td>
+                <td><button class="btn-sm btn-secondary" onclick="abrirDetalhesOS(${os.id})">${btnAcaoLabel}</button> <button class="btn-sm btn-info" onclick="imprimirOSPdf(${os.id})">🖨️ PDF</button> ${btnAnexo}</td>
+            </tr>`;
         });
-        tbody.innerHTML = html;
+        tbody.innerHTML = html || '<tr><td colspan="5" style="text-align:center;padding:15px;color:#64748b;">Nenhuma O.S. encontrada para o filtro.</td></tr>';
     }
 
     async function abrirDetalhesOS(os_id) {
@@ -196,7 +301,7 @@
             const os = data.os; const hist = data.historico;
 
             document.getElementById('detalheOsId').textContent = `#${os.id}`;
-            document.getElementById('detalheOsBadge').textContent = os.status.replace('_', ' ').toUpperCase();
+            document.getElementById('detalheOsBadge').textContent = (os.status === 'em_analise' ? 'EM VALIDAÇÃO FISCAL' : os.status.replace('_', ' ')).toUpperCase();
             document.getElementById('detalheOsEquip').textContent = `${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')} (Tombo: ${esc(os.tombo)})`;
             document.getElementById('detalheOsLocal').textContent = `${esc(os.comarca)} - ${esc(os.predio)} / ${esc(os.sala)}`;
             document.getElementById('detalheOsExecutante').textContent = os.nome_executante ? esc(os.nome_executante) : 'NÃO DESIGNADO';
@@ -205,7 +310,7 @@
             const boxLink = document.getElementById('boxLinkAnexo');
             if (boxLink) {
                 if (os.arquivo_conclusao) {
-                    boxLink.innerHTML = `<a href="${getApiUrl('/api/uploads/' + os.arquivo_conclusao)}" target="_blank" style="background:#10b981;color:#fff;padding:6px 12px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:12px;display:inline-block;">📎 Ver O.S. Assinada (Anexo)</a>`;
+                    boxLink.innerHTML = `<a href="${getApiUrl('/api/uploads/' + os.arquivo_conclusao)}" target="_blank" style="background:#10b981;color:#fff;padding:6px 12px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:12px;display:inline-block;">📎 Ver Folha Assinada Anexada</a>`;
                     boxLink.classList.remove('hidden');
                 } else { boxLink.classList.add('hidden'); }
             }
@@ -220,9 +325,20 @@
             selExec.innerHTML = '<option value="">Selecione o Técnico...</option>' + 
                 resExec.map(ex => `<option value="${ex.id}" ${os.executante_id === ex.id ? 'selected' : ''}>${esc(ex.nome)}</option>`).join('');
 
-            ajustarCamposContratada();
-            if (os.status === 'concluida') document.getElementById('boxAcaoOS').classList.add('hidden');
-            else document.getElementById('boxAcaoOS').classList.remove('hidden');
+            const boxAcao = document.getElementById('boxAcaoOS');
+            const boxAviso = document.getElementById('boxAvisoAnalise');
+
+            if (os.status === 'concluida' || os.status === 'cancelada') {
+                boxAcao.classList.add('hidden');
+                boxAviso.classList.add('hidden');
+            } else if (os.status === 'em_analise') {
+                boxAcao.classList.add('hidden');
+                boxAviso.classList.remove('hidden');
+            } else {
+                boxAcao.classList.remove('hidden');
+                boxAviso.classList.add('hidden');
+                ajustarCamposContratada();
+            }
 
         } catch (err) { document.getElementById('boxTimeline').innerHTML = `<span style="color:red;">Erro ao carregar detalhes.</span>`; }
     }
@@ -240,9 +356,9 @@
             if (!obsTexto) obsTexto = "ENCAMINHADO PARA O TÉCNICO EXECUTANTE.";
         } else if (statusNovo === 'aguardando_peca') {
             if (!obsTexto) return alert("Relate qual peça está pendente.");
-        } else if (statusNovo === 'concluida') {
-            if (fileInput.files.length === 0) return alert("Anexe a folha de O.S. assinada (Foto ou PDF).");
-            if (!obsTexto) obsTexto = "O.S. CONCLUÍDA COM ANEXO DE COMPROVANTE ASSINADO.";
+        } else if (statusNovo === 'em_analise') {
+            if (fileInput.files.length === 0) return alert("Para enviar à validação do Fiscal, anexe a folha de O.S. assinada (Foto ou PDF).");
+            if (!obsTexto) obsTexto = "ATENDIMENTO FINALIZADO PELA CONTRATADA. ENVIADO PARA VALIDAÇÃO DO FISCAL.";
 
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
@@ -279,7 +395,7 @@
             const data = await res.json();
 
             if (res.ok) {
-                alert("O.S. Atualizada com sucesso!");
+                alert(statusNovo === 'em_analise' ? "O.S. enviada com sucesso para validação do Fiscal!" : "O.S. Atualizada com sucesso!");
                 fecharModal('modalTratarOS'); 
                 await carregarOSServer(document.getElementById('conteudoAba'));
             } else {
@@ -297,6 +413,7 @@
         equipamentosCache = await (await apiFetch('/api/equipamentos')).json();
         renderizarCabecalhoEq(); desenharTabelaEquipamentos();
     }
+
     function renderizarCabecalhoEq() {
         const iconSort = eqSortAsc ? ' ▴' : ' ▾'; const col = (n, c) => `<th onclick="setEqSort('${c}')">${n}${eqSortCol === c ? iconSort : ''}</th>`;
         document.getElementById('headFiltrosEq').innerHTML = `<tr>${col('Comarca','comarca')}${col('Prédio','predio')}${col('Local','sala')}${col('Equipamento','tipo_equipamento')}${col('Cap','capacidade')}${col('Tombo','tombo')}${col('Status','status')}<th>Ações</th></tr>
@@ -351,7 +468,7 @@
             if (chamados.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Nenhuma O.S. aprovada para este equipamento.</td></tr>'; return; }
             let html = '';
             chamados.forEach(os => {
-                let cor = '#0ea5e9'; if (os.status==='concluida') cor='#10b981'; if (os.status.includes('execucao')) cor='#f59e0b'; if (os.status.includes('peca')) cor='#8b5cf6';
+                let cor = '#0ea5e9'; if (os.status==='concluida') cor='#10b981'; if (os.status==='em_execucao') cor='#f59e0b'; if (os.status==='aguardando_peca') cor='#8b5cf6'; if (os.status==='em_analise') cor='#4f46e5';
                 let btnAnexo = os.arquivo_conclusao ? `<a href="${getApiUrl('/api/uploads/' + os.arquivo_conclusao)}" target="_blank" class="btn-sm btn-success" style="text-decoration:none;display:inline-block;margin-left:4px;">📎 Anexo</a>` : '';
                 html += `<tr><td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td><td><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td><td><span class="badge" style="background:${cor};color:white;">${os.status.replace('_', ' ').toUpperCase()}</span></td><td><button class="btn-sm btn-secondary" onclick="fecharModal('modalHistoricoEqOS'); abrirDetalhesOS(${os.id});">Detalhes</button> <button class="btn-sm btn-info" onclick="imprimirOSPdf(${os.id})">🖨️ PDF</button> ${btnAnexo}</td></tr>`;
             });
