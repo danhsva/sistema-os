@@ -1,6 +1,6 @@
 /**
  * SGME - Núcleo Compartilhado Frontend
- * Arquivo: shared.js (Versão 2.5 - PDF Nativo)
+ * Arquivo: shared.js (Versão 2.7 - Formato Oficial OS_XXXX.MM.AAAA.pdf)
  */
 
 const IS_GITHUB_PAGES = window.location.hostname.includes('github.io');
@@ -35,6 +35,16 @@ const MUNICIPIOS_CE = [
 // Sanitização estrita contra XSS
 function esc(str) {
     return str ? String(str).replace(/[&<>'"]/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;' }[m])) : '';
+}
+
+// Formatação oficial do identificador da O.S.: OS_XXXX.MM.AAAA (ex: OS_0017.09.2026)
+function formatarNumOS(id, timestamp) {
+    if (!id) return '';
+    const d = timestamp ? new Date(timestamp) : new Date();
+    const seq = String(id).padStart(4, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const aaaa = d.getFullYear();
+    return `OS_${seq}.${mm}.${aaaa}`;
 }
 
 // Formatação amigável de data e hora
@@ -110,19 +120,43 @@ async function apiFetch(endpoint, options = {}) {
     return res;
 }
 
-// Emissão e download direto do PDF nativo (vetorial) gerado pelo Backend
-function imprimirOSPdf(os_id) {
+// Emissão e download direto do PDF no padrão oficial OS_XXXX.MM.AAAA.pdf (sem expor Cloudflare ou Token)
+async function imprimirOSPdf(os_id, data_abertura = null) {
     if (!usuarioLogado || !usuarioLogado.token) {
         alert("Usuário não autenticado.");
         return;
     }
-    
-    // Constrói URL com token para permitir abertura direta no visualizador de PDF do navegador/celular
-    const url = `${getApiUrl(`/api/os/${os_id}/pdf`)}?token=${encodeURIComponent(usuarioLogado.token)}&t=${Date.now()}`;
-    
-    const win = window.open(url, '_blank');
-    if (!win) {
-        // Fallback caso o navegador do celular bloqueie pop-up
-        window.location.href = url;
+
+    try {
+        // 1. Baixa o binário do PDF via AJAX seguro com o token no header
+        const res = await apiFetch(`/api/os/${os_id}/pdf`);
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.erro || "Falha ao gerar o documento PDF.");
+        }
+
+        // 2. Recupera o nome oficial enviado pelo backend (ex: OS_0017.09.2026.pdf) ou gera pelo formatador
+        let nomeArquivo = res.headers.get('X-Filename');
+        if (!nomeArquivo) {
+            nomeArquivo = `${formatarNumOS(os_id, data_abertura)}.pdf`;
+        }
+
+        // 3. Converte a resposta em um Blob local do navegador
+        const blob = await res.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+
+        // 4. Dispara o download com o nome padronizado
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = nomeArquivo;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // 5. Libera a memória alocada
+        setTimeout(() => window.URL.revokeObjectURL(blobUrl), 30000);
+
+    } catch (err) {
+        alert("Erro ao obter PDF: " + err.message);
     }
 }
