@@ -38,10 +38,14 @@
         tr:hover { background: #f8fafc; }
         .filter-row input { padding: 6px; margin: 0; font-size: 11px; border-radius: 4px; border: 1px solid #cbd5e1; width: 100%; }
         .row-os-ativa { background-color: var(--row-alert) !important; border-left: 3px solid var(--warning); }
-        .row-em-analise { background-color: #eef2ff !important; border-left: 4px solid #4f46e5 !important; }
-        .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
-        .dash-card { background: #fff; padding: 15px; border-radius: 8px; border: 1px solid var(--border); text-align: center; }
+        .row-em-analise { background-color: #f8fafc !important; opacity: 0.85; border-left: 4px solid #4f46e5 !important; }
+        .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .dash-card { background: #fff; padding: 14px; border-radius: 8px; border: 1px solid var(--border); text-align: center; cursor: pointer; transition: 0.2s; }
+        .dash-card:hover { border-color: var(--primary); transform: translateY(-2px); }
         .dash-value { font-size: 22px; font-weight: bold; margin-top: 6px; }
+        .toggle-visao { display: flex; gap: 8px; background: #e2e8f0; padding: 4px; border-radius: 8px; width: fit-content; }
+        .toggle-btn { background: none; color: #475569; padding: 6px 14px; font-size: 12px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; }
+        .toggle-btn.active { background: #fff; color: var(--primary-dark); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 15px; }
         .modal-box { background: #ffffff; border-radius: 12px; padding: 25px; width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; }
         .timeline { border-left: 3px solid var(--border); padding-left: 15px; margin-top: 15px; font-size: 13px; }
@@ -87,10 +91,16 @@
             <div id="boxLinkAnexo" class="hidden" style="margin-top:10px;"></div>
         </div>
 
+        <!-- AVISO DE CUSTÓDIA DO FISCAL / SOMENTE LEITURA -->
         <div id="boxAvisoAnalise" class="hidden" style="margin-top:15px;padding:12px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:6px;color:#3730a3;font-size:13px;">
-            <strong>ℹ️ Chamado em Análise pelo Fiscal:</strong> O serviço foi finalizado e a folha assinada já está anexada. O chamado aguarda homologação ou parecer do Fiscal de Contrato.
+            <strong>🔒 Chamado Sob Validação Fiscal (Somente Leitura):</strong> O serviço foi finalizado e a folha assinada foi entregue ao Fiscal. Não é permitido realizar alterações até que o Fiscal valide ou devolva o chamado.
         </div>
 
+        <div id="boxAvisoConcluida" class="hidden" style="margin-top:15px;padding:12px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:6px;color:#065f46;font-size:13px;">
+            <strong>✅ O.S. Concluída e Homologada:</strong> Chamado encerrado oficialmente pelo Fiscal de Contrato.
+        </div>
+
+        <!-- FORMULÁRIO DE ENCAMINHAMENTO (SÓ APARECE QUANDO A O.S. EXIGE AÇÃO DA CONTRATADA) -->
         <div id="boxAcaoOS" style="margin-top:20px;padding-top:15px;border-top:1px solid var(--border);">
             <h4>Encaminhamento do Chamado</h4>
             <form onsubmit="salvarTratamentoOS(event)">
@@ -99,7 +109,7 @@
                 <select id="tratarOsStatus" required onchange="ajustarCamposContratada()">
                     <option value="em_execucao">1. Encaminhar para o Técnico Executante</option>
                     <option value="aguardando_peca">2. Informar que está Aguardando Peça</option>
-                    <option value="em_analise">3. Finalizar Atendimento (Enviar para Validação do Fiscal)</option>
+                    <option value="em_analise">3. Finalizar Atendimento (Enviar para Validação Fiscal)</option>
                 </select>
 
                 <div id="boxDelegarExecutante">
@@ -109,7 +119,7 @@
 
                 <div id="boxObs">
                     <label id="lblObs">Observação Técnica:</label>
-                    <textarea id="tratarOsObs" rows="3" placeholder="Insira informações..."></textarea>
+                    <textarea id="tratarOsObs" rows="3" placeholder="Insira instruções para o técnico..."></textarea>
                 </div>
 
                 <div id="boxAnexoConclusao" class="hidden" style="background:#ecfdf5;padding:12px;border-radius:6px;border:1px dashed #10b981;margin-bottom:15px;">
@@ -133,7 +143,7 @@
     let equipamentosCache = []; let osCache = [];
     let eqSortCol = 'comarca'; let eqSortAsc = true; let eqDebounceTimeout = null;
     let eqFiltros = { comarca:'', predio:'', sala:'', tipo:'', cap:'', tombo:'', status:'' };
-    let osFiltros = { id:'', comarca:'', status:'', periodo:'' };
+    let osFiltros = { id:'', comarca:'', status:'', periodo:'', visao:'ativas' };
 
     window.addEventListener('DOMContentLoaded', async () => {
         const user = await inicializarCore('contratada');
@@ -169,11 +179,17 @@
         }
     }
 
-    // ====== ORDENS DE SERVIÇO COM MÉTRICAS E PERÍODO ======
+    // ====== ORDENS DE SERVIÇO (COM ALTERNADOR DE FILA ATIVA VS HISTÓRICO) ======
     async function carregarOSServer(box) {
         box.innerHTML = `
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;flex-wrap:wrap;gap:10px;">
-                <h3 style="margin:0;">Ordens de Serviço do Contrato</h3>
+                <div>
+                    <h3 style="margin:0 0 8px 0;">Ordens de Serviço do Contrato</h3>
+                    <div class="toggle-visao">
+                        <button type="button" id="btnVisaoAtivas" class="toggle-btn ${osFiltros.visao === 'ativas' ? 'active' : ''}" onclick="alternarVisaoOS('ativas')">⚡ Fila Ativa (Exige Ação)</button>
+                        <button type="button" id="btnVisaoTodas" class="toggle-btn ${osFiltros.visao === 'todas' ? 'active' : ''}" onclick="alternarVisaoOS('todas')">📋 Todas / Histórico</button>
+                    </div>
+                </div>
                 <div style="display:flex;align-items:center;gap:10px;">
                     <label style="margin:0;font-size:12px;color:#64748b;">Período:</label>
                     <select id="selOsPeriodoContratada" onchange="setOsPeriodoContratada(this.value)" style="margin:0;padding:6px;width:auto;font-size:12px;background:#fff;"></select>
@@ -183,12 +199,12 @@
 
             <!-- CARDS DE MÉTRICAS -->
             <div class="dash-grid" id="boxMetricasContratada">
-                <div class="dash-card"><div style="color:#64748b;font-size:11px;">Total O.S.</div><div class="dash-value" id="cardContratadaTotal" style="color:var(--primary-dark);">0</div></div>
-                <div class="dash-card"><div style="color:#64748b;font-size:11px;">Aguardando Início</div><div class="dash-value" id="cardContratadaAprovadas" style="color:var(--info);">0</div></div>
-                <div class="dash-card"><div style="color:#64748b;font-size:11px;">Em Execução</div><div class="dash-value" id="cardContratadaExecucao" style="color:var(--warning);">0</div></div>
-                <div class="dash-card"><div style="color:#64748b;font-size:11px;">Aguardando Peça</div><div class="dash-value" id="cardContratadaPeca" style="color:#8b5cf6;">0</div></div>
-                <div class="dash-card" style="border:2px solid #4f46e5;background:#eef2ff;"><div style="color:#4338ca;font-size:11px;font-weight:bold;">Em Validação Fiscal</div><div class="dash-value" id="cardContratadaAnalise" style="color:#4f46e5;">0</div></div>
-                <div class="dash-card"><div style="color:#64748b;font-size:11px;">Concluídas</div><div class="dash-value" id="cardContratadaConcluidas" style="color:var(--success);">0</div></div>
+                <div class="dash-card" onclick="filtrarStatusCard('')"><div style="color:#64748b;font-size:11px;">Total no Contrato</div><div class="dash-value" id="cardContratadaTotal" style="color:var(--primary-dark);">0</div></div>
+                <div class="dash-card" onclick="filtrarStatusCard('aprovada')"><div style="color:#64748b;font-size:11px;">Aguardando Início</div><div class="dash-value" id="cardContratadaAprovadas" style="color:var(--info);">0</div></div>
+                <div class="dash-card" onclick="filtrarStatusCard('em_execucao')"><div style="color:#64748b;font-size:11px;">Em Execução</div><div class="dash-value" id="cardContratadaExecucao" style="color:var(--warning);">0</div></div>
+                <div class="dash-card" onclick="filtrarStatusCard('aguardando_peca')"><div style="color:#64748b;font-size:11px;">Aguardando Peça</div><div class="dash-value" id="cardContratadaPeca" style="color:#8b5cf6;">0</div></div>
+                <div class="dash-card" style="border:2px solid #4f46e5;background:#eef2ff;" onclick="filtrarStatusCard('em_analise')"><div style="color:#4338ca;font-size:11px;font-weight:bold;">Em Validação Fiscal</div><div class="dash-value" id="cardContratadaAnalise" style="color:#4f46e5;">0</div></div>
+                <div class="dash-card" onclick="filtrarStatusCard('concluida')"><div style="color:#64748b;font-size:11px;">Concluídas</div><div class="dash-value" id="cardContratadaConcluidas" style="color:var(--success);">0</div></div>
             </div>
 
             <div style="overflow-x:auto;">
@@ -199,7 +215,7 @@
                             <td><input type="text" placeholder="Buscar ID..." oninput="setOsFiltro('id', this.value)"></td>
                             <td><input type="text" placeholder="Buscar Comarca..." oninput="setOsFiltro('comarca', this.value)"></td>
                             <td></td>
-                            <td><input type="text" placeholder="Buscar Status..." oninput="setOsFiltro('status', this.value)"></td>
+                            <td><input type="text" id="filtroInputStatus" placeholder="Buscar Status..." oninput="setOsFiltro('status', this.value)"></td>
                             <td><button class="btn-sm btn-secondary" onclick="limparFiltrosOS()" style="padding:6px;width:100%;">Limpar</button></td>
                         </tr>
                     </thead>
@@ -209,6 +225,24 @@
 
         osCache = await (await apiFetch('/api/os')).json();
         popularDropdownPeriodoContratada();
+        desenharTabelaOS();
+    }
+
+    function alternarVisaoOS(visao) {
+        osFiltros.visao = visao;
+        document.getElementById('btnVisaoAtivas').classList.toggle('active', visao === 'ativas');
+        document.getElementById('btnVisaoTodas').classList.toggle('active', visao === 'todas');
+        desenharTabelaOS();
+    }
+
+    function filtrarStatusCard(st) {
+        // Ao clicar num card, se for um status de histórico, abre a visão completa
+        if (['em_analise', 'concluida'].includes(st)) {
+            alternarVisaoOS('todas');
+        }
+        osFiltros.status = st;
+        const inp = document.getElementById('filtroInputStatus');
+        if (inp) inp.value = st;
         desenharTabelaOS();
     }
 
@@ -226,26 +260,15 @@
     }
 
     function setOsPeriodoContratada(val) { osFiltros.periodo = val; desenharTabelaOS(); }
-    function limparFiltrosOS() { osFiltros = { id:'', comarca:'', status:'', periodo:'' }; document.querySelectorAll('#headFiltrosOS input').forEach(i=>i.value=''); const sP = document.getElementById('selOsPeriodoContratada'); if(sP) sP.value=''; desenharTabelaOS(); }
+    function limparFiltrosOS() { osFiltros = { id:'', comarca:'', status:'', periodo:'', visao:'ativas' }; document.querySelectorAll('#headFiltrosOS input').forEach(i=>i.value=''); const sP = document.getElementById('selOsPeriodoContratada'); if(sP) sP.value=''; alternarVisaoOS('ativas'); }
     function setOsFiltro(c, v) { osFiltros[c] = v.toLowerCase(); desenharTabelaOS(); }
 
     function desenharTabelaOS() {
         const tbody = document.getElementById('tabelaBoxOS');
-        let filtrados = osCache.filter(os => {
-            if (osFiltros.id && !os.id.toString().includes(osFiltros.id)) return false;
-            if (osFiltros.comarca && !(os.comarca||'').toLowerCase().includes(osFiltros.comarca)) return false;
-            if (osFiltros.status && !(os.status||'').toLowerCase().includes(osFiltros.status)) return false;
-            if (osFiltros.periodo) {
-                const d = new Date(os.data_abertura);
-                const chave = `${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
-                if (chave !== osFiltros.periodo) return false;
-            }
-            return true;
-        });
-
-        // Métricas calculadas
-        let total = filtrados.length, aprov = 0, exec = 0, peca = 0, analise = 0, conc = 0;
-        filtrados.forEach(os => {
+        
+        // 1. Calcular Métricas de Todo o Contrato
+        let total = osCache.length, aprov = 0, exec = 0, peca = 0, analise = 0, conc = 0;
+        osCache.forEach(os => {
             if (os.status === 'aprovada') aprov++;
             else if (os.status === 'em_execucao') exec++;
             else if (os.status === 'aguardando_peca') peca++;
@@ -260,11 +283,30 @@
         document.getElementById('cardContratadaAnalise').textContent = analise;
         document.getElementById('cardContratadaConcluidas').textContent = conc;
 
+        // 2. Filtrar os registros exibidos na tabela
+        let filtrados = osCache.filter(os => {
+            // Se visão for 'ativas', exibe apenas o que exige ação da Contratada!
+            if (osFiltros.visao === 'ativas') {
+                if (!['aprovada', 'em_execucao', 'aguardando_peca'].includes(os.status)) return false;
+            }
+
+            if (osFiltros.id && !os.id.toString().includes(osFiltros.id)) return false;
+            if (osFiltros.comarca && !(os.comarca||'').toLowerCase().includes(osFiltros.comarca)) return false;
+            if (osFiltros.status && !(os.status||'').toLowerCase().includes(osFiltros.status)) return false;
+            if (osFiltros.periodo) {
+                const d = new Date(os.data_abertura);
+                const chave = `${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+                if (chave !== osFiltros.periodo) return false;
+            }
+            return true;
+        });
+
         let html = '';
         filtrados.forEach(os => {
             let cor = '#0ea5e9'; 
             let rowClasse = '';
             let labelStatus = os.status.replace('_', ' ').toUpperCase();
+            const exigeAcao = ['aprovada', 'em_execucao', 'aguardando_peca'].includes(os.status);
 
             if (os.status === 'concluida') cor = '#10b981';
             else if (os.status === 'em_execucao') cor = '#f59e0b';
@@ -276,17 +318,19 @@
             }
 
             let btnAnexo = os.arquivo_conclusao ? `<a href="${getApiUrl('/api/uploads/' + os.arquivo_conclusao)}" target="_blank" class="btn-sm btn-success" style="text-decoration:none;display:inline-block;margin-left:4px;">📎 Anexo</a>` : '';
-            let btnAcaoLabel = (os.status === 'em_analise' || os.status === 'concluida') ? 'Detalhes' : 'Tratar / Delegar';
+            let btnAcao = exigeAcao 
+                ? `<button class="btn-sm btn-primary" onclick="abrirDetalhesOS(${os.id})">Tratar / Delegar</button>`
+                : `<button class="btn-sm btn-secondary" onclick="abrirDetalhesOS(${os.id})">Visualizar</button>`;
 
             html += `<tr class="${rowClasse}">
                 <td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td>
                 <td><strong>${esc(os.comarca)}</strong><br><small>${esc(os.predio)} (${esc(os.sala)})</small></td>
                 <td style="max-width:250px;"><strong>${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')}</strong><br><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td>
                 <td><span class="badge" style="background:${cor};color:white;">${labelStatus}</span></td>
-                <td><button class="btn-sm btn-secondary" onclick="abrirDetalhesOS(${os.id})">${btnAcaoLabel}</button> <button class="btn-sm btn-info" onclick="imprimirOSPdf(${os.id})">🖨️ PDF</button> ${btnAnexo}</td>
+                <td>${btnAcao} <button class="btn-sm btn-info" onclick="imprimirOSPdf(${os.id})">🖨️ PDF</button> ${btnAnexo}</td>
             </tr>`;
         });
-        tbody.innerHTML = html || '<tr><td colspan="5" style="text-align:center;padding:15px;color:#64748b;">Nenhuma O.S. encontrada para o filtro.</td></tr>';
+        tbody.innerHTML = html || '<tr><td colspan="5" style="text-align:center;padding:20px;color:#64748b;">Nenhuma O.S. nesta visualização.</td></tr>';
     }
 
     async function abrirDetalhesOS(os_id) {
@@ -326,17 +370,23 @@
                 resExec.map(ex => `<option value="${ex.id}" ${os.executante_id === ex.id ? 'selected' : ''}>${esc(ex.nome)}</option>`).join('');
 
             const boxAcao = document.getElementById('boxAcaoOS');
-            const boxAviso = document.getElementById('boxAvisoAnalise');
+            const boxAvisoAnalise = document.getElementById('boxAvisoAnalise');
+            const boxAvisoConcluida = document.getElementById('boxAvisoConcluida');
 
-            if (os.status === 'concluida' || os.status === 'cancelada') {
+            // BLOQUEIO TOTAL DE ALTERAÇÃO QUANDO COM O FISCAL OU CONCLUÍDA
+            if (os.status === 'em_analise') {
                 boxAcao.classList.add('hidden');
-                boxAviso.classList.add('hidden');
-            } else if (os.status === 'em_analise') {
+                boxAvisoAnalise.classList.remove('hidden');
+                boxAvisoConcluida.classList.add('hidden');
+            } else if (os.status === 'concluida' || os.status === 'cancelada') {
                 boxAcao.classList.add('hidden');
-                boxAviso.classList.remove('hidden');
+                boxAvisoAnalise.classList.add('hidden');
+                boxAvisoConcluida.classList.remove('hidden');
             } else {
+                // ABERTA À AÇÃO DA CONTRATADA
                 boxAcao.classList.remove('hidden');
-                boxAviso.classList.add('hidden');
+                boxAvisoAnalise.classList.add('hidden');
+                boxAvisoConcluida.classList.add('hidden');
                 ajustarCamposContratada();
             }
 
@@ -395,7 +445,9 @@
             const data = await res.json();
 
             if (res.ok) {
-                alert(statusNovo === 'em_analise' ? "O.S. enviada com sucesso para validação do Fiscal!" : "O.S. Atualizada com sucesso!");
+                alert(statusNovo === 'em_analise' 
+                    ? "O.S. enviada com sucesso para validação do Fiscal! Ela saiu da sua fila ativa de atendimento." 
+                    : "O.S. Atualizada com sucesso!");
                 fecharModal('modalTratarOS'); 
                 await carregarOSServer(document.getElementById('conteudoAba'));
             } else {
