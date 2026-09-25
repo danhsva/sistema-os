@@ -36,7 +36,7 @@
         th, td { border: 1px solid var(--border); padding: 8px; text-align: left; }
         th { background: #f1f5f9; cursor: pointer; }
         tr:hover { background: #f8fafc; }
-        .filter-row input { padding: 6px; margin: 0; font-size: 11px; border-radius: 4px; border: 1px solid #cbd5e1; width: 100%; }
+        .filter-row input, .filter-row select { padding: 6px; margin: 0; font-size: 11px; border-radius: 4px; border: 1px solid #cbd5e1; width: 100%; }
         .inativo td { opacity: 0.5; background: #f1f5f9; }
         .row-os-ativa { background-color: var(--row-alert) !important; border-left: 3px solid var(--warning); }
         .row-em-analise { background-color: #eef2ff !important; border-left: 4px solid #4f46e5 !important; }
@@ -52,6 +52,9 @@
         .timeline-date { font-size: 11px; color: #64748b; font-weight: bold; }
         .timeline-user { color: var(--primary-dark); font-weight: bold; margin-bottom: 4px; }
         .timeline-text { background: #f8fafc; padding: 8px; border-radius: 6px; border: 1px solid var(--border); margin-top: 4px; }
+        .box-check-contratos { max-height: 140px; overflow-y: auto; border: 1px solid var(--border); padding: 8px 12px; border-radius: 6px; background: #fff; margin-bottom: 15px; }
+        .check-item { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-size: 13px; cursor: pointer; }
+        .check-item input[type="checkbox"] { width: 16px; height: 16px; margin: 0; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -79,21 +82,26 @@
         </main>
     </div>
 
-    <!-- MODAIS DO FISCAL -->
-    <div id="modalFormEquip" class="modal-overlay hidden"><div class="modal-box" style="max-width: 700px;"><h3>Inclusão de Equipamento no Contrato</h3><form onsubmit="salvarEquipamento(event)"><input type="hidden" id="formEqId"><div class="row"><div class="col"><label>Comarca:</label><select id="formEqComarca" required></select></div><div class="col"><label>Prédio:</label><input type="text" id="formEqPredio" required></div><div class="col"><label>Sala (Local):</label><input type="text" id="formEqSala" required></div></div><div class="row"><div class="col"><label>Tipo:</label><select id="formEqTipo" required><option value="">Selecione...</option><option value="HI WALL">HI WALL</option><option value="PISO TETO">PISO TETO</option><option value="CASSETE">CASSETE</option><option value="JANELEIRO">JANELEIRO</option><option value="MULTI SPLIT">MULTI SPLIT</option><option value="SELF">SELF</option><option value="CORTINA DE AR">CORTINA DE AR</option><option value="SPLITÃO">SPLITÃO</option><option value="OUTRO">OUTRO</option></select></div><div class="col"><label>Capacidade:</label><select id="formEqCap"><option value="">Selecione...</option><option value="7000 BTUS">7000 BTUS</option><option value="9000 BTUS">9000 BTUS</option><option value="10000 BTUS">10000 BTUS</option><option value="12000 BTUS">12000 BTUS</option><option value="18000 BTUS">18000 BTUS</option><option value="21000 BTUS">21000 BTUS</option><option value="22000 BTUS">22000 BTUS</option><option value="24000 BTUS">24000 BTUS</option><option value="30000 BTUS">30000 BTUS</option><option value="36000 BTUS">36000 BTUS</option><option value="48000 BTUS">48000 BTUS</option><option value="60000 BTUS">60000 BTUS</option><option value="3 TR">3 TR</option><option value="5 TR">5 TR</option><option value="7.5 TR">7.5 TR</option><option value="10 TR">10 TR</option><option value="15 TR">15 TR</option></select></div></div><div class="row"><div class="col"><label>Marca:</label><input type="text" id="formEqMarca"></div><div class="col"><label>Tombo:</label><input type="text" id="formEqTombo"></div></div><div style="display:flex;gap:10px;margin-top:15px;"><button type="submit" class="btn-success btn-block">Salvar</button><button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalFormEquip')">Cancelar</button></div></form></div></div>
-    <div id="modalFormUser" class="modal-overlay hidden"><div class="modal-box" style="max-width: 400px;"><h3>Novo Integrante da Equipe</h3><form onsubmit="salvarUsuario(event)"><input type="hidden" id="formUserId"><label>Nome Completo:</label><input type="text" id="formUserNome" required><label>Login:</label><input type="text" id="formUserLogin" required><label>Perfil:</label><select id="formUserPerfil" required><option value="executante">Executante (Técnico)</option><option value="contratada">Contratada (Empresa)</option></select><div style="display:flex;gap:10px;margin-top:15px;"><button type="submit" class="btn-success btn-block">Salvar</button><button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalFormUser')">Cancelar</button></div></form></div></div>
-    <div id="modalNovaOSAvulsa" class="modal-overlay hidden"><div class="modal-box" style="max-width: 600px;"><h3>Abrir Nova Ordem de Serviço</h3><div id="boxBuscaAvulsa" style="background:#f1f5f9;padding:15px;border-radius:6px;margin-bottom:15px;border:1px solid var(--border);"><label style="color:var(--primary-dark);">Busca por Tombo:</label><div style="display:flex;gap:10px;margin-bottom:15px;"><input type="text" id="buscaTombo" placeholder="Digite o tombo..." style="margin-bottom:0;"><button type="button" class="btn-primary" onclick="buscarEquipamentoPorTombo()">Buscar</button></div><hr style="border:0;border-top:1px dashed #cbd5e1;margin-bottom:15px;"><div class="row"><div class="col"><label>Comarca:</label><select id="selAvulsoComarca" onchange="popularAvulsoPredios()"></select></div><div class="col"><label>Prédio:</label><select id="selAvulsoPredio" onchange="popularAvulsoSalas()"></select></div></div><div class="row"><div class="col"><label>Sala:</label><select id="selAvulsoSala" onchange="popularAvulsoEqs()"></select></div><div class="col"><label>Equipamento:</label><select id="selAvulsoEq" required></select></div></div></div><div id="boxEqSelecionadoFixo" class="hidden" style="background:#e0f2fe;padding:15px;border-radius:6px;margin-bottom:15px;border:1px solid #7dd3fc;"><strong id="lblEqFixoNome" style="color:var(--primary-dark);font-size:15px;"></strong><br><span id="lblEqFixoLocal" style="color:#475569;font-size:13px;"></span></div><form onsubmit="enviarOSAvulsa(event)"><label>Relato do Defeito:</label><textarea id="osDescricaoAvulsa" rows="3" required placeholder="Descreva o problema..."></textarea><div style="display:flex;gap:10px;margin-top:10px;"><button type="submit" class="btn-success btn-block">Registrar O.S.</button><button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalNovaOSAvulsa')">Cancelar</button></div></form></div></div>
+    <!-- MODAL EQUIPAMENTO (1:N - ESCOLHA DE UM DOS CONTRATOS DO FISCAL) -->
+    <div id="modalFormEquip" class="modal-overlay hidden"><div class="modal-box" style="max-width: 700px;"><h3 id="tituloModalEquip">Inclusão de Equipamento no Contrato</h3><form onsubmit="salvarEquipamento(event)"><input type="hidden" id="formEqId"><div class="row"><div class="col"><label>Comarca:</label><select id="formEqComarca" required></select></div><div class="col"><label>Prédio:</label><input type="text" id="formEqPredio" required></div><div class="col"><label>Sala (Local):</label><input type="text" id="formEqSala" required></div></div><div class="row"><div class="col"><label>Tipo:</label><select id="formEqTipo" required><option value="">Selecione...</option><option value="HI WALL">HI WALL</option><option value="PISO TETO">PISO TETO</option><option value="CASSETE">CASSETE</option><option value="JANELEIRO">JANELEIRO</option><option value="MULTI SPLIT">MULTI SPLIT</option><option value="SELF">SELF</option><option value="CORTINA DE AR">CORTINA DE AR</option><option value="SPLITÃO">SPLITÃO</option><option value="OUTRO">OUTRO</option></select></div><div class="col"><label>Capacidade:</label><select id="formEqCap"><option value="">Selecione...</option><option value="7000 BTUS">7000 BTUS</option><option value="9000 BTUS">9000 BTUS</option><option value="10000 BTUS">10000 BTUS</option><option value="12000 BTUS">12000 BTUS</option><option value="18000 BTUS">18000 BTUS</option><option value="21000 BTUS">21000 BTUS</option><option value="22000 BTUS">22000 BTUS</option><option value="24000 BTUS">24000 BTUS</option><option value="30000 BTUS">30000 BTUS</option><option value="36000 BTUS">36000 BTUS</option><option value="48000 BTUS">48000 BTUS</option><option value="60000 BTUS">60000 BTUS</option><option value="3 TR">3 TR</option><option value="5 TR">5 TR</option><option value="7.5 TR">7.5 TR</option><option value="10 TR">10 TR</option><option value="15 TR">15 TR</option></select></div></div><div class="row"><div class="col"><label>Marca:</label><input type="text" id="formEqMarca"></div><div class="col"><label>Tombo:</label><input type="text" id="formEqTombo"></div></div><div><label>Vincular a qual Contrato:</label><select id="formEqContrato" required></select></div><div style="display:flex;gap:10px;margin-top:15px;"><button type="submit" class="btn-success btn-block">Salvar Equipamento</button><button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalFormEquip')">Cancelar</button></div></form></div></div>
+
+    <!-- MODAL USUÁRIO / EQUIPE (N:N - SELEÇÃO DE CONTRATOS DO FISCAL) -->
+    <div id="modalFormUser" class="modal-overlay hidden"><div class="modal-box" style="max-width: 480px;"><h3 id="tituloModalUser">Novo Integrante da Equipe</h3><form onsubmit="salvarUsuario(event)"><input type="hidden" id="formUserId"><label>Nome Completo:</label><input type="text" id="formUserNome" required><label>Login:</label><input type="text" id="formUserLogin" required><label>Perfil:</label><select id="formUserPerfil" required><option value="executante">Executante (Técnico de Campo)</option><option value="contratada">Contratada (Empresa)</option></select><label>Vincular aos Contratos:</label><div class="box-check-contratos" id="listaCheckContratosFiscal"></div><div style="display:flex;gap:10px;margin-top:15px;"><button type="submit" class="btn-success btn-block">Salvar Integrante</button><button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalFormUser')">Cancelar</button></div></form></div></div>
+
+    <!-- MODAL NOVA O.S. AVULSA -->
+    <div id="modalNovaOSAvulsa" class="modal-overlay hidden"><div class="modal-box" style="max-width: 600px;"><h3>Abrir Nova Ordem de Serviço</h3><div id="boxBuscaAvulsa" style="background:#f1f5f9;padding:15px;border-radius:6px;margin-bottom:15px;border:1px solid var(--border);"><label style="color:var(--primary-dark);">Busca por Tombo:</label><div style="display:flex;gap:10px;margin-bottom:15px;"><input type="text" id="buscaTombo" placeholder="Digite o tombo..." style="margin-bottom:0;"><button type="button" class="btn-primary" onclick="buscarEquipamentoPorTombo()">Buscar</button></div><hr style="border:0;border-top:1px dashed #cbd5e1;margin-bottom:15px;"><div class="row"><div class="col"><label>Comarca:</label><select id="selAvulsoComarca" onchange="popularAvulsoPredios()"></select></div><div class="col"><label>Prédio:</label><select id="selAvulsoPredio" onchange="popularAvulsoSalas()"></select></div></div><div class="row"><div class="col"><label>Sala:</label><select id="selAvulsoSala" onchange="popularAvulsoEqs()"></select></div><div class="col"><label>Equipamento:</label><select id="selAvulsoEq" required></select></div></div></div><div id="boxEqSelecionadoFixo" class="hidden" style="background:#e0f2fe;padding:15px;border-radius:6px;margin-bottom:15px;border:1px solid #7dd3fc;"><strong id="lblEqFixoNome" style="color:var(--primary-dark);font-size:15px;"></strong><br><span id="lblEqFixoLocal" style="color:#475569;font-size:13px;"></span></div><form onsubmit="enviarOSAvulsa(event)"><label>Relato do Defeito:</label><textarea id="osDescricaoAvulsa" rows="3" required placeholder="Descreva o problema..."></textarea><div style="display:flex;gap:10px;margin-top:10px;"><button type="submit" class="btn-success btn-block">Registrar e Autorizar O.S.</button><button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalNovaOSAvulsa')">Cancelar</button></div></form></div></div>
+
     <div id="modalHistoricoEqOS" class="modal-overlay hidden"><div class="modal-box" style="max-width: 700px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;"><h3 style="margin:0;">Histórico do Equipamento</h3><button class="btn-danger btn-sm" onclick="fecharModal('modalHistoricoEqOS')">X</button></div><div style="overflow-x:auto;"><table style="margin-top:0;"><thead><tr><th>O.S. / Data</th><th>Defeito</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tabelaHistoricoEqOS"></tbody></table></div></div></div>
 
     <!-- MODAL TRATAR / VALIDAR O.S. PELO FISCAL -->
-    <div id="modalTratarOS" class="modal-overlay hidden"><div class="modal-box"><div style="display:flex;justify-content:space-between;align-items:center;"><div><h3 style="margin:0;">Fiscalização da O.S. <span id="detalheOsId"></span></h3><span id="detalheOsBadge" class="badge"></span></div><button class="btn-info btn-sm" id="btnImprimirModal" style="padding:8px 12px;">🖨️ PDF</button></div><div style="background:#f8fafc;border:1px solid var(--border);padding:10px;border-radius:6px;margin-top:15px;font-size:13px;"><strong>Equipamento:</strong> <span id="detalheOsEquip"></span><br><strong>Local:</strong> <span id="detalheOsLocal"></span><br><strong>Técnico Responsável:</strong> <span id="detalheOsExecutante" style="color:var(--primary-dark);font-weight:bold;"></span><br><strong>Defeito Inicial:</strong> <span id="detalheOsDefeito" style="color:var(--danger);"></span><div id="boxLinkAnexo" class="hidden" style="margin-top:10px;"></div></div><div id="boxAcaoOS" style="margin-top:20px;padding-top:15px;border-top:1px solid var(--border);"><h4 id="tituloAcaoFiscal">Decisão do Fiscal</h4><form onsubmit="salvarTratamentoOS(event)"><input type="hidden" id="tratarOsId"><label>Ação a Tomar:</label><select id="tratarOsStatus" required onchange="ajustarExigenciaObs()"></select><label id="lblObsFiscal">Observação / Justificativa:</label><textarea id="tratarOsObs" rows="3" placeholder="Insira informações adicionais..."></textarea><button type="submit" class="btn-success btn-block" id="btnGravarDecisao">Confirmar Decisão</button></form></div><h4 style="margin-top:25px;">Histórico da O.S.</h4><div id="boxTimeline" class="timeline"></div><button class="btn-secondary btn-block" style="margin-top:20px;" onclick="fecharModal('modalTratarOS')">Fechar Detalhes</button></div></div>
+    <div id="modalTratarOS" class="modal-overlay hidden"><div class="modal-box"><div style="display:flex;justify-content:space-between;align-items:center;"><div><h3 style="margin:0;">Fiscalização da O.S. <span id="detalheOsId"></span></h3><span id="detalheOsBadge" class="badge"></span></div><button class="btn-info btn-sm" id="btnImprimirModal" style="padding:8px 12px;">🖨️ PDF</button></div><div style="background:#f8fafc;border:1px solid var(--border);padding:10px;border-radius:6px;margin-top:15px;font-size:13px;"><strong>Equipamento:</strong> <span id="detalheOsEquip"></span><br><strong>Local:</strong> <span id="detalheOsLocal"></span><br><strong>Contrato:</strong> <span id="detalheOsContrato" style="font-weight:bold;color:var(--primary-dark);"></span><br><strong>Técnico Responsável:</strong> <span id="detalheOsExecutante" style="color:var(--primary-dark);font-weight:bold;"></span><br><strong>Defeito Inicial:</strong> <span id="detalheOsDefeito" style="color:var(--danger);"></span><div id="boxLinkAnexo" class="hidden" style="margin-top:10px;"></div></div><div id="boxAcaoOS" style="margin-top:20px;padding-top:15px;border-top:1px solid var(--border);"><h4 id="tituloAcaoFiscal">Decisão do Fiscal</h4><form onsubmit="salvarTratamentoOS(event)"><input type="hidden" id="tratarOsId"><label>Ação a Tomar:</label><select id="tratarOsStatus" required onchange="ajustarExigenciaObs()"></select><label id="lblObsFiscal">Observação / Justificativa:</label><textarea id="tratarOsObs" rows="3" placeholder="Insira informações adicionais..."></textarea><button type="submit" class="btn-success btn-block" id="btnGravarDecisao">Confirmar Decisão</button></form></div><h4 style="margin-top:25px;">Histórico da O.S.</h4><div id="boxTimeline" class="timeline"></div><button class="btn-secondary btn-block" style="margin-top:20px;" onclick="fecharModal('modalTratarOS')">Fechar Detalhes</button></div></div>
 
 <script src="shared.js"></script>
 <script>
-    let equipamentosCache = []; let osCache = []; let usuariosCache = [];
+    let equipamentosCache = []; let osCache = []; let usuariosCache = []; let contratosDoFiscal = [];
     let eqSortCol = 'comarca'; let eqSortAsc = true; let eqDebounceTimeout = null;
-    let eqFiltros = { comarca:'', predio:'', sala:'', tipo:'', cap:'', tombo:'', status:'' };
-    let osFiltros = { id:'', comarca:'', status:'', periodo:'' };
+    let eqFiltros = { comarca:'', predio:'', sala:'', tipo:'', cap:'', tombo:'', contrato:'', status:'' };
+    let osFiltros = { id:'', comarca:'', status:'', contrato:'', periodo:'' };
 
     window.addEventListener('DOMContentLoaded', async () => {
         const user = await inicializarCore('fiscal');
@@ -115,11 +123,31 @@
         if (abaId === 'geralOS') carregarOSServer(box);
     }
 
+    async function carregarListaContratosFiscal() {
+        contratosDoFiscal = await (await apiFetch('/api/contratos')).json();
+        
+        // 1. Dropdown para Equipamento (1:N)
+        const htmlSelect = '<option value="">Selecione o Contrato...</option>' + 
+            contratosDoFiscal.map(c => `<option value="${c.id}">${esc(c.numero_contrato)} - ${esc(c.nome_empresa)}</option>`).join('');
+        const sEq = document.getElementById('formEqContrato');
+        if (sEq) sEq.innerHTML = htmlSelect;
+
+        // 2. Checkboxes para Usuário/Equipe (N:N)
+        const htmlChecks = contratosDoFiscal.map(c => `
+            <label class="check-item">
+                <input type="checkbox" name="chkContratoFiscalUser" value="${c.id}">
+                <span><strong>${esc(c.numero_contrato)}</strong> - ${esc(c.nome_empresa)}</span>
+            </label>
+        `).join('') || '<span style="font-size:12px;color:#64748b;">Nenhum contrato ativo.</span>';
+        const boxChk = document.getElementById('listaCheckContratosFiscal');
+        if (boxChk) boxChk.innerHTML = htmlChecks;
+    }
+
     // ====== USUÁRIOS / EQUIPE ======
     async function renderAdmUsers(box) {
-        box.innerHTML = `<div style="display:flex;justify-content:space-between;margin-bottom:15px;"><h3>Minha Equipe no Contrato</h3><button class="btn-success" onclick="abrirModalUser(null)">+ Novo Integrante</button></div><div id="tabelaUsers">Carregando...</div>`;
+        box.innerHTML = `<div style="display:flex;justify-content:space-between;margin-bottom:15px;"><h3>Minha Equipe nos Contratos</h3><button class="btn-success" onclick="abrirModalUser(null)">+ Novo Integrante</button></div><div id="tabelaUsers">Carregando...</div>`;
         usuariosCache = await (await apiFetch('/api/usuarios')).json();
-        let html = `<table><thead><tr><th>Nome</th><th>Login</th><th>Perfil</th><th>Status</th><th>Ações</th></tr></thead><tbody>`;
+        let html = `<table><thead><tr><th>Nome</th><th>Login</th><th>Perfil</th><th>Contratos Vinculados</th><th>Status</th><th>Ações</th></tr></thead><tbody>`;
         usuariosCache.forEach(u => {
             const inativo = u.ativo === 0 ? 'class="inativo"' : '';
             const status = u.ativo === 1 ? '<span style="color:var(--success);font-weight:bold;">Ativo</span>' : '<span style="color:var(--danger);font-weight:bold;">Inativo</span>';
@@ -129,40 +157,66 @@
                 let btnAtivar = u.ativo === 1 ? `<button class="btn-sm btn-danger" onclick="toggleAtivoUser(${u.id}, 0)">Inativar</button>` : `<button class="btn-sm btn-success" onclick="toggleAtivoUser(${u.id}, 1)">Ativar</button>`;
                 acoes = `<button class="btn-sm btn-secondary" onclick="abrirModalUser(${u.id})">Editar</button> ${btnAtivar}`;
             }
-            html += `<tr ${inativo}><td>${esc(u.nome)}</td><td>${esc(u.login)}</td><td><span class="badge">${esc(u.perfil)}</span></td><td>${status}</td><td style="white-space:nowrap;">${acoes}</td></tr>`;
+            html += `<tr ${inativo}><td>${esc(u.nome)}</td><td>${esc(u.login)}</td><td><span class="badge">${esc(u.perfil)}</span></td><td><strong>${esc(u.contrato_nome)||'-'}</strong></td><td>${status}</td><td style="white-space:nowrap;">${acoes}</td></tr>`;
         });
         document.getElementById('tabelaUsers').innerHTML = html + `</tbody></table>`;
     }
 
-    function abrirModalUser(id) {
+    async function abrirModalUser(id) {
         if (id === usuarioLogado.id) { alert("Você não pode editar o seu próprio perfil."); return; }
         document.getElementById('formUserId').value = ''; document.getElementById('formUserNome').value = ''; document.getElementById('formUserLogin').value = '';
+        await carregarListaContratosFiscal();
         document.getElementById('modalFormUser').classList.remove('hidden');
+
+        document.querySelectorAll('input[name="chkContratoFiscalUser"]').forEach(ck => ck.checked = false);
+
         if (id) {
             const u = usuariosCache.find(x => x.id === id);
+            document.getElementById('tituloModalUser').textContent = 'Editar Integrante';
             document.getElementById('formUserId').value = u.id; document.getElementById('formUserNome').value = u.nome; document.getElementById('formUserLogin').value = u.login; document.getElementById('formUserPerfil').value = u.perfil;
+            if (u.contratos_ids) {
+                const ids = String(u.contratos_ids).split(',').map(Number);
+                document.querySelectorAll('input[name="chkContratoFiscalUser"]').forEach(ck => {
+                    if (ids.includes(Number(ck.value))) ck.checked = true;
+                });
+            }
+        } else {
+            document.getElementById('tituloModalUser').textContent = 'Novo Integrante';
         }
     }
 
     async function salvarUsuario(e) {
         e.preventDefault(); const id = document.getElementById('formUserId').value;
-        const p = { nome: document.getElementById('formUserNome').value.trim().toUpperCase(), login: document.getElementById('formUserLogin').value.trim().toLowerCase(), perfil: document.getElementById('formUserPerfil').value, ativo: id ? usuariosCache.find(x => x.id == id).ativo : 1 };
+        const contratos_ids = Array.from(document.querySelectorAll('input[name="chkContratoFiscalUser"]:checked')).map(ck => parseInt(ck.value));
+
+        if (contratos_ids.length === 0) {
+            return alert("Selecione pelo menos um contrato para vincular ao integrante.");
+        }
+
+        const p = { 
+            nome: document.getElementById('formUserNome').value.trim().toUpperCase(), 
+            login: document.getElementById('formUserLogin').value.trim().toLowerCase(), 
+            perfil: document.getElementById('formUserPerfil').value, 
+            ativo: id ? usuariosCache.find(x => x.id == id).ativo : 1,
+            contratos_ids: contratos_ids
+        };
+
         const res = await apiFetch(id ? `/api/usuarios/${id}` : '/api/usuarios', { method: id ? 'PUT' : 'POST', body: JSON.stringify(p) });
-        if (res.ok) { alert(id ? "Atualizado!" : "Usuário criado!"); fecharModal('modalFormUser'); mudarAba('admUsers'); } else alert((await res.json()).erro);
+        if (res.ok) { alert(id ? "Atualizado!" : "Integrante criado!"); fecharModal('modalFormUser'); mudarAba('admUsers'); } else alert((await res.json()).erro);
     }
 
     async function toggleAtivoUser(id, s) { if (s === 0 && !confirm("Inativar usuário da equipe?")) return; const u = usuariosCache.find(x => x.id == id); u.ativo = s; await apiFetch(`/api/usuarios/${id}`, { method: 'PUT', body: JSON.stringify(u) }); mudarAba('admUsers'); }
 
     // ====== EQUIPAMENTOS ======
     async function carregarEquipamentosServer(box) {
-        box.innerHTML = `<div style="display:flex;justify-content:space-between;margin-bottom:15px;"><h3>Equipamentos do meu Contrato</h3><button class="btn-success" onclick="abrirModalEquip(null)">+ Inclusão de Equipamento</button></div><div style="overflow-x:auto;"><table><thead id="headFiltrosEq"></thead><tbody id="tabelaBoxEq"><tr><td colspan="8">Carregando...</td></tr></tbody></table></div><div id="totalEqs" style="font-size:12px;color:#64748b;margin-top:10px;"></div>`;
+        box.innerHTML = `<div style="display:flex;justify-content:space-between;margin-bottom:15px;"><h3>Equipamentos dos meus Contratos</h3><button class="btn-success" onclick="abrirModalEquip(null)">+ Inclusão de Equipamento</button></div><div style="overflow-x:auto;"><table><thead id="headFiltrosEq"></thead><tbody id="tabelaBoxEq"><tr><td colspan="9">Carregando...</td></tr></tbody></table></div><div id="totalEqs" style="font-size:12px;color:#64748b;margin-top:10px;"></div>`;
         equipamentosCache = await (await apiFetch('/api/equipamentos')).json();
         renderizarCabecalhoEq(); desenharTabelaEquipamentos();
     }
 
     function renderizarCabecalhoEq() {
         const iconSort = eqSortAsc ? ' ▴' : ' ▾'; const col = (n, c) => `<th onclick="setEqSort('${c}')">${n}${eqSortCol === c ? iconSort : ''}</th>`;
-        document.getElementById('headFiltrosEq').innerHTML = `<tr>${col('Comarca','comarca')}${col('Prédio','predio')}${col('Local','sala')}${col('Equipamento','tipo_equipamento')}${col('Cap','capacidade')}${col('Tombo','tombo')}${col('Status','status')}<th>Ações</th></tr>
+        document.getElementById('headFiltrosEq').innerHTML = `<tr>${col('Comarca','comarca')}${col('Prédio','predio')}${col('Local','sala')}${col('Equipamento','tipo_equipamento')}${col('Cap','capacidade')}${col('Tombo','tombo')}${col('Contrato','contrato_nome')}${col('Status','status')}<th>Ações</th></tr>
             <tr class="filter-row">
                 <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('comarca', this.value)" value="${eqFiltros.comarca}"></td>
                 <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('predio', this.value)" value="${eqFiltros.predio}"></td>
@@ -170,13 +224,14 @@
                 <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('tipo', this.value)" value="${eqFiltros.tipo}"></td>
                 <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('cap', this.value)" value="${eqFiltros.cap}"></td>
                 <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('tombo', this.value)" value="${eqFiltros.tombo}"></td>
+                <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('contrato', this.value)" value="${eqFiltros.contrato}"></td>
                 <td><input type="text" placeholder="ativo/inativo" oninput="debounceFiltroEq('status', this.value)" value="${eqFiltros.status}"></td>
                 <td><button class="btn-sm btn-secondary" onclick="limparFiltrosEq()" style="padding:6px;width:100%;">Limpar</button></td>
             </tr>`;
     }
 
     function debounceFiltroEq(c, v) { clearTimeout(eqDebounceTimeout); eqDebounceTimeout = setTimeout(() => { eqFiltros[c] = v.toLowerCase(); desenharTabelaEquipamentos(); }, 250); }
-    function limparFiltrosEq() { eqFiltros = { comarca:'', predio:'', sala:'', tipo:'', cap:'', tombo:'', status:'' }; renderizarCabecalhoEq(); desenharTabelaEquipamentos(); }
+    function limparFiltrosEq() { eqFiltros = { comarca:'', predio:'', sala:'', tipo:'', cap:'', tombo:'', contrato:'', status:'' }; renderizarCabecalhoEq(); desenharTabelaEquipamentos(); }
     function setEqSort(c) { if (eqSortCol === c) eqSortAsc = !eqSortAsc; else { eqSortCol = c; eqSortAsc = true; } renderizarCabecalhoEq(); desenharTabelaEquipamentos(); }
 
     function desenharTabelaEquipamentos() {
@@ -188,6 +243,7 @@
             if (eqFiltros.tipo && !(eq.tipo_equipamento||'').toLowerCase().includes(eqFiltros.tipo)) return false;
             if (eqFiltros.cap && !(eq.capacidade||'').toLowerCase().includes(eqFiltros.cap)) return false;
             if (eqFiltros.tombo && !(eq.tombo||'').toLowerCase().includes(eqFiltros.tombo)) return false;
+            if (eqFiltros.contrato && !(eq.contrato_nome||'').toLowerCase().includes(eqFiltros.contrato)) return false;
             if (eqFiltros.status && !(eq.ativo === 1 ? 'ativo' : 'inativo').includes(eqFiltros.status)) return false;
             return true;
         });
@@ -206,30 +262,53 @@
             acoes += `<button class="btn-sm btn-secondary" onclick="abrirModalEquip(${eq.id})">Editar</button> `;
             if (eq.ativo === 1) acoes += `<button class="btn-sm btn-danger" onclick="toggleAtivoEq(${eq.id}, 0)">Inativar</button>`;
             else acoes += `<button class="btn-sm" style="background:#10b981;" onclick="toggleAtivoEq(${eq.id}, 1)">Ativar</button>`;
-            html += `<tr class="${rowClass}"><td>${esc(eq.comarca)}</td><td>${esc(eq.predio)}</td><td>${esc(eq.sala)}</td><td>${esc(eq.tipo_equipamento)}</td><td>${esc(eq.capacidade||'-')}</td><td>${eq.tombo === 'S/T' ? '<span class="badge" style="background:#e2e8f0;color:#64748b;">S/T</span>' : esc(eq.tombo)}</td><td>${statusLabel}</td><td style="white-space:nowrap;">${acoes}</td></tr>`;
+            html += `<tr class="${rowClass}"><td>${esc(eq.comarca)}</td><td>${esc(eq.predio)}</td><td>${esc(eq.sala)}</td><td>${esc(eq.tipo_equipamento)}</td><td>${esc(eq.capacidade||'-')}</td><td>${eq.tombo === 'S/T' ? '<span class="badge" style="background:#e2e8f0;color:#64748b;">S/T</span>' : esc(eq.tombo)}</td><td><strong>${esc(eq.contrato_nome)||'-'}</strong></td><td>${statusLabel}</td><td style="white-space:nowrap;">${acoes}</td></tr>`;
         });
         tbody.innerHTML = html; document.getElementById('totalEqs').textContent = `Total listado: ${filtrados.length} equipamento(s).`;
     }
 
     async function abrirModalEquip(id) {
         document.getElementById('formEqId').value = ''; document.getElementById('formEqPredio').value = ''; document.getElementById('formEqSala').value = ''; document.getElementById('formEqMarca').value = ''; document.getElementById('formEqTombo').value = '';
+        await carregarListaContratosFiscal();
         document.getElementById('modalFormEquip').classList.remove('hidden');
         if (id) {
             const eq = equipamentosCache.find(e => e.id === id);
+            document.getElementById('tituloModalEquip').textContent = 'Editar Equipamento';
             document.getElementById('formEqId').value = eq.id; document.getElementById('formEqComarca').value = eq.comarca; document.getElementById('formEqPredio').value = eq.predio; document.getElementById('formEqSala').value = eq.sala; document.getElementById('formEqTipo').value = eq.tipo_equipamento; document.getElementById('formEqCap').value = eq.capacidade || ''; document.getElementById('formEqMarca').value = eq.marca || ''; document.getElementById('formEqTombo').value = eq.tombo === 'S/T' ? '' : eq.tombo;
+            document.getElementById('formEqContrato').value = eq.contrato_id || '';
+        } else {
+            document.getElementById('tituloModalEquip').textContent = 'Inclusão de Equipamento no Contrato';
         }
     }
 
     async function salvarEquipamento(e) {
         e.preventDefault(); const id = document.getElementById('formEqId').value;
-        const payload = { comarca: document.getElementById('formEqComarca').value.trim().toUpperCase(), predio: document.getElementById('formEqPredio').value.trim().toUpperCase(), sala: document.getElementById('formEqSala').value.trim().toUpperCase(), tipo_equipamento: document.getElementById('formEqTipo').value.trim().toUpperCase(), capacidade: document.getElementById('formEqCap').value.trim().toUpperCase(), marca: document.getElementById('formEqMarca').value.trim().toUpperCase(), tombo: document.getElementById('formEqTombo').value.trim().toUpperCase() || 'S/T', ativo: id ? equipamentosCache.find(e => e.id == id).ativo : 1 };
-        await apiFetch(id ? `/api/equipamentos/${id}` : '/api/equipamentos', { method: id ? 'PUT' : 'POST', body: JSON.stringify(payload) });
-        fecharModal('modalFormEquip'); mudarAba('geralEqs');
+        const cid = document.getElementById('formEqContrato').value;
+        if (!cid) return alert("Selecione a qual contrato este equipamento pertence.");
+
+        const payload = { 
+            comarca: document.getElementById('formEqComarca').value.trim().toUpperCase(), 
+            predio: document.getElementById('formEqPredio').value.trim().toUpperCase(), 
+            sala: document.getElementById('formEqSala').value.trim().toUpperCase(), 
+            tipo_equipamento: document.getElementById('formEqTipo').value.trim().toUpperCase(), 
+            capacidade: document.getElementById('formEqCap').value.trim().toUpperCase(), 
+            marca: document.getElementById('formEqMarca').value.trim().toUpperCase(), 
+            tombo: document.getElementById('formEqTombo').value.trim().toUpperCase() || 'S/T', 
+            contrato_id: parseInt(cid),
+            ativo: id ? equipamentosCache.find(e => e.id == id).ativo : 1 
+        };
+
+        const res = await apiFetch(id ? `/api/equipamentos/${id}` : '/api/equipamentos', { method: id ? 'PUT' : 'POST', body: JSON.stringify(payload) });
+        if (res.ok) {
+            fecharModal('modalFormEquip'); mudarAba('geralEqs');
+        } else {
+            alert((await res.json()).erro || "Erro ao salvar equipamento.");
+        }
     }
 
     async function toggleAtivoEq(id, s) { const eq = equipamentosCache.find(e => e.id == id); eq.ativo = s; await apiFetch(`/api/equipamentos/${id}`, { method: 'PUT', body: JSON.stringify(eq) }); mudarAba('geralEqs'); }
 
-    // ====== ORDENS DE SERVIÇO COM MÉTRICAS E PERÍODO ======
+    // ====== ORDENS DE SERVIÇO COM MÉTRICAS E FILTROS ======
     async function carregarOSServer(box) {
         box.innerHTML = `
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;flex-wrap:wrap;gap:10px;">
@@ -241,7 +320,7 @@
                 </div>
             </div>
 
-            <!-- CARDS DE MÉTRICAS (TOTALIZADORES) -->
+            <!-- CARDS DE MÉTRICAS -->
             <div class="dash-grid" id="boxMetricasFiscal">
                 <div class="dash-card"><div style="color:#64748b;font-size:11px;">Total O.S.</div><div class="dash-value" id="cardMetricaTotal" style="color:var(--primary-dark);">0</div></div>
                 <div class="dash-card"><div style="color:#64748b;font-size:11px;">Aguardando Início</div><div class="dash-value" id="cardMetricaAprovadas" style="color:var(--info);">0</div></div>
@@ -254,16 +333,17 @@
             <div style="overflow-x:auto;">
                 <table>
                     <thead id="headFiltrosOS">
-                        <tr><th>ID / Data</th><th>Local</th><th>Equipamento / Defeito</th><th>Status</th><th>Ações</th></tr>
+                        <tr><th>ID / Data</th><th>Local</th><th>Equipamento / Defeito</th><th>Contrato</th><th>Status</th><th>Ações</th></tr>
                         <tr class="filter-row">
                             <td><input type="text" placeholder="Buscar ID..." oninput="setOsFiltro('id', this.value)"></td>
                             <td><input type="text" placeholder="Buscar Comarca..." oninput="setOsFiltro('comarca', this.value)"></td>
                             <td></td>
+                            <td><input type="text" placeholder="Buscar Contrato..." oninput="setOsFiltro('contrato', this.value)"></td>
                             <td><input type="text" placeholder="Buscar Status..." oninput="setOsFiltro('status', this.value)"></td>
                             <td><button class="btn-sm btn-secondary" onclick="limparFiltrosOS()" style="padding:6px;width:100%;">Limpar</button></td>
                         </tr>
                     </thead>
-                    <tbody id="tabelaBoxOS"><tr><td colspan="5">Carregando...</td></tr></tbody>
+                    <tbody id="tabelaBoxOS"><tr><td colspan="6">Carregando...</td></tr></tbody>
                 </table>
             </div>`;
 
@@ -286,7 +366,7 @@
     }
 
     function setOsPeriodo(val) { osFiltros.periodo = val; desenharTabelaOS(); }
-    function limparFiltrosOS() { osFiltros = { id:'', comarca:'', status:'', periodo:'' }; document.querySelectorAll('#headFiltrosOS input').forEach(i=>i.value=''); const sP = document.getElementById('selOsPeriodo'); if(sP) sP.value=''; desenharTabelaOS(); }
+    function limparFiltrosOS() { osFiltros = { id:'', comarca:'', status:'', contrato:'', periodo:'' }; document.querySelectorAll('#headFiltrosOS input').forEach(i=>i.value=''); const sP = document.getElementById('selOsPeriodo'); if(sP) sP.value=''; desenharTabelaOS(); }
     function setOsFiltro(c, v) { osFiltros[c] = v.toLowerCase(); desenharTabelaOS(); }
     
     function desenharTabelaOS() {
@@ -294,6 +374,7 @@
         let filtrados = osCache.filter(os => {
             if (osFiltros.id && !os.id.toString().includes(osFiltros.id)) return false;
             if (osFiltros.comarca && !(os.comarca||'').toLowerCase().includes(osFiltros.comarca)) return false;
+            if (osFiltros.contrato && !(os.contrato_nome||'').toLowerCase().includes(osFiltros.contrato)) return false;
             if (osFiltros.status && !(os.status||'').toLowerCase().includes(osFiltros.status)) return false;
             if (osFiltros.periodo) {
                 const d = new Date(os.data_abertura);
@@ -303,7 +384,6 @@
             return true;
         });
 
-        // Atualizar Métricas dos filtrados
         let total = filtrados.length, aprov = 0, exec = 0, peca = 0, analise = 0, conc = 0;
         filtrados.forEach(os => {
             if (os.status === 'aprovada' || os.status === 'aberta') aprov++;
@@ -343,15 +423,16 @@
             html += `<tr class="${rowClasse}">
                 <td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td>
                 <td><strong>${esc(os.comarca)}</strong><br><small>${esc(os.predio)} (${esc(os.sala)})</small></td>
-                <td style="max-width:250px;"><strong>${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')}</strong><br><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td>
+                <td style="max-width:240px;"><strong>${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')}</strong><br><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td>
+                <td><strong>${esc(os.contrato_nome || '-')}</strong></td>
                 <td><span class="badge" style="background:${cor};color:white;">${labelStatus}</span></td>
                 <td><button class="btn-sm ${os.status === 'em_analise' ? 'btn-warning' : 'btn-secondary'}" onclick="abrirDetalhesOS(${os.id})">${textoBotaoTratar}</button> <button class="btn-sm btn-info" onclick="imprimirOSPdf(${os.id})">🖨️ PDF</button> ${btnAnexo}</td>
             </tr>`;
         });
-        tbody.innerHTML = html || '<tr><td colspan="5" style="text-align:center;padding:15px;color:#64748b;">Nenhuma O.S. encontrada para o filtro.</td></tr>';
+        tbody.innerHTML = html || '<tr><td colspan="6" style="text-align:center;padding:15px;color:#64748b;">Nenhuma O.S. encontrada para o filtro.</td></tr>';
     }
 
-    // ====== ABERTURA DE O.S. PELO FISCAL ======
+    // ====== ABERTURA DE O.S. ======
     async function abrirNovaOSAvulsa() {
         document.getElementById('buscaTombo').value = ''; document.getElementById('osDescricaoAvulsa').value = '';
         document.getElementById('boxBuscaAvulsa').classList.remove('hidden'); document.getElementById('boxEqSelecionadoFixo').classList.add('hidden');
@@ -379,7 +460,7 @@
         if (!eqId) return alert("Selecione um equipamento."); 
         const res = await apiFetch('/api/os', { method: 'POST', body: JSON.stringify({ equipamento_id: eqId, descricao_falha: document.getElementById('osDescricaoAvulsa').value.trim().toUpperCase() }) }); 
         if (res.ok) {
-            alert("O.S. Aberta e Aprovada com sucesso! Já está visível no painel da contratada.");
+            alert("O.S. Aberta e Aprovada com sucesso! Já está visível no painel da contratada correspondente.");
             fecharModal('modalNovaOSAvulsa'); 
             mudarAba('geralOS'); 
         } else {
@@ -404,7 +485,7 @@
         } catch (err) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:red;">Erro ao buscar dados.</td></tr>'; }
     }
 
-    // ====== TRATAMENTO E VALIDAÇÃO FISCAL (ITEM 3) ======
+    // ====== TRATAMENTO E VALIDAÇÃO FISCAL ======
     async function abrirDetalhesOS(os_id) {
         document.getElementById('modalTratarOS').classList.remove('hidden');
         document.getElementById('boxTimeline').innerHTML = "Carregando...";
@@ -419,6 +500,7 @@
             document.getElementById('detalheOsBadge').textContent = (os.status === 'em_analise' ? 'AGUARDANDO VALIDAÇÃO' : os.status.replace('_', ' ')).toUpperCase();
             document.getElementById('detalheOsEquip').textContent = `${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')} (Tombo: ${esc(os.tombo)})`;
             document.getElementById('detalheOsLocal').textContent = `${esc(os.comarca)} - ${esc(os.predio)} / ${esc(os.sala)}`;
+            document.getElementById('detalheOsContrato').textContent = esc(os.contrato_nome || '-');
             document.getElementById('detalheOsExecutante').textContent = os.nome_executante ? esc(os.nome_executante) : 'NÃO DESIGNADO';
             document.getElementById('detalheOsDefeito').textContent = esc(os.descricao_falha);
 
@@ -444,7 +526,6 @@
             if (os.status === 'concluida' || os.status === 'cancelada') {
                 boxAcao.classList.add('hidden');
             } else if (os.status === 'em_analise') {
-                // FLUXO PRINCIPAL: O.S. Aguardando Validação
                 boxAcao.classList.remove('hidden');
                 titAcao.textContent = "⚖️ Validação do Serviço Realizado";
                 selStatus.innerHTML = `
@@ -462,7 +543,6 @@
                 `;
                 ajustarExigenciaObs();
             } else {
-                // Em execução ou aguardando peça
                 boxAcao.classList.remove('hidden');
                 titAcao.textContent = "Acompanhamento Fiscal";
                 selStatus.innerHTML = `

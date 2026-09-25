@@ -54,6 +54,9 @@
         .timeline-date { font-size: 11px; color: #64748b; font-weight: bold; }
         .timeline-user { color: var(--primary-dark); font-weight: bold; margin-bottom: 4px; }
         .timeline-text { background: #f8fafc; padding: 8px; border-radius: 6px; border: 1px solid var(--border); margin-top: 4px; }
+        .box-check-contratos { max-height: 150px; overflow-y: auto; border: 1px solid var(--border); padding: 8px 12px; border-radius: 6px; background: #fff; margin-bottom: 15px; }
+        .check-item { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-size: 13px; cursor: pointer; }
+        .check-item input[type="checkbox"] { width: 16px; height: 16px; margin: 0; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -87,16 +90,18 @@
     <!-- MODAIS DO ADMIN -->
     <div id="modalFormContrato" class="modal-overlay hidden"><div class="modal-box" style="max-width: 500px;"><h3 id="tituloModalContrato">Novo Contrato</h3><form onsubmit="salvarContrato(event)"><input type="hidden" id="formContratoId"><label>Nº do Contrato:</label><input type="text" id="formContratoNum" required placeholder="Ex: 015/2024"><label>Nome da Empresa:</label><input type="text" id="formContratoEmpresa" required><label>CNPJ:</label><input type="text" id="formContratoCnpj"><div style="display:flex;gap:10px;margin-top:15px;"><button type="submit" class="btn-success btn-block">Salvar</button><button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalFormContrato')">Cancelar</button></div></form></div></div>
     
-    <div id="modalFormEquip" class="modal-overlay hidden"><div class="modal-box" style="max-width: 700px;"><h3 id="tituloModalEquip">Novo Equipamento</h3><form onsubmit="salvarEquipamento(event)"><input type="hidden" id="formEqId"><div class="row"><div class="col"><label>Comarca:</label><select id="formEqComarca" required></select></div><div class="col"><label>Prédio:</label><input type="text" id="formEqPredio" required></div><div class="col"><label>Sala (Local):</label><input type="text" id="formEqSala" required></div></div><div class="row"><div class="col"><label>Tipo:</label><select id="formEqTipo" required><option value="">Selecione...</option><option value="HI WALL">HI WALL</option><option value="PISO TETO">PISO TETO</option><option value="CASSETE">CASSETE</option><option value="JANELEIRO">JANELEIRO</option><option value="MULTI SPLIT">MULTI SPLIT</option><option value="SELF">SELF</option><option value="CORTINA DE AR">CORTINA DE AR</option><option value="SPLITÃO">SPLITÃO</option><option value="OUTRO">OUTRO</option></select></div><div class="col"><label>Capacidade:</label><select id="formEqCap"><option value="">Selecione...</option><option value="7000 BTUS">7000 BTUS</option><option value="9000 BTUS">9000 BTUS</option><option value="10000 BTUS">10000 BTUS</option><option value="12000 BTUS">12000 BTUS</option><option value="18000 BTUS">18000 BTUS</option><option value="21000 BTUS">21000 BTUS</option><option value="22000 BTUS">22000 BTUS</option><option value="24000 BTUS">24000 BTUS</option><option value="30000 BTUS">30000 BTUS</option><option value="36000 BTUS">36000 BTUS</option><option value="48000 BTUS">48000 BTUS</option><option value="60000 BTUS">60000 BTUS</option><option value="3 TR">3 TR</option><option value="5 TR">5 TR</option><option value="7.5 TR">7.5 TR</option><option value="10 TR">10 TR</option><option value="15 TR">15 TR</option></select></div></div><div class="row"><div class="col"><label>Marca:</label><input type="text" id="formEqMarca"></div><div class="col"><label>Tombo:</label><input type="text" id="formEqTombo"></div></div><div><label>Vincular a um Contrato:</label><select id="formEqContrato"></select></div><div style="display:flex;gap:10px;margin-top:15px;"><button type="submit" class="btn-success btn-block">Salvar</button><button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalFormEquip')">Cancelar</button></div></form></div></div>
+    <!-- MODAL EQUIPAMENTO (1:N - UM CONTRATO ESPECÍFICO) -->
+    <div id="modalFormEquip" class="modal-overlay hidden"><div class="modal-box" style="max-width: 700px;"><h3 id="tituloModalEquip">Novo Equipamento</h3><form onsubmit="salvarEquipamento(event)"><input type="hidden" id="formEqId"><div class="row"><div class="col"><label>Comarca:</label><select id="formEqComarca" required></select></div><div class="col"><label>Prédio:</label><input type="text" id="formEqPredio" required></div><div class="col"><label>Sala (Local):</label><input type="text" id="formEqSala" required></div></div><div class="row"><div class="col"><label>Tipo:</label><select id="formEqTipo" required><option value="">Selecione...</option><option value="HI WALL">HI WALL</option><option value="PISO TETO">PISO TETO</option><option value="CASSETE">CASSETE</option><option value="JANELEIRO">JANELEIRO</option><option value="MULTI SPLIT">MULTI SPLIT</option><option value="SELF">SELF</option><option value="CORTINA DE AR">CORTINA DE AR</option><option value="SPLITÃO">SPLITÃO</option><option value="OUTRO">OUTRO</option></select></div><div class="col"><label>Capacidade:</label><select id="formEqCap"><option value="">Selecione...</option><option value="7000 BTUS">7000 BTUS</option><option value="9000 BTUS">9000 BTUS</option><option value="10000 BTUS">10000 BTUS</option><option value="12000 BTUS">12000 BTUS</option><option value="18000 BTUS">18000 BTUS</option><option value="21000 BTUS">21000 BTUS</option><option value="22000 BTUS">22000 BTUS</option><option value="24000 BTUS">24000 BTUS</option><option value="30000 BTUS">30000 BTUS</option><option value="36000 BTUS">36000 BTUS</option><option value="48000 BTUS">48000 BTUS</option><option value="60000 BTUS">60000 BTUS</option><option value="3 TR">3 TR</option><option value="5 TR">5 TR</option><option value="7.5 TR">7.5 TR</option><option value="10 TR">10 TR</option><option value="15 TR">15 TR</option></select></div></div><div class="row"><div class="col"><label>Marca:</label><input type="text" id="formEqMarca"></div><div class="col"><label>Tombo:</label><input type="text" id="formEqTombo"></div></div><div><label>Vincular ao Contrato Cobertor:</label><select id="formEqContrato" required></select></div><div style="display:flex;gap:10px;margin-top:15px;"><button type="submit" class="btn-success btn-block">Salvar</button><button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalFormEquip')">Cancelar</button></div></form></div></div>
     
-    <div id="modalFormUser" class="modal-overlay hidden"><div class="modal-box" style="max-width: 400px;"><h3 id="tituloModalUser">Novo Usuário</h3><form onsubmit="salvarUsuario(event)"><input type="hidden" id="formUserId"><label>Nome Completo:</label><input type="text" id="formUserNome" required><label>Login:</label><input type="text" id="formUserLogin" required><label>Perfil:</label><select id="formUserPerfil" required onchange="verificarExibicaoContratoUser()"><option value="solicitante">Solicitante</option><option value="fiscal">Fiscal</option><option value="executante">Executante</option><option value="contratada">Contratada</option><option value="administrador">Administrador</option></select><div id="boxUserContrato" class="hidden"><label>Vincular ao Contrato:</label><select id="formUserContrato"></select></div><div style="display:flex;gap:10px;margin-top:15px;"><button type="submit" class="btn-success btn-block">Salvar</button><button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalFormUser')">Cancelar</button></div></form></div></div>
+    <!-- MODAL USUÁRIO (N:N - MÚLTIPLOS CONTRATOS POSSÍVEIS) -->
+    <div id="modalFormUser" class="modal-overlay hidden"><div class="modal-box" style="max-width: 480px;"><h3 id="tituloModalUser">Novo Usuário</h3><form onsubmit="salvarUsuario(event)"><input type="hidden" id="formUserId"><label>Nome Completo:</label><input type="text" id="formUserNome" required><label>Login:</label><input type="text" id="formUserLogin" required><label>Perfil:</label><select id="formUserPerfil" required onchange="verificarExibicaoContratoUser()"><option value="solicitante">Solicitante</option><option value="fiscal">Fiscal</option><option value="executante">Executante</option><option value="contratada">Contratada</option><option value="administrador">Administrador</option></select><div id="boxUserContrato" class="hidden"><label>Vincular a Contratos (Selecione um ou mais):</label><div class="box-check-contratos" id="listaCheckContratosUser"></div></div><div style="display:flex;gap:10px;margin-top:15px;"><button type="submit" class="btn-success btn-block">Salvar</button><button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalFormUser')">Cancelar</button></div></form></div></div>
     
     <div id="modalNovaOSAvulsa" class="modal-overlay hidden"><div class="modal-box" style="max-width: 600px;"><h3>Abrir Nova Ordem de Serviço</h3><div id="boxBuscaAvulsa" style="background:#f1f5f9;padding:15px;border-radius:6px;margin-bottom:15px;border:1px solid var(--border);"><label style="color:var(--primary-dark);">Busca por Tombo:</label><div style="display:flex;gap:10px;margin-bottom:15px;"><input type="text" id="buscaTombo" placeholder="Digite o tombo..." style="margin-bottom:0;"><button type="button" class="btn-primary" onclick="buscarEquipamentoPorTombo()">Buscar</button></div><hr style="border:0;border-top:1px dashed #cbd5e1;margin-bottom:15px;"><div class="row"><div class="col"><label>Comarca:</label><select id="selAvulsoComarca" onchange="popularAvulsoPredios()"></select></div><div class="col"><label>Prédio:</label><select id="selAvulsoPredio" onchange="popularAvulsoSalas()"></select></div></div><div class="row"><div class="col"><label>Sala:</label><select id="selAvulsoSala" onchange="popularAvulsoEqs()"></select></div><div class="col"><label>Equipamento:</label><select id="selAvulsoEq" required></select></div></div></div><div id="boxEqSelecionadoFixo" class="hidden" style="background:#e0f2fe;padding:15px;border-radius:6px;margin-bottom:15px;border:1px solid #7dd3fc;"><strong id="lblEqFixoNome" style="color:var(--primary-dark);font-size:15px;"></strong><br><span id="lblEqFixoLocal" style="color:#475569;font-size:13px;"></span></div><form onsubmit="enviarOSAvulsa(event)"><label>Relato do Defeito:</label><textarea id="osDescricaoAvulsa" rows="3" required placeholder="Descreva o problema..."></textarea><div style="display:flex;gap:10px;margin-top:10px;"><button type="submit" class="btn-success btn-block">Registrar O.S.</button><button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalNovaOSAvulsa')">Cancelar</button></div></form></div></div>
     
     <div id="modalHistoricoEqOS" class="modal-overlay hidden"><div class="modal-box" style="max-width: 700px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;"><h3 style="margin:0;">Histórico do Equipamento</h3><button class="btn-danger btn-sm" onclick="fecharModal('modalHistoricoEqOS')">X</button></div><div style="overflow-x:auto;"><table style="margin-top:0;"><thead><tr><th>O.S. / Data</th><th>Defeito</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tabelaHistoricoEqOS"></tbody></table></div></div></div>
 
     <!-- MODAL TRATAR / VALIDAR O.S. -->
-    <div id="modalTratarOS" class="modal-overlay hidden"><div class="modal-box"><div style="display:flex;justify-content:space-between;align-items:center;"><div><h3 style="margin:0;">Detalhes da O.S. <span id="detalheOsId"></span></h3><span id="detalheOsBadge" class="badge"></span></div><button class="btn-info btn-sm" id="btnImprimirModal" style="padding:8px 12px;">🖨️ PDF</button></div><div style="background:#f8fafc;border:1px solid var(--border);padding:10px;border-radius:6px;margin-top:15px;font-size:13px;"><strong>Equipamento:</strong> <span id="detalheOsEquip"></span><br><strong>Local:</strong> <span id="detalheOsLocal"></span><br><strong>Técnico Designado:</strong> <span id="detalheOsExecutante" style="color:var(--primary-dark);font-weight:bold;"></span><br><strong>Defeito Inicial:</strong> <span id="detalheOsDefeito" style="color:var(--danger);"></span><div id="boxLinkAnexo" class="hidden" style="margin-top:10px;"></div></div><div id="boxAcaoOS" style="margin-top:20px;padding-top:15px;border-top:1px solid var(--border);"><h4>Atualizar / Tramitar Chamado</h4><form onsubmit="salvarTratamentoOS(event)"><input type="hidden" id="tratarOsId"><label>Novo Status:</label><select id="tratarOsStatus" required><option value="aprovada">Aprovada (Autorizar Início)</option><option value="em_execucao">Em Execução (Devolver p/ Contratada)</option><option value="em_analise">Em Análise (Aguardando Validação Fiscal)</option><option value="aguardando_peca">Aguardando Peça</option><option value="concluida">Concluída (Homologado)</option><option value="cancelada">Cancelada (Improcedente / Erro)</option></select><label>Relatório Técnico / Observação:</label><textarea id="tratarOsObs" rows="3" placeholder="O que foi feito ou parecer..."></textarea><button type="submit" class="btn-success btn-block">Gravar Atualização</button></form></div><h4 style="margin-top:25px;">Histórico da O.S.</h4><div id="boxTimeline" class="timeline"></div><button class="btn-secondary btn-block" style="margin-top:20px;" onclick="fecharModal('modalTratarOS')">Fechar Detalhes</button></div></div>
+    <div id="modalTratarOS" class="modal-overlay hidden"><div class="modal-box"><div style="display:flex;justify-content:space-between;align-items:center;"><div><h3 style="margin:0;">Detalhes da O.S. <span id="detalheOsId"></span></h3><span id="detalheOsBadge" class="badge"></span></div><button class="btn-info btn-sm" id="btnImprimirModal" style="padding:8px 12px;">🖨️ PDF</button></div><div style="background:#f8fafc;border:1px solid var(--border);padding:10px;border-radius:6px;margin-top:15px;font-size:13px;"><strong>Equipamento:</strong> <span id="detalheOsEquip"></span><br><strong>Local:</strong> <span id="detalheOsLocal"></span><br><strong>Contrato:</strong> <span id="detalheOsContrato" style="font-weight:bold;color:var(--primary-dark);"></span><br><strong>Técnico Designado:</strong> <span id="detalheOsExecutante" style="color:var(--primary-dark);font-weight:bold;"></span><br><strong>Defeito Inicial:</strong> <span id="detalheOsDefeito" style="color:var(--danger);"></span><div id="boxLinkAnexo" class="hidden" style="margin-top:10px;"></div></div><div id="boxAcaoOS" style="margin-top:20px;padding-top:15px;border-top:1px solid var(--border);"><h4>Atualizar / Tramitar Chamado</h4><form onsubmit="salvarTratamentoOS(event)"><input type="hidden" id="tratarOsId"><label>Novo Status:</label><select id="tratarOsStatus" required><option value="aprovada">Aprovada (Autorizar Início)</option><option value="em_execucao">Em Execução (Devolver p/ Contratada)</option><option value="em_analise">Em Análise (Aguardando Validação Fiscal)</option><option value="aguardando_peca">Aguardando Peça</option><option value="concluida">Concluída (Homologado)</option><option value="cancelada">Cancelada (Improcedente / Erro)</option></select><label>Relatório Técnico / Observação:</label><textarea id="tratarOsObs" rows="3" placeholder="O que foi feito ou parecer..."></textarea><button type="submit" class="btn-success btn-block">Gravar Atualização</button></form></div><h4 style="margin-top:25px;">Histórico da O.S.</h4><div id="boxTimeline" class="timeline"></div><button class="btn-secondary btn-block" style="margin-top:20px;" onclick="fecharModal('modalTratarOS')">Fechar Detalhes</button></div></div>
 
 <script src="shared.js"></script>
 <script>
@@ -129,9 +134,20 @@
 
     async function carregarListaContratosAtivos() {
         contratosCache = await (await apiFetch('/api/contratos')).json();
-        const html = '<option value="">Nenhum Contrato (Avulso)</option>' + contratosCache.filter(c => c.ativo === 1).map(c => `<option value="${c.id}">${esc(c.numero_contrato)}</option>`).join('');
-        document.getElementById('formEqContrato').innerHTML = html;
-        document.getElementById('formUserContrato').innerHTML = html;
+        
+        // 1. Dropdown para Equipamento (1:N)
+        const htmlSelect = '<option value="">Selecione o Contrato...</option>' + 
+            contratosCache.filter(c => c.ativo === 1).map(c => `<option value="${c.id}">${esc(c.numero_contrato)} - ${esc(c.nome_empresa)}</option>`).join('');
+        document.getElementById('formEqContrato').innerHTML = htmlSelect;
+
+        // 2. Checkboxes para Usuário (N:N)
+        const htmlChecks = contratosCache.filter(c => c.ativo === 1).map(c => `
+            <label class="check-item">
+                <input type="checkbox" name="chkContratoUser" value="${c.id}">
+                <span><strong>${esc(c.numero_contrato)}</strong> - ${esc(c.nome_empresa)}</span>
+            </label>
+        `).join('') || '<span style="font-size:12px;color:#64748b;">Nenhum contrato ativo.</span>';
+        document.getElementById('listaCheckContratosUser').innerHTML = htmlChecks;
     }
 
     // DASHBOARD GERAL
@@ -188,11 +204,11 @@
     }
     async function toggleAtivoContrato(id, status) { const c = contratosCache.find(x => x.id == id); c.ativo = status; await apiFetch(`/api/contratos/${id}`, { method: 'PUT', body: JSON.stringify(c) }); mudarAba('admContratos'); }
 
-    // EQUIPE
+    // EQUIPE / USUÁRIOS (N:N)
     async function renderAdmUsers(box) {
         box.innerHTML = `<div style="display:flex;justify-content:space-between;margin-bottom:15px;"><h3>Equipe de Usuários</h3><button class="btn-success" onclick="abrirModalUser(null)">+ Novo Usuário</button></div><div id="tabelaUsers">Carregando...</div>`;
         usuariosCache = await (await apiFetch('/api/usuarios')).json();
-        let html = `<table><thead><tr><th>Nome</th><th>Login</th><th>Perfil</th><th>Contrato</th><th>Status</th><th>Ações</th></tr></thead><tbody>`;
+        let html = `<table><thead><tr><th>Nome</th><th>Login</th><th>Perfil</th><th>Contratos Vinculados</th><th>Status</th><th>Ações</th></tr></thead><tbody>`;
         usuariosCache.forEach(u => {
             const inativo = u.ativo === 0 ? 'class="inativo"' : '';
             const status = u.ativo === 1 ? '<span style="color:var(--success);font-weight:bold;">Ativo</span>' : '<span style="color:var(--danger);font-weight:bold;">Inativo</span>';
@@ -212,11 +228,22 @@
         document.getElementById('formUserId').value = ''; document.getElementById('formUserNome').value = ''; document.getElementById('formUserLogin').value = '';
         await carregarListaContratosAtivos();
         document.getElementById('modalFormUser').classList.remove('hidden');
+
+        // Limpar todas as caixas de seleção
+        document.querySelectorAll('input[name="chkContratoUser"]').forEach(ck => ck.checked = false);
+
         if (id) {
             const u = usuariosCache.find(x => x.id === id);
             document.getElementById('tituloModalUser').textContent = 'Editar Usuário';
             document.getElementById('formUserId').value = u.id; document.getElementById('formUserNome').value = u.nome; document.getElementById('formUserLogin').value = u.login; document.getElementById('formUserPerfil').value = u.perfil;
-            document.getElementById('formUserContrato').value = u.contrato_id || '';
+            
+            // Marcar checkboxes correspondentes aos contratos do usuário
+            if (u.contratos_ids) {
+                const idsArray = String(u.contratos_ids).split(',').map(Number);
+                document.querySelectorAll('input[name="chkContratoUser"]').forEach(ck => {
+                    if (idsArray.includes(Number(ck.value))) ck.checked = true;
+                });
+            }
             verificarExibicaoContratoUser();
         } else {
             document.getElementById('tituloModalUser').textContent = 'Novo Usuário';
@@ -230,15 +257,29 @@
     }
     async function salvarUsuario(e) {
         e.preventDefault(); const id = document.getElementById('formUserId').value;
-        const p = { nome: document.getElementById('formUserNome').value.trim().toUpperCase(), login: document.getElementById('formUserLogin').value.trim().toLowerCase(), perfil: document.getElementById('formUserPerfil').value, ativo: id ? usuariosCache.find(x => x.id == id).ativo : 1 };
-        if (['fiscal','executante','contratada'].includes(p.perfil)) p.contrato_id = document.getElementById('formUserContrato').value || null;
+        const perfil = document.getElementById('formUserPerfil').value;
+        
+        const contratos_ids = Array.from(document.querySelectorAll('input[name="chkContratoUser"]:checked')).map(ck => parseInt(ck.value));
+
+        if (['fiscal','contratada','executante'].includes(perfil) && contratos_ids.length === 0) {
+            return alert("Selecione pelo menos um contrato para este usuário.");
+        }
+
+        const p = { 
+            nome: document.getElementById('formUserNome').value.trim().toUpperCase(), 
+            login: document.getElementById('formUserLogin').value.trim().toLowerCase(), 
+            perfil: perfil, 
+            ativo: id ? usuariosCache.find(x => x.id == id).ativo : 1,
+            contratos_ids: contratos_ids
+        };
+
         const res = await apiFetch(id ? `/api/usuarios/${id}` : '/api/usuarios', { method: id ? 'PUT' : 'POST', body: JSON.stringify(p) });
         if (res.ok) { alert(id ? "Atualizado!" : "Usuário criado!"); fecharModal('modalFormUser'); mudarAba('admUsers'); } else alert((await res.json()).erro);
     }
     async function toggleAtivoUser(id, status) { if (status === 0 && !confirm("Inativar usuário?")) return; const u = usuariosCache.find(x => x.id == id); u.ativo = status; await apiFetch(`/api/usuarios/${id}`, { method: 'PUT', body: JSON.stringify(u) }); mudarAba('admUsers'); }
     async function resetarSenhaUser(id, nome) { if (!confirm(`Resetar senha de ${nome}?`)) return; const res = await apiFetch(`/api/usuarios/${id}/resetar-senha`, { method: 'POST' }); alert((await res.json()).mensagem); }
 
-    // EQUIPAMENTOS
+    // EQUIPAMENTOS (1:N)
     async function carregarEquipamentosServer(box) {
         box.innerHTML = `<div style="display:flex;justify-content:space-between;margin-bottom:15px;"><h3>Base de Equipamentos</h3><div><button class="btn-secondary" onclick="exportarCSV('equipamentos')" style="margin-right:10px;">⬇ Exportar CSV</button><button class="btn-success" onclick="abrirModalEquip(null)">+ Novo Equipamento</button></div></div><div style="overflow-x:auto;"><table><thead id="headFiltrosEq"></thead><tbody id="tabelaBoxEq"><tr><td colspan="9">Carregando...</td></tr></tbody></table></div><div id="totalEqs" style="font-size:12px;color:#64748b;margin-top:10px;"></div>`;
         equipamentosCache = await (await apiFetch('/api/equipamentos')).json();
@@ -398,7 +439,6 @@
             return true;
         });
 
-        // Métricas
         let total = filtrados.length, aprov = 0, exec = 0, peca = 0, analise = 0, conc = 0;
         filtrados.forEach(os => {
             if (os.status === 'aprovada' || os.status === 'aberta') aprov++;
@@ -521,6 +561,7 @@
             document.getElementById('detalheOsBadge').textContent = (os.status === 'em_analise' ? 'EM VALIDAÇÃO FISCAL' : os.status.replace('_', ' ')).toUpperCase();
             document.getElementById('detalheOsEquip').textContent = `${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')} (Tombo: ${esc(os.tombo)})`;
             document.getElementById('detalheOsLocal').textContent = `${esc(os.comarca)} - ${esc(os.predio)} / ${esc(os.sala)}`;
+            document.getElementById('detalheOsContrato').textContent = esc(os.contrato_nome || '-');
             document.getElementById('detalheOsExecutante').textContent = os.nome_executante ? esc(os.nome_executante) : 'NÃO DESIGNADO';
             document.getElementById('detalheOsDefeito').textContent = esc(os.descricao_falha);
 
