@@ -4,7 +4,7 @@
  */
 
 const IS_GITHUB_PAGES = window.location.hostname.includes('github.io');
-let servidorBaseUrl = "http://127.0.0.1:8083";
+let servidorBaseUrl = "";
 let usuarioLogado = null;
 
 // Lista oficial dos 184 municípios cearenses em caixa alta
