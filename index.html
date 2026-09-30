@@ -125,7 +125,7 @@
             alert("Senha definida com sucesso!");
             redirecionarParaPerfil(usuarioLogado.perfil);
         } else {
-            alert("Erro ao salvar nova senha.");
+            alert((await res.json().catch(() => ({}))).erro || "Erro ao salvar nova senha.");
         }
     }
 

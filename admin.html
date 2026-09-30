@@ -473,7 +473,7 @@
             }
 
             let btnCancelar = (os.status !== 'cancelada' && os.status !== 'concluida') ? `<br><button class="btn-sm btn-danger" style="margin-top:4px;" onclick="cancelarOSDireto(${os.id})">Cancelar</button>` : '';
-            let btnAnexo = os.arquivo_conclusao ? `<a href="${getApiUrl('/api/uploads/' + os.arquivo_conclusao)}" target="_blank" class="btn-sm btn-success" style="text-decoration:none;display:inline-block;margin-left:4px;">📎 Anexo</a>` : '';
+            let btnAnexo = os.arquivo_conclusao ? `<a href="#" onclick="abrirAnexo('${esc(os.arquivo_conclusao)}'); return false;" class="btn-sm btn-success" style="text-decoration:none;display:inline-block;margin-left:4px;">📎 Anexo</a>` : '';
             
             html += `<tr class="${rowClasse}">
                 <td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td>
@@ -533,7 +533,7 @@
             let html = '';
             chamados.forEach(os => {
                 let cor = '#3b82f6'; if (os.status==='concluida') cor='#10b981'; if (os.status==='cancelada') cor='#ef4444'; if (os.status==='em_execucao') cor='#f59e0b'; if (os.status==='aguardando_peca') cor='#8b5cf6'; if (os.status==='aprovada') cor='#0ea5e9'; if (os.status==='em_analise') cor='#4f46e5';
-                let btnAnexo = os.arquivo_conclusao ? `<a href="${getApiUrl('/api/uploads/' + os.arquivo_conclusao)}" target="_blank" class="btn-sm btn-success" style="text-decoration:none;display:inline-block;margin-left:4px;">📎 Anexo</a>` : '';
+                let btnAnexo = os.arquivo_conclusao ? `<a href="#" onclick="abrirAnexo('${esc(os.arquivo_conclusao)}'); return false;" class="btn-sm btn-success" style="text-decoration:none;display:inline-block;margin-left:4px;">📎 Anexo</a>` : '';
                 html += `<tr><td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td><td><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td><td><span class="badge" style="background:${cor};color:white;">${os.status.replace('_', ' ').toUpperCase()}</span></td><td><button class="btn-sm btn-secondary" onclick="fecharModal('modalHistoricoEqOS'); abrirDetalhesOS(${os.id});">Detalhes</button> <button class="btn-sm btn-info" onclick="imprimirOSPdf(${os.id})">🖨️ PDF</button> ${btnAnexo}</td></tr>`;
             });
             tbody.innerHTML = html;
@@ -568,7 +568,7 @@
             const boxLink = document.getElementById('boxLinkAnexo');
             if (boxLink) {
                 if (os.arquivo_conclusao) {
-                    boxLink.innerHTML = `<a href="${getApiUrl('/api/uploads/' + os.arquivo_conclusao)}" target="_blank" style="background:#10b981;color:#fff;padding:8px 14px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:12px;display:inline-block;">📎 Conferir Folha Assinada Anexada (Clique aqui)</a>`;
+                    boxLink.innerHTML = `<a href="#" onclick="abrirAnexo('${esc(os.arquivo_conclusao)}'); return false;" style="background:#10b981;color:#fff;padding:8px 14px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:12px;display:inline-block;">📎 Conferir Folha Assinada Anexada (Clique aqui)</a>`;
                     boxLink.classList.remove('hidden');
                 } else { boxLink.classList.add('hidden'); }
             }

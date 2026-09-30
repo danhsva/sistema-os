@@ -1,6 +1,6 @@
 /**
  * SGME - Núcleo Compartilhado Frontend
- * Arquivo: shared.js (Versão 2.7 - Formato Oficial OS_XXXX.MM.AAAA.pdf)
+ * Arquivo: shared.js (Versão 2.8 - Segurança: anexos autenticados via Blob)
  */
 
 const IS_GITHUB_PAGES = window.location.hostname.includes('github.io');
@@ -158,5 +158,34 @@ async function imprimirOSPdf(os_id, data_abertura = null) {
 
     } catch (err) {
         alert("Erro ao obter PDF: " + err.message);
+    }
+}
+
+// Abre anexo (folha assinada) autenticado: busca com Bearer token e exibe via Blob, sem token na URL.
+async function abrirAnexo(nomeArquivo) {
+    // A aba é aberta de forma síncrona (clique do usuário) para não ser bloqueada como popup.
+    const aba = window.open('', '_blank');
+    try {
+        const res = await apiFetch('/api/uploads/' + encodeURIComponent(nomeArquivo));
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.erro || 'Não foi possível abrir o anexo.');
+        }
+        const blob = await res.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        if (aba) {
+            aba.location.href = blobUrl;
+        } else {
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = nomeArquivo;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60000);
+    } catch (err) {
+        if (aba) aba.close();
+        alert('Erro ao abrir anexo: ' + err.message);
     }
 }
