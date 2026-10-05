@@ -149,7 +149,7 @@
         </div>
     </div>
 
-<script src="shared.js"></script>
+<script src="shared.js?v=2.9"></script>
 <script>
     let equipamentosCache = []; 
     let osCache = [];
@@ -200,7 +200,7 @@
         let html = '';
         filtrados.forEach(os => {
             let cor = '#3b82f6'; if (os.status==='concluida') cor='#10b981'; if (os.status==='cancelada') cor='#ef4444'; if (os.status.includes('execucao')) cor='#f59e0b'; if (os.status.includes('peca')) cor='#8b5cf6'; if (os.status==='aprovada') cor='#0ea5e9';
-            let btnAnexo = os.arquivo_conclusao ? `<a href="#" onclick="abrirAnexo('${esc(os.arquivo_conclusao)}'); return false;" class="btn-sm btn-success" style="text-decoration:none;display:inline-block;margin-left:4px;">📎 Anexo</a>` : '';
+            let btnAnexo = os.arquivo_conclusao ? `<a href="#" onclick="event.preventDefault(); abrirAnexo('${esc(os.arquivo_conclusao)}'); return false;" class="btn-sm btn-success" style="text-decoration:none;display:inline-block;margin-left:4px;">📎 Anexo</a>` : '';
             html += `<tr><td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td><td><strong>${esc(os.comarca)}</strong><br><small>${esc(os.predio)} (${esc(os.sala)})</small></td><td style="max-width:250px;"><strong>${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')}</strong><br><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td><td><span class="badge" style="background:${cor};color:white;">${os.status.replace('_', ' ').toUpperCase()}</span></td><td><button class="btn-sm btn-secondary" onclick="abrirDetalhesOS(${os.id})">Acompanhar</button> <button class="btn-sm btn-info" onclick="imprimirOSPdf(${os.id})">🖨️ PDF</button> ${btnAnexo}</td></tr>`;
         });
         tbody.innerHTML = html;
@@ -223,7 +223,7 @@
             const boxLink = document.getElementById('boxLinkAnexo');
             if (boxLink) {
                 if (os.arquivo_conclusao) {
-                    boxLink.innerHTML = `<a href="#" onclick="abrirAnexo('${esc(os.arquivo_conclusao)}'); return false;" style="background:#10b981;color:#fff;padding:6px 12px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:12px;display:inline-block;">📎 Ver Comprovante Assinado (Foto / PDF)</a>`;
+                    boxLink.innerHTML = `<a href="#" onclick="event.preventDefault(); abrirAnexo('${esc(os.arquivo_conclusao)}'); return false;" style="background:#10b981;color:#fff;padding:6px 12px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:12px;display:inline-block;">📎 Ver Comprovante Assinado (Foto / PDF)</a>`;
                     boxLink.classList.remove('hidden');
                 } else { boxLink.classList.add('hidden'); }
             }

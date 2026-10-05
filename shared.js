@@ -1,6 +1,6 @@
 /**
  * SGME - Núcleo Compartilhado Frontend
- * Arquivo: shared.js (Versão 2.8 - Segurança: anexos autenticados via Blob)
+ * Arquivo: shared.js (Versão 2.9 - Anexos em visualizador na própria página)
  */
 
 const IS_GITHUB_PAGES = window.location.hostname.includes('github.io');
@@ -161,10 +161,10 @@ async function imprimirOSPdf(os_id, data_abertura = null) {
     }
 }
 
-// Abre anexo (folha assinada) autenticado: busca com Bearer token e exibe via Blob, sem token na URL.
+// ---- Anexos (folha assinada) -------------------------------------------------
+// Busca o arquivo com o token no header e exibe SEM abrir nova aba (abas em branco/bloqueio de popup
+// são frágeis no celular): foto => visualizador na própria página; PDF => visualizador (desktop) ou download.
 async function abrirAnexo(nomeArquivo) {
-    // A aba é aberta de forma síncrona (clique do usuário) para não ser bloqueada como popup.
-    const aba = window.open('', '_blank');
     try {
         const res = await apiFetch('/api/uploads/' + encodeURIComponent(nomeArquivo));
         if (!res.ok) {
@@ -172,20 +172,84 @@ async function abrirAnexo(nomeArquivo) {
             throw new Error(err.erro || 'Não foi possível abrir o anexo.');
         }
         const blob = await res.blob();
+        const tipo = (blob.type || '').toLowerCase();
         const blobUrl = window.URL.createObjectURL(blob);
-        if (aba) {
-            aba.location.href = blobUrl;
+        const movel = /Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent);
+
+        if (tipo.startsWith('image/') || (tipo === 'application/pdf' && !movel)) {
+            mostrarVisualizadorAnexo(blobUrl, nomeArquivo, tipo);
         } else {
-            const link = document.createElement('a');
-            link.href = blobUrl;
-            link.download = nomeArquivo;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            baixarBlob(blobUrl, nomeArquivo);
+            setTimeout(() => window.URL.revokeObjectURL(blobUrl), 30000);
         }
-        setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60000);
     } catch (err) {
-        if (aba) aba.close();
         alert('Erro ao abrir anexo: ' + err.message);
     }
+}
+
+function baixarBlob(blobUrl, nomeArquivo) {
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = nomeArquivo;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function mostrarVisualizadorAnexo(blobUrl, nomeArquivo, tipo) {
+    const antigo = document.getElementById('visualizadorAnexo');
+    if (antigo) antigo.remove();
+
+    const fundo = document.createElement('div');
+    fundo.id = 'visualizadorAnexo';
+    fundo.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.9);display:flex;flex-direction:column;';
+
+    const barra = document.createElement('div');
+    barra.style.cssText = 'display:flex;gap:10px;justify-content:flex-end;align-items:center;padding:10px 14px;flex:0 0 auto;';
+    const dica = document.createElement('span');
+    dica.style.cssText = 'color:#cbd5e1;font:12px sans-serif;margin-right:auto;';
+    dica.textContent = tipo.startsWith('image/') ? 'Toque na imagem para ampliar/reduzir' : '';
+    const estiloBtn = 'border:0;border-radius:6px;padding:9px 14px;font:bold 13px sans-serif;cursor:pointer;text-decoration:none;';
+    const baixar = document.createElement('button');
+    baixar.type = 'button';
+    baixar.textContent = '⬇ Baixar';
+    baixar.style.cssText = estiloBtn + 'background:#10b981;color:#fff;';
+    baixar.onclick = () => baixarBlob(blobUrl, nomeArquivo);
+    const fechar = document.createElement('button');
+    fechar.type = 'button';
+    fechar.textContent = '✕ Fechar';
+    fechar.style.cssText = estiloBtn + 'background:#e2e8f0;color:#0f172a;';
+    barra.append(dica, baixar, fechar);
+
+    const area = document.createElement('div');
+    area.style.cssText = 'flex:1 1 auto;overflow:auto;display:flex;padding:0 10px 10px;min-height:0;';
+
+    if (tipo.startsWith('image/')) {
+        const img = document.createElement('img');
+        img.src = blobUrl;
+        img.alt = 'Folha assinada';
+        const ajustada = 'max-width:100%;max-height:100%;margin:auto;object-fit:contain;cursor:zoom-in;background:#fff;';
+        const ampliada = 'max-width:none;margin:0 auto auto;cursor:zoom-out;background:#fff;';
+        img.style.cssText = ajustada;
+        let zoom = false;
+        img.onclick = () => { zoom = !zoom; img.style.cssText = zoom ? ampliada : ajustada; };
+        area.appendChild(img);
+    } else {
+        const quadro = document.createElement('iframe');
+        quadro.src = blobUrl;
+        quadro.style.cssText = 'flex:1;border:0;background:#fff;';
+        area.appendChild(quadro);
+    }
+
+    const encerrar = () => {
+        document.removeEventListener('keydown', aoTeclar);
+        fundo.remove();
+        window.URL.revokeObjectURL(blobUrl);
+    };
+    const aoTeclar = (e) => { if (e.key === 'Escape') encerrar(); };
+    fechar.onclick = encerrar;
+    document.addEventListener('keydown', aoTeclar);
+
+    fundo.append(barra, area);
+    document.body.appendChild(fundo);
 }
