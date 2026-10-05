@@ -1,6 +1,6 @@
 /**
  * SGME - Núcleo Compartilhado Frontend
- * Arquivo: shared.js (Versão 2.9 - Anexos em visualizador na própria página)
+ * Arquivo: shared.js (Versão 4.0 - Fotos reduzidas no aparelho antes do envio + visualizador de anexos)
  */
 
 const IS_GITHUB_PAGES = window.location.hostname.includes('github.io');
@@ -161,29 +161,101 @@ async function imprimirOSPdf(os_id, data_abertura = null) {
     }
 }
 
-// ---- Anexos (folha assinada) -------------------------------------------------
-// Busca o arquivo com o token no header e exibe SEM abrir nova aba (abas em branco/bloqueio de popup
-// são frágeis no celular): foto => visualizador na própria página; PDF => visualizador (desktop) ou download.
-async function abrirAnexo(nomeArquivo) {
+// ---- Fotos: reduz no próprio aparelho ANTES do envio (celular -> Raspberry pela internet) -----------
+// Foto de 8 MB vira ~300 KB (lado maior 1600 px, JPEG 80%). PDF e qualquer falha: devolve o arquivo original.
+async function otimizarImagemCliente(arquivo, ladoMax = 1600, qualidade = 0.8) {
     try {
-        const res = await apiFetch('/api/uploads/' + encodeURIComponent(nomeArquivo));
+        if (!arquivo || !/^image\//i.test(arquivo.type || '')) return arquivo;
+        let imagem;
+        if (window.createImageBitmap) {
+            try { imagem = await createImageBitmap(arquivo, { imageOrientation: 'from-image' }); }
+            catch (e) { imagem = await createImageBitmap(arquivo); }
+        } else {
+            imagem = await new Promise((ok, erro) => {
+                const url = URL.createObjectURL(arquivo);
+                const el = new Image();
+                el.onload = () => { URL.revokeObjectURL(url); ok(el); };
+                el.onerror = () => { URL.revokeObjectURL(url); erro(new Error('imagem ilegível')); };
+                el.src = url;
+            });
+        }
+        const larg = imagem.width, alt = imagem.height;
+        const escala = Math.min(1, ladoMax / Math.max(larg, alt));
+        const w = Math.max(1, Math.round(larg * escala)), h = Math.max(1, Math.round(alt * escala));
+        const tela = document.createElement('canvas');
+        tela.width = w; tela.height = h;
+        const ctx = tela.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(imagem, 0, 0, w, h);
+        if (imagem.close) imagem.close();
+        const blob = await new Promise(ok => tela.toBlob(ok, 'image/jpeg', qualidade));
+        if (!blob || (blob.size >= arquivo.size && /jpe?g/i.test(arquivo.type))) return arquivo;
+        const base = (arquivo.name || 'foto').replace(/\.[^.]+$/, '');
+        return new File([blob], base + '.jpg', { type: 'image/jpeg' });
+    } catch (e) {
+        return arquivo;   // em qualquer problema, envia o original (o servidor também otimiza)
+    }
+}
+
+// ---- Anexos (folha assinada) -------------------------------------------------
+// Busca o arquivo com o token no header e exibe SEM abrir nova aba. Mostra aviso de carregamento com
+// progresso (o arquivo vem do Raspberry pela internet e pode demorar) e erro visível se falhar/estourar o tempo.
+function avisoAnexo(texto) {
+    let el = document.getElementById('avisoAnexo');
+    if (!texto) { if (el) el.remove(); return; }
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'avisoAnexo';
+        el.style.cssText = 'position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:100001;background:#0f172a;color:#fff;padding:12px 18px;border-radius:8px;font:bold 14px sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.35);';
+        document.body.appendChild(el);
+    }
+    el.textContent = texto;
+}
+
+async function abrirAnexo(nomeArquivo) {
+    const ctl = new AbortController();
+    const limite = setTimeout(() => ctl.abort(), 90000);
+    avisoAnexo('⏳ Carregando anexo...');
+    try {
+        const res = await apiFetch('/api/uploads/' + encodeURIComponent(nomeArquivo), { signal: ctl.signal });
         if (!res.ok) {
             const err = await res.json().catch(() => ({}));
-            throw new Error(err.erro || 'Não foi possível abrir o anexo.');
+            throw new Error(err.erro || ('Servidor respondeu HTTP ' + res.status));
         }
-        const blob = await res.blob();
-        const tipo = (blob.type || '').toLowerCase();
+        const tipo = (res.headers.get('Content-Type') || '').toLowerCase();
+        const total = parseInt(res.headers.get('Content-Length') || '0', 10);
+        let blob;
+        if (res.body && res.body.getReader) {
+            const leitor = res.body.getReader();
+            const partes = [];
+            let recebido = 0;
+            for (;;) {
+                const { done, value } = await leitor.read();
+                if (done) break;
+                partes.push(value);
+                recebido += value.length;
+                avisoAnexo('⏳ Carregando anexo... ' + (total ? Math.min(99, Math.round(recebido * 100 / total)) + '%' : Math.round(recebido / 1024) + ' KB'));
+            }
+            blob = new Blob(partes, { type: tipo });
+        } else {
+            blob = await res.blob();
+        }
         const blobUrl = window.URL.createObjectURL(blob);
         const movel = /Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent);
 
-        if (tipo.startsWith('image/') || (tipo === 'application/pdf' && !movel)) {
+        if (tipo.startsWith('image/') || (tipo.startsWith('application/pdf') && !movel)) {
             mostrarVisualizadorAnexo(blobUrl, nomeArquivo, tipo);
         } else {
             baixarBlob(blobUrl, nomeArquivo);
             setTimeout(() => window.URL.revokeObjectURL(blobUrl), 30000);
         }
     } catch (err) {
-        alert('Erro ao abrir anexo: ' + err.message);
+        const msg = err.name === 'AbortError' ? 'Tempo esgotado (90 s). Verifique a conexão e tente novamente.' : err.message;
+        alert('Erro ao abrir anexo: ' + msg);
+    } finally {
+        clearTimeout(limite);
+        avisoAnexo(null);
     }
 }
 

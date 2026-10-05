@@ -196,7 +196,7 @@
         </div>
     </div>
 
-<script src="shared.js"></script>
+<script src="shared.js?v=4.0"></script>
 <script>
     let osCache = [];
 
@@ -343,7 +343,7 @@
             if (!obsTexto) obsTexto = "SERVIÇO EXECUTADO EM CAMPO. FOLHA ASSINADA ENVIADA PARA VALIDAÇÃO DO FISCAL.";
 
             const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
+            document.getElementById('btnSalvarTratamento').disabled = true; formData.append('file', await otimizarImagemCliente(fileInput.files[0]));
             const btn = document.getElementById('btnSalvarTratamento');
             btn.disabled = true; btn.textContent = 'Enviando Foto/PDF...';
 
