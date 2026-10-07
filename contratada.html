@@ -122,7 +122,7 @@
                     <textarea id="tratarOsObs" rows="3" placeholder="Insira instruções para o técnico..."></textarea>
                 </div>
 
-                <div id="boxAnexoConclusao" class="hidden" style="background:#ecfdf5;padding:12px;border-radius:6px;border:1px dashed #10b981;margin-bottom:15px;">
+                <div id="boxInstalacaoContr" class="hidden" style="background:#eff6ff;padding:12px;border:1px dashed #2563eb;border-radius:6px;margin-bottom:15px"><label>Tombo do novo equipamento:</label><input type="text" id="tomboInstContr"><label>Foto da evaporadora:</label><input type="file" id="fotoEvapContr" accept="image/*"><label>Foto da condensadora:</label><input type="file" id="fotoCondContr" accept="image/*"></div><div id="boxAnexoConclusao" class="hidden" style="background:#ecfdf5;padding:12px;border-radius:6px;border:1px dashed #10b981;margin-bottom:15px;">
                     <label style="color:#065f46;">Foto ou PDF da O.S. Assinada (Obrigatório para Validação):</label>
                     <input type="file" id="arquivoOS" accept="image/jpeg,image/png,application/pdf">
                 </div>
@@ -138,11 +138,11 @@
 
     <div id="modalHistoricoEqOS" class="modal-overlay hidden"><div class="modal-box" style="max-width: 700px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;"><h3 style="margin:0;">Histórico do Equipamento</h3><button class="btn-danger btn-sm" onclick="fecharModal('modalHistoricoEqOS')">X</button></div><div style="overflow-x:auto;"><table style="margin-top:0;"><thead><tr><th>O.S. / Data</th><th>Defeito</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tabelaHistoricoEqOS"></tbody></table></div></div></div>
 
-<script src="shared.js?v=4.0"></script>
+<script src="shared.js?v=5.0"></script>
 <script>
-    let equipamentosCache = []; let osCache = [];
+    let equipamentosCache = []; let osCache = []; let osAtual = null;
     let eqSortCol = 'comarca'; let eqSortAsc = true; let eqDebounceTimeout = null;
-    let eqFiltros = { comarca:'', predio:'', sala:'', tipo:'', cap:'', tombo:'', status:'' };
+    let eqFiltros = { comarca:'', predio:'', sala:'', marca:'', tipo:'', cap:'', tombo:'', status:'' };
     let osFiltros = { id:'', comarca:'', status:'', periodo:'', visao:'ativas' };
 
     window.addEventListener('DOMContentLoaded', async () => {
@@ -325,7 +325,7 @@
             html += `<tr class="${rowClasse}">
                 <td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td>
                 <td><strong>${esc(os.comarca)}</strong><br><small>${esc(os.predio)} (${esc(os.sala)})</small></td>
-                <td style="max-width:250px;"><strong>${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')}</strong><br><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td>
+                <td style="max-width:250px;"><strong>${seloTipoOS(os.tipo_os)} ${os.marca ? esc(os.marca)+' ' : ''}${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')}</strong><br><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td>
                 <td><span class="badge" style="background:${cor};color:white;">${labelStatus}</span></td>
                 <td>${btnAcao} <button class="btn-sm btn-info" onclick="imprimirOSPdf(${os.id})">🖨️ PDF</button> ${btnAnexo}</td>
             </tr>`;
@@ -342,19 +342,21 @@
         
         try {
             const data = await (await apiFetch(`/api/os/${os_id}`)).json();
-            const os = data.os; const hist = data.historico;
+            const os = data.os; osAtual=os; const hist = data.historico;
+            document.getElementById('boxInstalacaoContr').classList.toggle('hidden', !['instalacao','substituicao'].includes(os.tipo_os));
+            document.getElementById('tomboInstContr').value = os.tombo && os.tombo !== 'S/T' ? os.tombo : '';
 
             document.getElementById('detalheOsId').textContent = `#${os.id}`;
             document.getElementById('detalheOsBadge').textContent = (os.status === 'em_analise' ? 'EM VALIDAÇÃO FISCAL' : os.status.replace('_', ' ')).toUpperCase();
-            document.getElementById('detalheOsEquip').textContent = `${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')} (Tombo: ${esc(os.tombo)})`;
+            document.getElementById('detalheOsEquip').textContent = `${seloTipoOS(os.tipo_os)} ${os.marca ? esc(os.marca)+' ' : ''}${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')} (Tombo: ${esc(os.tombo)})`;
             document.getElementById('detalheOsLocal').textContent = `${esc(os.comarca)} - ${esc(os.predio)} / ${esc(os.sala)}`;
             document.getElementById('detalheOsExecutante').textContent = os.nome_executante ? esc(os.nome_executante) : 'NÃO DESIGNADO';
             document.getElementById('detalheOsDefeito').textContent = esc(os.descricao_falha);
 
             const boxLink = document.getElementById('boxLinkAnexo');
             if (boxLink) {
-                if (os.arquivo_conclusao) {
-                    boxLink.innerHTML = `<a href="#" onclick="event.preventDefault(); abrirAnexo('${esc(os.arquivo_conclusao)}'); return false;" style="background:#10b981;color:#fff;padding:6px 12px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:12px;display:inline-block;">📎 Ver Folha Assinada Anexada</a>`;
+                if (os.arquivo_conclusao || os.foto_evaporadora || os.foto_condensadora) {
+                    boxLink.innerHTML = linksAnexosOS(os);
                     boxLink.classList.remove('hidden');
                 } else { boxLink.classList.add('hidden'); }
             }
@@ -399,7 +401,7 @@
         let obsTexto = document.getElementById('tratarOsObs').value.trim().toUpperCase();
         const execId = document.getElementById('tratarOsExecutante').value;
         const fileInput = document.getElementById('arquivoOS');
-        let nomeArquivoSalvo = null;
+        let nomeArquivoSalvo = null; let fotoEvap=null; let fotoCond=null;
 
         if (statusNovo === 'em_execucao') {
             if (!execId) return alert("Selecione um Técnico Executante.");
@@ -407,6 +409,7 @@
         } else if (statusNovo === 'aguardando_peca') {
             if (!obsTexto) return alert("Relate qual peça está pendente.");
         } else if (statusNovo === 'em_analise') {
+            if (osAtual && ['instalacao','substituicao'].includes(osAtual.tipo_os)) { if(!document.getElementById('tomboInstContr').value.trim() || !document.getElementById('fotoEvapContr').files[0] || !document.getElementById('fotoCondContr').files[0]) return alert('Informe tombo e as duas fotos do equipamento.'); fotoEvap=await enviarArquivoSGME(document.getElementById('fotoEvapContr').files[0],'Evaporadora'); fotoCond=await enviarArquivoSGME(document.getElementById('fotoCondContr').files[0],'Condensadora'); }
             if (fileInput.files.length === 0) return alert("Para enviar à validação do Fiscal, anexe a folha de O.S. assinada (Foto ou PDF).");
             if (!obsTexto) obsTexto = "ATENDIMENTO FINALIZADO PELA CONTRATADA. ENVIADO PARA VALIDAÇÃO DO FISCAL.";
 
@@ -435,7 +438,7 @@
                 status: statusNovo, 
                 observacao: obsTexto, 
                 executante_id: (statusNovo === 'em_execucao' ? execId : null),
-                arquivo_conclusao: nomeArquivoSalvo
+                arquivo_conclusao: nomeArquivoSalvo, tombo: document.getElementById('tomboInstContr').value, foto_evaporadora: fotoEvap, foto_condensadora: fotoCond
             };
 
             const res = await apiFetch(`/api/os/${document.getElementById('tratarOsId').value}/status`, { 
@@ -468,12 +471,12 @@
 
     function renderizarCabecalhoEq() {
         const iconSort = eqSortAsc ? ' ▴' : ' ▾'; const col = (n, c) => `<th onclick="setEqSort('${c}')">${n}${eqSortCol === c ? iconSort : ''}</th>`;
-        document.getElementById('headFiltrosEq').innerHTML = `<tr>${col('Comarca','comarca')}${col('Prédio','predio')}${col('Local','sala')}${col('Equipamento','tipo_equipamento')}${col('Cap','capacidade')}${col('Tombo','tombo')}${col('Status','status')}<th>Ações</th></tr>
+        document.getElementById('headFiltrosEq').innerHTML = `<tr>${col('Comarca','comarca')}${col('Prédio','predio')}${col('Local','sala')}${col('Marca','marca')}${col('Equipamento','tipo_equipamento')}${col('Cap','capacidade')}${col('Tombo','tombo')}${col('Status','status')}<th>Ações</th></tr>
             <tr class="filter-row">
                 <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('comarca', this.value)" value="${eqFiltros.comarca}"></td>
                 <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('predio', this.value)" value="${eqFiltros.predio}"></td>
                 <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('sala', this.value)" value="${eqFiltros.sala}"></td>
-                <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('tipo', this.value)" value="${eqFiltros.tipo}"></td>
+                <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('marca', this.value)"></td><td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('tipo', this.value)" value="${eqFiltros.tipo}"></td>
                 <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('cap', this.value)" value="${eqFiltros.cap}"></td>
                 <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('tombo', this.value)" value="${eqFiltros.tombo}"></td>
                 <td><input type="text" placeholder="ativo/inativo" oninput="debounceFiltroEq('status', this.value)" value="${eqFiltros.status}"></td>
@@ -481,7 +484,7 @@
             </tr>`;
     }
     function debounceFiltroEq(c, v) { clearTimeout(eqDebounceTimeout); eqDebounceTimeout = setTimeout(() => { eqFiltros[c] = v.toLowerCase(); desenharTabelaEquipamentos(); }, 250); }
-    function limparFiltrosEq() { eqFiltros = { comarca:'', predio:'', sala:'', tipo:'', cap:'', tombo:'', status:'' }; renderizarCabecalhoEq(); desenharTabelaEquipamentos(); }
+    function limparFiltrosEq() { eqFiltros = { comarca:'', predio:'', sala:'', marca:'', tipo:'', cap:'', tombo:'', status:'' }; renderizarCabecalhoEq(); desenharTabelaEquipamentos(); }
     function setEqSort(c) { if (eqSortCol === c) eqSortAsc = !eqSortAsc; else { eqSortCol = c; eqSortAsc = true; } renderizarCabecalhoEq(); desenharTabelaEquipamentos(); }
 
     function desenharTabelaEquipamentos() {
@@ -490,6 +493,7 @@
             if (eqFiltros.comarca && !(eq.comarca||'').toLowerCase().includes(eqFiltros.comarca)) return false;
             if (eqFiltros.predio && !(eq.predio||'').toLowerCase().includes(eqFiltros.predio)) return false;
             if (eqFiltros.sala && !(eq.sala||'').toLowerCase().includes(eqFiltros.sala)) return false;
+            if (eqFiltros.marca && !(eq.marca||'').toLowerCase().includes(eqFiltros.marca)) return false;
             if (eqFiltros.tipo && !(eq.tipo_equipamento||'').toLowerCase().includes(eqFiltros.tipo)) return false;
             if (eqFiltros.cap && !(eq.capacidade||'').toLowerCase().includes(eqFiltros.cap)) return false;
             if (eqFiltros.tombo && !(eq.tombo||'').toLowerCase().includes(eqFiltros.tombo)) return false;
@@ -505,7 +509,7 @@
         filtrados.forEach(eq => {
             const rowClass = eq.ativo === 0 ? 'inativo' : (eq.tem_os_ativa > 0 ? 'row-os-ativa' : '');
             const statusLabel = eq.ativo === 1 ? '<span style="color:var(--success);font-weight:bold;">Ativo</span>' : '<span style="color:var(--danger);font-weight:bold;">Inativo</span>';
-            html += `<tr class="${rowClass}"><td>${esc(eq.comarca)}</td><td>${esc(eq.predio)}</td><td>${esc(eq.sala)}</td><td>${esc(eq.tipo_equipamento)}</td><td>${esc(eq.capacidade||'-')}</td><td>${eq.tombo === 'S/T' ? '<span class="badge" style="background:#e2e8f0;color:#64748b;">S/T</span>' : esc(eq.tombo)}</td><td>${statusLabel}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="abrirHistoricoEqOS(${eq.id})">Ver O.S.</button></td></tr>`;
+            html += `<tr class="${rowClass}"><td>${esc(eq.comarca)}</td><td>${esc(eq.predio)}</td><td>${esc(eq.sala)}</td><td>${esc(eq.marca||'-')}</td><td>${esc(eq.tipo_equipamento)}</td><td>${esc(eq.capacidade||'-')}</td><td>${eq.tombo === 'S/T' ? '<span class="badge" style="background:#e2e8f0;color:#64748b;">S/T</span>' : esc(eq.tombo)}</td><td>${statusLabel}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="abrirHistoricoEqOS(${eq.id})">Ver O.S.</button></td></tr>`;
         });
         tbody.innerHTML = html; document.getElementById('totalEqs').textContent = `Total: ${filtrados.length} equipamento(s).`;
     }

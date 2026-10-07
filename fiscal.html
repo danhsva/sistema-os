@@ -74,7 +74,7 @@
                     <div style="margin-top: 4px;"><span id="usuarioNomeDisplay" style="font-weight: 600; font-size: 14px;"></span> <span class="badge">FISCAL</span></div>
                 </div>
                 <div style="display: flex; gap: 10px;">
-                    <button class="btn-warning" onclick="abrirNovaOSAvulsa()">+ NOVA O.S.</button>
+                    <button class="btn-warning" onclick="abrirNovaOSAvulsa()">+ MANUTENÇÃO</button><button class="btn-success" onclick="abrirNovaInstalacao()">+ INSTALAÇÃO / SUBSTITUIÇÃO</button>
                     <button onclick="fazerLogout()" class="btn-danger">Sair</button>
                 </div>
             </div>
@@ -91,16 +91,22 @@
     <!-- MODAL NOVA O.S. AVULSA -->
     <div id="modalNovaOSAvulsa" class="modal-overlay hidden"><div class="modal-box" style="max-width: 600px;"><h3>Abrir Nova Ordem de Serviço</h3><div id="boxBuscaAvulsa" style="background:#f1f5f9;padding:15px;border-radius:6px;margin-bottom:15px;border:1px solid var(--border);"><label style="color:var(--primary-dark);">Busca por Tombo:</label><div style="display:flex;gap:10px;margin-bottom:15px;"><input type="text" id="buscaTombo" placeholder="Digite o tombo..." style="margin-bottom:0;"><button type="button" class="btn-primary" onclick="buscarEquipamentoPorTombo()">Buscar</button></div><hr style="border:0;border-top:1px dashed #cbd5e1;margin-bottom:15px;"><div class="row"><div class="col"><label>Comarca:</label><select id="selAvulsoComarca" onchange="popularAvulsoPredios()"></select></div><div class="col"><label>Prédio:</label><select id="selAvulsoPredio" onchange="popularAvulsoSalas()"></select></div></div><div class="row"><div class="col"><label>Sala:</label><select id="selAvulsoSala" onchange="popularAvulsoEqs()"></select></div><div class="col"><label>Equipamento:</label><select id="selAvulsoEq" required></select></div></div></div><div id="boxEqSelecionadoFixo" class="hidden" style="background:#e0f2fe;padding:15px;border-radius:6px;margin-bottom:15px;border:1px solid #7dd3fc;"><strong id="lblEqFixoNome" style="color:var(--primary-dark);font-size:15px;"></strong><br><span id="lblEqFixoLocal" style="color:#475569;font-size:13px;"></span></div><form onsubmit="enviarOSAvulsa(event)"><label>Relato do Defeito:</label><textarea id="osDescricaoAvulsa" rows="3" required placeholder="Descreva o problema..."></textarea><div style="display:flex;gap:10px;margin-top:10px;"><button type="submit" class="btn-success btn-block">Registrar e Autorizar O.S.</button><button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalNovaOSAvulsa')">Cancelar</button></div></form></div></div>
 
-    <div id="modalHistoricoEqOS" class="modal-overlay hidden"><div class="modal-box" style="max-width: 700px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;"><h3 style="margin:0;">Histórico do Equipamento</h3><button class="btn-danger btn-sm" onclick="fecharModal('modalHistoricoEqOS')">X</button></div><div style="overflow-x:auto;"><table style="margin-top:0;"><thead><tr><th>O.S. / Data</th><th>Defeito</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tabelaHistoricoEqOS"></tbody></table></div></div></div>
+    
+<div id="modalNovaInstalacao" class="modal-overlay hidden"><div class="modal-box" style="max-width:760px"><h3>Nova O.S. de Instalação / Substituição</h3><form onsubmit="enviarNovaInstalacao(event)"><label>Modalidade:</label><select id="instTipo" onchange="ajustarModalInstalacao()"><option value="instalacao">Instalação nova</option><option value="substituicao">Substituição de equipamento</option></select><div id="instBoxContrato"><label>Contrato:</label><select id="instContrato"></select></div><div id="instBoxSub" class="hidden"><label>Equipamento a substituir:</label><select id="instEquipSub"></select></div><div class="row"><div class="col"><label>Marca:</label><input id="instMarca" type="text" required></div><div class="col"><label>Modelo / tipo:</label><select id="instModelo" required><option>HI WALL</option><option>PISO TETO</option><option>CASSETE</option><option>JANELEIRO</option><option>MULTI SPLIT</option><option>SELF</option><option>CORTINA DE AR</option><option>SPLITÃO</option><option>OUTRO</option></select></div><div class="col"><label>Capacidade:</label><input id="instCap" type="text"></div></div><div class="row"><div class="col"><label>Comarca:</label><select id="instComarca" required></select></div><div class="col"><label>Prédio:</label><input id="instPredio" type="text" required></div><div class="col"><label>Local:</label><input id="instSala" type="text" required></div></div><label>Tombo (pode ser informado na conclusão):</label><input id="instTombo" type="text"><label>Observação:</label><textarea id="instObs"></textarea><div style="display:flex;gap:10px"><button class="btn-success btn-block">Criar e autorizar O.S.</button><button type="button" class="btn-secondary btn-block" onclick="fecharModal('modalNovaInstalacao')">Cancelar</button></div></form></div></div>
+<div id="modalHistoricoEqOS" class="modal-overlay hidden"><div class="modal-box" style="max-width: 700px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;"><h3 style="margin:0;">Histórico do Equipamento</h3><button class="btn-danger btn-sm" onclick="fecharModal('modalHistoricoEqOS')">X</button></div><div style="overflow-x:auto;"><table style="margin-top:0;"><thead><tr><th>O.S. / Data</th><th>Defeito</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tabelaHistoricoEqOS"></tbody></table></div></div></div>
 
     <!-- MODAL TRATAR / VALIDAR O.S. PELO FISCAL -->
-    <div id="modalTratarOS" class="modal-overlay hidden"><div class="modal-box"><div style="display:flex;justify-content:space-between;align-items:center;"><div><h3 style="margin:0;">Fiscalização da O.S. <span id="detalheOsId"></span></h3><span id="detalheOsBadge" class="badge"></span></div><button class="btn-info btn-sm" id="btnImprimirModal" style="padding:8px 12px;">🖨️ PDF</button></div><div style="background:#f8fafc;border:1px solid var(--border);padding:10px;border-radius:6px;margin-top:15px;font-size:13px;"><strong>Equipamento:</strong> <span id="detalheOsEquip"></span><br><strong>Local:</strong> <span id="detalheOsLocal"></span><br><strong>Contrato:</strong> <span id="detalheOsContrato" style="font-weight:bold;color:var(--primary-dark);"></span><br><strong>Técnico Responsável:</strong> <span id="detalheOsExecutante" style="color:var(--primary-dark);font-weight:bold;"></span><br><strong>Defeito Inicial:</strong> <span id="detalheOsDefeito" style="color:var(--danger);"></span><div id="boxLinkAnexo" class="hidden" style="margin-top:10px;"></div></div><div id="boxAcaoOS" style="margin-top:20px;padding-top:15px;border-top:1px solid var(--border);"><h4 id="tituloAcaoFiscal">Decisão do Fiscal</h4><form onsubmit="salvarTratamentoOS(event)"><input type="hidden" id="tratarOsId"><label>Ação a Tomar:</label><select id="tratarOsStatus" required onchange="ajustarExigenciaObs()"></select><label id="lblObsFiscal">Observação / Justificativa:</label><textarea id="tratarOsObs" rows="3" placeholder="Insira informações adicionais..."></textarea><button type="submit" class="btn-success btn-block" id="btnGravarDecisao">Confirmar Decisão</button></form></div><h4 style="margin-top:25px;">Histórico da O.S.</h4><div id="boxTimeline" class="timeline"></div><button class="btn-secondary btn-block" style="margin-top:20px;" onclick="fecharModal('modalTratarOS')">Fechar Detalhes</button></div></div>
+    <div id="modalTratarOS" class="modal-overlay hidden"><div class="modal-box"><div style="display:flex;justify-content:space-between;align-items:center;"><div><h3 style="margin:0;">Fiscalização da O.S. <span id="detalheOsId"></span></h3><span id="detalheOsBadge" class="badge"></span></div><button class="btn-info btn-sm" id="btnImprimirModal" style="padding:8px 12px;">🖨️ PDF</button></div><div style="background:#f8fafc;border:1px solid var(--border);padding:10px;border-radius:6px;margin-top:15px;font-size:13px;"><strong>Equipamento:</strong> <span id="detalheOsEquip"></span><br><strong>Local:</strong> <span id="detalheOsLocal"></span><br><strong>Contrato:</strong> <span id="detalheOsContrato" style="font-weight:bold;color:var(--primary-dark);"></span><br><strong>Técnico Responsável:</strong> <span id="detalheOsExecutante" style="color:var(--primary-dark);font-weight:bold;"></span><br><strong>Defeito Inicial:</strong> <span id="detalheOsDefeito" style="color:var(--danger);"></span><div id="boxLinkAnexo" class="hidden" style="margin-top:10px;"></div></div><div id="boxAcaoOS" style="margin-top:20px;padding-top:15px;border-top:1px solid var(--border);"><h4 id="tituloAcaoFiscal">Decisão do Fiscal</h4><form onsubmit="salvarTratamentoOS(event)"><input type="hidden" id="tratarOsId"><label>Ação a Tomar:</label><select id="tratarOsStatus" required onchange="ajustarExigenciaObs()"></select><div id="boxTomboFiscal" class="hidden"><label>Tombo do novo equipamento:</label><input type="text" id="tomboFiscal"></div><label id="lblObsFiscal">Observação / Justificativa:</label><textarea id="tratarOsObs" rows="3" placeholder="Insira informações adicionais..."></textarea><button type="submit" class="btn-success btn-block" id="btnGravarDecisao">Confirmar Decisão</button></form></div><h4 style="margin-top:25px;">Histórico da O.S.</h4><div id="boxTimeline" class="timeline"></div><button class="btn-secondary btn-block" style="margin-top:20px;" onclick="fecharModal('modalTratarOS')">Fechar Detalhes</button></div></div>
 
-<script src="shared.js?v=4.0"></script>
+<script src="shared.js?v=5.0">
+async function abrirNovaInstalacao(){if(!contratosDoFiscal.length)await carregarListaContratosFiscal();if(!equipamentosCache.length)equipamentosCache=await(await apiFetch('/api/equipamentos')).json();document.getElementById('instContrato').innerHTML=contratosDoFiscal.map(c=>`<option value="${c.id}">${esc(c.numero_contrato)} - ${esc(c.nome_empresa)}</option>`).join('');document.getElementById('instEquipSub').innerHTML=equipamentosCache.filter(e=>e.ativo===1).map(e=>`<option value="${e.id}">${esc(e.marca||'')} ${esc(e.tipo_equipamento)} - ${esc(e.comarca)} / ${esc(e.sala)} - ${esc(e.tombo)}</option>`).join('');document.getElementById('instComarca').innerHTML=MUNICIPIOS_CE.map(m=>`<option>${m}</option>`).join('');ajustarModalInstalacao();document.getElementById('modalNovaInstalacao').classList.remove('hidden');}
+function ajustarModalInstalacao(){const sub=document.getElementById('instTipo').value==='substituicao';document.getElementById('instBoxSub').classList.toggle('hidden',!sub);document.getElementById('instBoxContrato').classList.toggle('hidden',sub);}
+async function enviarNovaInstalacao(e){e.preventDefault();const sub=document.getElementById('instTipo').value==='substituicao';const p={substituicao:sub,contrato_id:Number(document.getElementById('instContrato').value),equipamento_substituido_id:sub?Number(document.getElementById('instEquipSub').value):null,marca:document.getElementById('instMarca').value,tipo_equipamento:document.getElementById('instModelo').value,capacidade:document.getElementById('instCap').value,comarca:document.getElementById('instComarca').value,predio:document.getElementById('instPredio').value,sala:document.getElementById('instSala').value,tombo:document.getElementById('instTombo').value,observacao:document.getElementById('instObs').value};const r=await apiFetch('/api/os/instalacao',{method:'POST',body:JSON.stringify(p)});const d=await r.json();if(!r.ok)return alert(d.erro||'Falha ao criar O.S.');alert('O.S. criada e autorizada.');fecharModal('modalNovaInstalacao');mudarAba('geralOS');}
+</script>
 <script>
     let equipamentosCache = []; let osCache = []; let usuariosCache = []; let contratosDoFiscal = [];
     let eqSortCol = 'comarca'; let eqSortAsc = true; let eqDebounceTimeout = null;
-    let eqFiltros = { comarca:'', predio:'', sala:'', tipo:'', cap:'', tombo:'', contrato:'', status:'' };
+    let eqFiltros = { comarca:'', predio:'', sala:'', marca:'', tipo:'', cap:'', tombo:'', contrato:'', status:'' };
     let osFiltros = { id:'', comarca:'', status:'', contrato:'', periodo:'' };
 
     window.addEventListener('DOMContentLoaded', async () => {
@@ -216,12 +222,12 @@
 
     function renderizarCabecalhoEq() {
         const iconSort = eqSortAsc ? ' ▴' : ' ▾'; const col = (n, c) => `<th onclick="setEqSort('${c}')">${n}${eqSortCol === c ? iconSort : ''}</th>`;
-        document.getElementById('headFiltrosEq').innerHTML = `<tr>${col('Comarca','comarca')}${col('Prédio','predio')}${col('Local','sala')}${col('Equipamento','tipo_equipamento')}${col('Cap','capacidade')}${col('Tombo','tombo')}${col('Contrato','contrato_nome')}${col('Status','status')}<th>Ações</th></tr>
+        document.getElementById('headFiltrosEq').innerHTML = `<tr>${col('Comarca','comarca')}${col('Prédio','predio')}${col('Local','sala')}${col('Marca','marca')}${col('Equipamento','tipo_equipamento')}${col('Cap','capacidade')}${col('Tombo','tombo')}${col('Contrato','contrato_nome')}${col('Status','status')}<th>Ações</th></tr>
             <tr class="filter-row">
                 <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('comarca', this.value)" value="${eqFiltros.comarca}"></td>
                 <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('predio', this.value)" value="${eqFiltros.predio}"></td>
                 <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('sala', this.value)" value="${eqFiltros.sala}"></td>
-                <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('tipo', this.value)" value="${eqFiltros.tipo}"></td>
+                <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('marca', this.value)"></td><td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('tipo', this.value)" value="${eqFiltros.tipo}"></td>
                 <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('cap', this.value)" value="${eqFiltros.cap}"></td>
                 <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('tombo', this.value)" value="${eqFiltros.tombo}"></td>
                 <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('contrato', this.value)" value="${eqFiltros.contrato}"></td>
@@ -231,7 +237,7 @@
     }
 
     function debounceFiltroEq(c, v) { clearTimeout(eqDebounceTimeout); eqDebounceTimeout = setTimeout(() => { eqFiltros[c] = v.toLowerCase(); desenharTabelaEquipamentos(); }, 250); }
-    function limparFiltrosEq() { eqFiltros = { comarca:'', predio:'', sala:'', tipo:'', cap:'', tombo:'', contrato:'', status:'' }; renderizarCabecalhoEq(); desenharTabelaEquipamentos(); }
+    function limparFiltrosEq() { eqFiltros = { comarca:'', predio:'', sala:'', marca:'', tipo:'', cap:'', tombo:'', contrato:'', status:'' }; renderizarCabecalhoEq(); desenharTabelaEquipamentos(); }
     function setEqSort(c) { if (eqSortCol === c) eqSortAsc = !eqSortAsc; else { eqSortCol = c; eqSortAsc = true; } renderizarCabecalhoEq(); desenharTabelaEquipamentos(); }
 
     function desenharTabelaEquipamentos() {
@@ -240,6 +246,7 @@
             if (eqFiltros.comarca && !(eq.comarca||'').toLowerCase().includes(eqFiltros.comarca)) return false;
             if (eqFiltros.predio && !(eq.predio||'').toLowerCase().includes(eqFiltros.predio)) return false;
             if (eqFiltros.sala && !(eq.sala||'').toLowerCase().includes(eqFiltros.sala)) return false;
+            if (eqFiltros.marca && !(eq.marca||'').toLowerCase().includes(eqFiltros.marca)) return false;
             if (eqFiltros.tipo && !(eq.tipo_equipamento||'').toLowerCase().includes(eqFiltros.tipo)) return false;
             if (eqFiltros.cap && !(eq.capacidade||'').toLowerCase().includes(eqFiltros.cap)) return false;
             if (eqFiltros.tombo && !(eq.tombo||'').toLowerCase().includes(eqFiltros.tombo)) return false;
@@ -262,7 +269,7 @@
             acoes += `<button class="btn-sm btn-secondary" onclick="abrirModalEquip(${eq.id})">Editar</button> `;
             if (eq.ativo === 1) acoes += `<button class="btn-sm btn-danger" onclick="toggleAtivoEq(${eq.id}, 0)">Inativar</button>`;
             else acoes += `<button class="btn-sm" style="background:#10b981;" onclick="toggleAtivoEq(${eq.id}, 1)">Ativar</button>`;
-            html += `<tr class="${rowClass}"><td>${esc(eq.comarca)}</td><td>${esc(eq.predio)}</td><td>${esc(eq.sala)}</td><td>${esc(eq.tipo_equipamento)}</td><td>${esc(eq.capacidade||'-')}</td><td>${eq.tombo === 'S/T' ? '<span class="badge" style="background:#e2e8f0;color:#64748b;">S/T</span>' : esc(eq.tombo)}</td><td><strong>${esc(eq.contrato_nome)||'-'}</strong></td><td>${statusLabel}</td><td style="white-space:nowrap;">${acoes}</td></tr>`;
+            html += `<tr class="${rowClass}"><td>${esc(eq.comarca)}</td><td>${esc(eq.predio)}</td><td>${esc(eq.sala)}</td><td>${esc(eq.marca||'-')}</td><td>${esc(eq.tipo_equipamento)}</td><td>${esc(eq.capacidade||'-')}</td><td>${eq.tombo === 'S/T' ? '<span class="badge" style="background:#e2e8f0;color:#64748b;">S/T</span>' : esc(eq.tombo)}</td><td><strong>${esc(eq.contrato_nome)||'-'}</strong></td><td>${statusLabel}</td><td style="white-space:nowrap;">${acoes}</td></tr>`;
         });
         tbody.innerHTML = html; document.getElementById('totalEqs').textContent = `Total listado: ${filtrados.length} equipamento(s).`;
     }
@@ -423,7 +430,7 @@
             html += `<tr class="${rowClasse}">
                 <td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td>
                 <td><strong>${esc(os.comarca)}</strong><br><small>${esc(os.predio)} (${esc(os.sala)})</small></td>
-                <td style="max-width:240px;"><strong>${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')}</strong><br><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td>
+                <td style="max-width:240px;"><strong>${seloTipoOS(os.tipo_os)} ${os.marca ? esc(os.marca)+' ' : ''}${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')}</strong><br><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td>
                 <td><strong>${esc(os.contrato_nome || '-')}</strong></td>
                 <td><span class="badge" style="background:${cor};color:white;">${labelStatus}</span></td>
                 <td><button class="btn-sm ${os.status === 'em_analise' ? 'btn-warning' : 'btn-secondary'}" onclick="abrirDetalhesOS(${os.id})">${textoBotaoTratar}</button> <button class="btn-sm btn-info" onclick="imprimirOSPdf(${os.id})">🖨️ PDF</button> ${btnAnexo}</td>
@@ -495,10 +502,11 @@
         try {
             const data = await (await apiFetch(`/api/os/${os_id}`)).json();
             const os = data.os; const hist = data.historico;
+            window.osFiscalAtual=os; document.getElementById('boxTomboFiscal').classList.toggle('hidden', !['instalacao','substituicao'].includes(os.tipo_os)); document.getElementById('tomboFiscal').value=os.tombo && os.tombo!=='S/T'?os.tombo:'';
 
             document.getElementById('detalheOsId').textContent = `#${os.id}`;
             document.getElementById('detalheOsBadge').textContent = (os.status === 'em_analise' ? 'AGUARDANDO VALIDAÇÃO' : os.status.replace('_', ' ')).toUpperCase();
-            document.getElementById('detalheOsEquip').textContent = `${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')} (Tombo: ${esc(os.tombo)})`;
+            document.getElementById('detalheOsEquip').textContent = `${seloTipoOS(os.tipo_os)} ${os.marca ? esc(os.marca)+' ' : ''}${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')} (Tombo: ${esc(os.tombo)})`;
             document.getElementById('detalheOsLocal').textContent = `${esc(os.comarca)} - ${esc(os.predio)} / ${esc(os.sala)}`;
             document.getElementById('detalheOsContrato').textContent = esc(os.contrato_nome || '-');
             document.getElementById('detalheOsExecutante').textContent = os.nome_executante ? esc(os.nome_executante) : 'NÃO DESIGNADO';
@@ -506,8 +514,8 @@
 
             const boxLink = document.getElementById('boxLinkAnexo');
             if (boxLink) {
-                if (os.arquivo_conclusao) {
-                    boxLink.innerHTML = `<a href="#" onclick="event.preventDefault(); abrirAnexo('${esc(os.arquivo_conclusao)}'); return false;" style="background:#10b981;color:#fff;padding:8px 14px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:12px;display:inline-block;">📎 Conferir Folha Assinada Anexada (Clique aqui)</a>`;
+                if (os.arquivo_conclusao || os.foto_evaporadora || os.foto_condensadora) {
+                    boxLink.innerHTML = linksAnexosOS(os);
                     boxLink.classList.remove('hidden');
                 } else { 
                     boxLink.classList.add('hidden'); 
@@ -592,7 +600,7 @@
         try {
             const res = await apiFetch(`/api/os/${document.getElementById('tratarOsId').value}/status`, { 
                 method: 'PUT', 
-                body: JSON.stringify({ status: statusNovo, observacao: obsTexto }) 
+                body: JSON.stringify({ status: statusNovo, observacao: obsTexto, tombo: document.getElementById('tomboFiscal').value }) 
             });
             const data = await res.json();
             if (res.ok) {
@@ -608,6 +616,10 @@
             btn.disabled = false; btn.textContent = 'Confirmar Decisão';
         }
     }
+
+async function abrirNovaInstalacao(){if(!contratosDoFiscal.length)await carregarListaContratosFiscal();if(!equipamentosCache.length)equipamentosCache=await(await apiFetch('/api/equipamentos')).json();document.getElementById('instContrato').innerHTML=contratosDoFiscal.map(c=>`<option value="${c.id}">${esc(c.numero_contrato)} - ${esc(c.nome_empresa)}</option>`).join('');document.getElementById('instEquipSub').innerHTML=equipamentosCache.filter(e=>e.ativo===1).map(e=>`<option value="${e.id}">${esc(e.marca||'')} ${esc(e.tipo_equipamento)} - ${esc(e.comarca)} / ${esc(e.sala)} - ${esc(e.tombo)}</option>`).join('');document.getElementById('instComarca').innerHTML=MUNICIPIOS_CE.map(m=>`<option>${m}</option>`).join('');ajustarModalInstalacao();document.getElementById('modalNovaInstalacao').classList.remove('hidden');}
+function ajustarModalInstalacao(){const sub=document.getElementById('instTipo').value==='substituicao';document.getElementById('instBoxSub').classList.toggle('hidden',!sub);document.getElementById('instBoxContrato').classList.toggle('hidden',sub);}
+async function enviarNovaInstalacao(e){e.preventDefault();const sub=document.getElementById('instTipo').value==='substituicao';const p={substituicao:sub,contrato_id:Number(document.getElementById('instContrato').value),equipamento_substituido_id:sub?Number(document.getElementById('instEquipSub').value):null,marca:document.getElementById('instMarca').value,tipo_equipamento:document.getElementById('instModelo').value,capacidade:document.getElementById('instCap').value,comarca:document.getElementById('instComarca').value,predio:document.getElementById('instPredio').value,sala:document.getElementById('instSala').value,tombo:document.getElementById('instTombo').value,observacao:document.getElementById('instObs').value};const r=await apiFetch('/api/os/instalacao',{method:'POST',body:JSON.stringify(p)});const d=await r.json();if(!r.ok)return alert(d.erro||'Falha ao criar O.S.');alert('O.S. criada e autorizada.');fecharModal('modalNovaInstalacao');mudarAba('geralOS');}
 </script>
 </body>
 </html>

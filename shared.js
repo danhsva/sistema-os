@@ -325,3 +325,31 @@ function mostrarVisualizadorAnexo(blobUrl, nomeArquivo, tipo) {
     fundo.append(barra, area);
     document.body.appendChild(fundo);
 }
+
+// SGME 5.0 - utilitários para O.S. de instalação/substituição
+function rotuloTipoOS(tipo) {
+    return tipo === 'instalacao' ? 'INSTALAÇÃO' : (tipo === 'substituicao' ? 'SUBSTITUIÇÃO' : 'MANUTENÇÃO');
+}
+function seloTipoOS(tipo) {
+    const cor = tipo === 'instalacao' ? '#059669' : (tipo === 'substituicao' ? '#7c3aed' : '#2563eb');
+    return `<span class="badge" style="background:${cor};color:#fff;margin-right:4px;">${rotuloTipoOS(tipo)}</span>`;
+}
+function descricaoEquipamentoOS(os) {
+    const marca = os.marca ? `${esc(os.marca)} ` : '';
+    return `${marca}${esc(os.tipo_equipamento || '')} ${esc(os.capacidade || '')} (Tombo: ${esc(os.tombo || 'S/T')})`;
+}
+function linksAnexosOS(os) {
+    const itens = [
+        ['Folha assinada', os.arquivo_conclusao],
+        ['Foto da evaporadora', os.foto_evaporadora],
+        ['Foto da condensadora', os.foto_condensadora]
+    ].filter(x => x[1]);
+    return itens.map(([r,n]) => `<a href="#" onclick="event.preventDefault();abrirAnexo('${esc(n)}');return false;" style="background:#10b981;color:#fff;padding:7px 10px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:12px;display:inline-block;margin:3px;">📎 ${r}</a>`).join('');
+}
+async function enviarArquivoSGME(arquivo, rotulo) {
+    if (!arquivo) throw new Error(`${rotulo}: selecione um arquivo.`);
+    const fd = new FormData(); fd.append('file', await otimizarImagemCliente(arquivo));
+    const r = await apiFetch('/api/upload', { method:'POST', body:fd });
+    const d = await r.json(); if (!r.ok) throw new Error(`${rotulo}: ${d.erro || 'falha no envio'}`);
+    return d.arquivo;
+}

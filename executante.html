@@ -177,7 +177,7 @@
                 </select>
 
                 <!-- CAPTURA DA FOLHA ASSINADA COM A CÂMERA -->
-                <div id="boxAnexoExec" class="box-camera-upload">
+                <div id="boxInstalacaoExec" class="box-camera-upload hidden"><label>Tombo do novo equipamento:</label><input type="text" id="tomboInstExec" style="width:100%;padding:12px;margin-bottom:12px"><label>📷 Foto da evaporadora:</label><input type="file" id="fotoEvapExec" accept="image/*"><label>📷 Foto da condensadora:</label><input type="file" id="fotoCondExec" accept="image/*"></div><div id="boxAnexoExec" class="box-camera-upload">
                     <label>📷 Foto ou PDF da O.S. Assinada (Obrigatório):</label>
                     <input type="file" id="arquivoOSExec" accept="image/*,application/pdf">
                     <div style="font-size:11px;color:#047857;margin-top:-6px;">No celular, toque para abrir a câmera ou galeria</div>
@@ -196,9 +196,9 @@
         </div>
     </div>
 
-<script src="shared.js?v=4.0"></script>
+<script src="shared.js?v=5.0"></script>
 <script>
-    let osCache = [];
+    let osCache = []; let osAtual = null;
 
     window.addEventListener('DOMContentLoaded', async () => {
         const user = await inicializarCore('executante');
@@ -302,7 +302,9 @@
         
         try {
             const data = await (await apiFetch(`/api/os/${os_id}`)).json();
-            const os = data.os; const hist = data.historico;
+            const os = data.os; osAtual=os; const hist = data.historico;
+            document.getElementById('boxInstalacaoExec').classList.toggle('hidden', !['instalacao','substituicao'].includes(os.tipo_os));
+            document.getElementById('tomboInstExec').value = os.tombo && os.tombo !== 'S/T' ? os.tombo : '';
 
             document.getElementById('detalheOsId').textContent = `O.S. #${os.id}`;
             document.getElementById('detalheOsBadge').innerHTML = `<span class="badge" style="background:${os.status === 'aguardando_peca' ? '#8b5cf6' : '#f59e0b'};">${os.status.replace('_', ' ').toUpperCase()}</span>`;
@@ -332,11 +334,16 @@
         const statusNovo = document.getElementById('tratarOsStatus').value;
         let obsTexto = document.getElementById('tratarOsObs').value.trim().toUpperCase();
         const fileInput = document.getElementById('arquivoOSExec');
-        let nomeArquivoSalvo = null;
+        let nomeArquivoSalvo = null; let fotoEvap=null; let fotoCond=null;
 
         if (statusNovo === 'aguardando_peca') {
             if (!obsTexto) return alert("É OBRIGATÓRIO informar qual peça está pendente.");
         } else if (statusNovo === 'em_analise') {
+            if (osAtual && ['instalacao','substituicao'].includes(osAtual.tipo_os)) {
+                if (!document.getElementById('tomboInstExec').value.trim() || !document.getElementById('fotoEvapExec').files[0] || !document.getElementById('fotoCondExec').files[0]) return alert('Informe o tombo e as fotos da evaporadora e condensadora.');
+                fotoEvap=await enviarArquivoSGME(document.getElementById('fotoEvapExec').files[0],'Evaporadora');
+                fotoCond=await enviarArquivoSGME(document.getElementById('fotoCondExec').files[0],'Condensadora');
+            }
             if (fileInput.files.length === 0) {
                 return alert("Para finalizar o serviço, é OBRIGATÓRIO tirar foto ou anexar o PDF da folha de O.S. assinada.");
             }
@@ -365,7 +372,7 @@
         try {
             const res = await apiFetch(`/api/os/${document.getElementById('tratarOsId').value}/status`, { 
                 method: 'PUT', 
-                body: JSON.stringify({ status: statusNovo, observacao: obsTexto, arquivo_conclusao: nomeArquivoSalvo }) 
+                body: JSON.stringify({ status: statusNovo, observacao: obsTexto, arquivo_conclusao: nomeArquivoSalvo, tombo: document.getElementById('tomboInstExec').value, foto_evaporadora: fotoEvap, foto_condensadora: fotoCond }) 
             });
             const data = await res.json();
             

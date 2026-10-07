@@ -149,14 +149,14 @@
         </div>
     </div>
 
-<script src="shared.js?v=4.0"></script>
+<script src="shared.js?v=5.0"></script>
 <script>
     let equipamentosCache = []; 
     let osCache = [];
     let eqSortCol = 'comarca'; 
     let eqSortAsc = true; 
     let eqDebounceTimeout = null;
-    let eqFiltros = { comarca: '', predio: '', sala: '', tipo: '', cap: '', tombo: '' };
+    let eqFiltros = { comarca: '', predio: '', sala: '', marca: '', tipo: '', cap: '', tombo: '' };
     let osFiltros = { id: '', comarca: '', status: '' };
 
     window.addEventListener('DOMContentLoaded', async () => {
@@ -201,7 +201,7 @@
         filtrados.forEach(os => {
             let cor = '#3b82f6'; if (os.status==='concluida') cor='#10b981'; if (os.status==='cancelada') cor='#ef4444'; if (os.status.includes('execucao')) cor='#f59e0b'; if (os.status.includes('peca')) cor='#8b5cf6'; if (os.status==='aprovada') cor='#0ea5e9';
             let btnAnexo = os.arquivo_conclusao ? `<a href="#" onclick="event.preventDefault(); abrirAnexo('${esc(os.arquivo_conclusao)}'); return false;" class="btn-sm btn-success" style="text-decoration:none;display:inline-block;margin-left:4px;">📎 Anexo</a>` : '';
-            html += `<tr><td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td><td><strong>${esc(os.comarca)}</strong><br><small>${esc(os.predio)} (${esc(os.sala)})</small></td><td style="max-width:250px;"><strong>${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')}</strong><br><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td><td><span class="badge" style="background:${cor};color:white;">${os.status.replace('_', ' ').toUpperCase()}</span></td><td><button class="btn-sm btn-secondary" onclick="abrirDetalhesOS(${os.id})">Acompanhar</button> <button class="btn-sm btn-info" onclick="imprimirOSPdf(${os.id})">🖨️ PDF</button> ${btnAnexo}</td></tr>`;
+            html += `<tr><td><strong>#${os.id}</strong><br><small>${dataFormatada(os.data_abertura)}</small></td><td><strong>${esc(os.comarca)}</strong><br><small>${esc(os.predio)} (${esc(os.sala)})</small></td><td style="max-width:250px;"><strong>${seloTipoOS(os.tipo_os)} ${os.marca ? esc(os.marca)+' ' : ''}${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')}</strong><br><small style="color:#64748b;">${esc(os.descricao_falha)}</small></td><td><span class="badge" style="background:${cor};color:white;">${os.status.replace('_', ' ').toUpperCase()}</span></td><td><button class="btn-sm btn-secondary" onclick="abrirDetalhesOS(${os.id})">Acompanhar</button> <button class="btn-sm btn-info" onclick="imprimirOSPdf(${os.id})">🖨️ PDF</button> ${btnAnexo}</td></tr>`;
         });
         tbody.innerHTML = html;
     }
@@ -216,14 +216,14 @@
             const os = data.os; const hist = data.historico;
             document.getElementById('detalheOsId').textContent = `#${os.id}`;
             document.getElementById('detalheOsBadge').textContent = os.status.replace('_', ' ').toUpperCase();
-            document.getElementById('detalheOsEquip').textContent = `${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')} (Tombo: ${esc(os.tombo)})`;
+            document.getElementById('detalheOsEquip').textContent = `${seloTipoOS(os.tipo_os)} ${os.marca ? esc(os.marca)+' ' : ''}${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')} (Tombo: ${esc(os.tombo)})`;
             document.getElementById('detalheOsLocal').textContent = `${esc(os.comarca)} - ${esc(os.predio)} / ${esc(os.sala)}`;
             document.getElementById('detalheOsDefeito').textContent = esc(os.descricao_falha);
 
             const boxLink = document.getElementById('boxLinkAnexo');
             if (boxLink) {
-                if (os.arquivo_conclusao) {
-                    boxLink.innerHTML = `<a href="#" onclick="event.preventDefault(); abrirAnexo('${esc(os.arquivo_conclusao)}'); return false;" style="background:#10b981;color:#fff;padding:6px 12px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:12px;display:inline-block;">📎 Ver Comprovante Assinado (Foto / PDF)</a>`;
+                if (os.arquivo_conclusao || os.foto_evaporadora || os.foto_condensadora) {
+                    boxLink.innerHTML = linksAnexosOS(os);
                     boxLink.classList.remove('hidden');
                 } else { boxLink.classList.add('hidden'); }
             }
@@ -243,12 +243,12 @@
 
     function renderizarCabecalhoEq() {
         const iconSort = eqSortAsc ? ' ▴' : ' ▾'; const col = (n, c) => `<th onclick="setEqSort('${c}')">${n}${eqSortCol === c ? iconSort : ''}</th>`;
-        document.getElementById('headFiltrosEq').innerHTML = `<tr>${col('Comarca','comarca')}${col('Prédio','predio')}${col('Local','sala')}${col('Equipamento','tipo_equipamento')}${col('Cap','capacidade')}${col('Tombo','tombo')}<th>Ação</th></tr>
+        document.getElementById('headFiltrosEq').innerHTML = `<tr>${col('Comarca','comarca')}${col('Prédio','predio')}${col('Local','sala')}${col('Marca','marca')}${col('Equipamento','tipo_equipamento')}${col('Cap','capacidade')}${col('Tombo','tombo')}<th>Ação</th></tr>
             <tr class="filter-row">
                 <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('comarca', this.value)" value="${eqFiltros.comarca}"></td>
                 <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('predio', this.value)" value="${eqFiltros.predio}"></td>
                 <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('sala', this.value)" value="${eqFiltros.sala}"></td>
-                <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('tipo', this.value)" value="${eqFiltros.tipo}"></td>
+                <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('marca', this.value)"></td><td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('tipo', this.value)" value="${eqFiltros.tipo}"></td>
                 <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('cap', this.value)" value="${eqFiltros.cap}"></td>
                 <td><input type="text" placeholder="Buscar..." oninput="debounceFiltroEq('tombo', this.value)" value="${eqFiltros.tombo}"></td>
                 <td><button class="btn-sm btn-secondary" onclick="limparFiltrosEq()" style="padding:6px;width:100%;">Limpar</button></td>
@@ -256,7 +256,7 @@
     }
 
     function debounceFiltroEq(c, v) { clearTimeout(eqDebounceTimeout); eqDebounceTimeout = setTimeout(() => { eqFiltros[c] = v.toLowerCase(); desenharTabelaEquipamentos(); }, 250); }
-    function limparFiltrosEq() { eqFiltros = { comarca:'', predio:'', sala:'', tipo:'', cap:'', tombo:'' }; renderizarCabecalhoEq(); desenharTabelaEquipamentos(); }
+    function limparFiltrosEq() { eqFiltros = { comarca:'', predio:'', sala:'', marca:'', tipo:'', cap:'', tombo:'' }; renderizarCabecalhoEq(); desenharTabelaEquipamentos(); }
     function setEqSort(c) { if (eqSortCol === c) eqSortAsc = !eqSortAsc; else { eqSortCol = c; eqSortAsc = true; } renderizarCabecalhoEq(); desenharTabelaEquipamentos(); }
 
     function desenharTabelaEquipamentos() {
@@ -266,6 +266,7 @@
             if (eqFiltros.comarca && !(eq.comarca||'').toLowerCase().includes(eqFiltros.comarca)) return false;
             if (eqFiltros.predio && !(eq.predio||'').toLowerCase().includes(eqFiltros.predio)) return false;
             if (eqFiltros.sala && !(eq.sala||'').toLowerCase().includes(eqFiltros.sala)) return false;
+            if (eqFiltros.marca && !(eq.marca||'').toLowerCase().includes(eqFiltros.marca)) return false;
             if (eqFiltros.tipo && !(eq.tipo_equipamento||'').toLowerCase().includes(eqFiltros.tipo)) return false;
             if (eqFiltros.cap && !(eq.capacidade||'').toLowerCase().includes(eqFiltros.cap)) return false;
             if (eqFiltros.tombo && !(eq.tombo||'').toLowerCase().includes(eqFiltros.tombo)) return false;
@@ -279,7 +280,7 @@
         let html = '';
         filtrados.forEach(eq => {
             const rowClass = eq.tem_os_ativa > 0 ? 'row-os-ativa' : '';
-            html += `<tr class="${rowClass}"><td>${esc(eq.comarca)}</td><td>${esc(eq.predio)}</td><td>${esc(eq.sala)}</td><td>${esc(eq.tipo_equipamento)}</td><td>${esc(eq.capacidade||'-')}</td><td>${eq.tombo === 'S/T' ? '<span class="badge" style="background:#e2e8f0;color:#64748b;">S/T</span>' : esc(eq.tombo)}</td><td style="white-space:nowrap;"><button class="btn-sm btn-success" onclick="abrirModalNovaOSAvulsaPeloEq(${eq.id}, '${esc(eq.tipo_equipamento)} ${esc(eq.capacidade||'')}', '${esc(eq.comarca)} - ${esc(eq.predio)} / ${esc(eq.sala)}')">Abrir O.S.</button> <button class="btn-sm btn-warning" onclick="abrirHistoricoEqOS(${eq.id})">Histórico</button></td></tr>`;
+            html += `<tr class="${rowClass}"><td>${esc(eq.comarca)}</td><td>${esc(eq.predio)}</td><td>${esc(eq.sala)}</td><td>${esc(eq.marca||'-')}</td><td>${esc(eq.tipo_equipamento)}</td><td>${esc(eq.capacidade||'-')}</td><td>${eq.tombo === 'S/T' ? '<span class="badge" style="background:#e2e8f0;color:#64748b;">S/T</span>' : esc(eq.tombo)}</td><td style="white-space:nowrap;"><button class="btn-sm btn-success" onclick="abrirModalNovaOSAvulsaPeloEq(${eq.id}, '${esc(eq.tipo_equipamento)} ${esc(eq.capacidade||'')}', '${esc(eq.comarca)} - ${esc(eq.predio)} / ${esc(eq.sala)}')">Abrir O.S.</button> <button class="btn-sm btn-warning" onclick="abrirHistoricoEqOS(${eq.id})">Histórico</button></td></tr>`;
         });
         tbody.innerHTML = html; document.getElementById('totalEqs').textContent = `Total: ${filtrados.length} equipamento(s).`;
     }
