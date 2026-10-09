@@ -1,6 +1,6 @@
 /**
  * SGME - Núcleo Compartilhado Frontend
- * Arquivo: shared.js (Versão 4.0 - Fotos reduzidas no aparelho antes do envio + visualizador de anexos)
+ * Arquivo: shared.js (Versão 5.1 - Instalação/substituição e fluxo de filas - Fotos reduzidas no aparelho antes do envio + visualizador de anexos)
  */
 
 const IS_GITHUB_PAGES = window.location.hostname.includes('github.io');

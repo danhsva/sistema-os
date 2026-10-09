@@ -160,6 +160,7 @@
             <div style="background:#f8fafc;padding:12px;border-radius:8px;border:1px solid var(--border);margin-bottom:15px;font-size:13px;line-height:1.5;">
                 <div style="color:var(--muted);font-size:11px;font-weight:700;">ONDE EXECUTAR:</div>
                 <strong id="detalheOsLocal" style="color:var(--primary-dark);font-size:14px;"></strong><br>
+                <span id="detalheOsTipo"></span><br>
                 <span id="detalheOsEquip" style="font-weight:600;color:#334155;"></span><br>
                 <div style="margin-top:6px;background:#fff1f2;padding:6px 8px;border-radius:6px;border:1px dashed #fecdd3;">
                     <span style="color:var(--danger);font-weight:700;">DEFEITO: </span><span id="detalheOsDefeito" style="color:#475569;"></span>
@@ -196,7 +197,7 @@
         </div>
     </div>
 
-<script src="shared.js?v=5.0"></script>
+<script src="shared.js?v=5.1"></script>
 <script>
     let osCache = []; let osAtual = null;
 
@@ -309,7 +310,8 @@
             document.getElementById('detalheOsId').textContent = `O.S. #${os.id}`;
             document.getElementById('detalheOsBadge').innerHTML = `<span class="badge" style="background:${os.status === 'aguardando_peca' ? '#8b5cf6' : '#f59e0b'};">${os.status.replace('_', ' ').toUpperCase()}</span>`;
             document.getElementById('detalheOsLocal').textContent = `${esc(os.comarca)} — ${esc(os.predio)} / ${esc(os.sala)}`;
-            document.getElementById('detalheOsEquip').textContent = `❄️ ${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')} (Tombo: ${esc(os.tombo||'S/T')})`;
+            document.getElementById('detalheOsTipo').innerHTML = seloTipoOS(os.tipo_os);
+            document.getElementById('detalheOsEquip').textContent = `❄️ ${os.marca ? os.marca+' ' : ''}${os.tipo_equipamento || ''} ${os.capacidade || ''} (Tombo: ${os.tombo || 'A DEFINIR'})`.replace(/\s+/g,' ').trim();
             document.getElementById('detalheOsDefeito').textContent = esc(os.descricao_falha);
 
             let htmlHist = '';

@@ -84,6 +84,7 @@
             <button class="btn-info btn-sm" id="btnImprimirModal" style="padding:8px 12px;">🖨️ PDF</button>
         </div>
         <div style="background:#f8fafc;border:1px solid var(--border);padding:10px;border-radius:6px;margin-top:15px;font-size:13px;">
+            <strong>Tipo:</strong> <span id="detalheOsTipo"></span><br>
             <strong>Equipamento:</strong> <span id="detalheOsEquip"></span><br>
             <strong>Local:</strong> <span id="detalheOsLocal"></span><br>
             <strong>Técnico Responsável:</strong> <span id="detalheOsExecutante" style="color:var(--primary-dark);font-weight:bold;"></span><br>
@@ -138,7 +139,7 @@
 
     <div id="modalHistoricoEqOS" class="modal-overlay hidden"><div class="modal-box" style="max-width: 700px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;"><h3 style="margin:0;">Histórico do Equipamento</h3><button class="btn-danger btn-sm" onclick="fecharModal('modalHistoricoEqOS')">X</button></div><div style="overflow-x:auto;"><table style="margin-top:0;"><thead><tr><th>O.S. / Data</th><th>Defeito</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tabelaHistoricoEqOS"></tbody></table></div></div></div>
 
-<script src="shared.js?v=5.0"></script>
+<script src="shared.js?v=5.1"></script>
 <script>
     let equipamentosCache = []; let osCache = []; let osAtual = null;
     let eqSortCol = 'comarca'; let eqSortAsc = true; let eqDebounceTimeout = null;
@@ -348,7 +349,8 @@
 
             document.getElementById('detalheOsId').textContent = `#${os.id}`;
             document.getElementById('detalheOsBadge').textContent = (os.status === 'em_analise' ? 'EM VALIDAÇÃO FISCAL' : os.status.replace('_', ' ')).toUpperCase();
-            document.getElementById('detalheOsEquip').textContent = `${seloTipoOS(os.tipo_os)} ${os.marca ? esc(os.marca)+' ' : ''}${esc(os.tipo_equipamento)} ${esc(os.capacidade||'')} (Tombo: ${esc(os.tombo)})`;
+            document.getElementById('detalheOsTipo').innerHTML = seloTipoOS(os.tipo_os);
+            document.getElementById('detalheOsEquip').textContent = `${os.marca ? os.marca+' ' : ''}${os.tipo_equipamento || ''} ${os.capacidade || ''} (Tombo: ${os.tombo || 'A DEFINIR'})`.replace(/\s+/g,' ').trim();
             document.getElementById('detalheOsLocal').textContent = `${esc(os.comarca)} - ${esc(os.predio)} / ${esc(os.sala)}`;
             document.getElementById('detalheOsExecutante').textContent = os.nome_executante ? esc(os.nome_executante) : 'NÃO DESIGNADO';
             document.getElementById('detalheOsDefeito').textContent = esc(os.descricao_falha);
@@ -389,6 +391,10 @@
                 boxAcao.classList.remove('hidden');
                 boxAvisoAnalise.classList.add('hidden');
                 boxAvisoConcluida.classList.add('hidden');
+                // O.S. aprovada ou ainda sem técnico: prioridade é delegar.
+                // O.S. já atribuída: mantém a opção de continuidade/finalização.
+                const selStatus = document.getElementById('tratarOsStatus');
+                selStatus.value = (!os.executante_id || os.status === 'aprovada') ? 'em_execucao' : os.status === 'aguardando_peca' ? 'aguardando_peca' : 'em_analise';
                 ajustarCamposContratada();
             }
 
